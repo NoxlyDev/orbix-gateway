@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use common_utils::{ext_traits::OptionExt, id_type};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{router_data::ErrorResponse, types};
+use orbix_domain_models::{router_data::ErrorResponse, types};
 
 use crate::{
     core::payments,
@@ -21,7 +21,7 @@ pub async fn construct_relay_refund_router_data<F>(
     state: &SessionState,
     merchant_id: &id_type::MerchantId,
     connector_account: &domain::MerchantConnectorAccount,
-    relay_record: &hyperswitch_domain_models::relay::Relay,
+    relay_record: &orbix_domain_models::relay::Relay,
 ) -> RouterResult<types::RefundsRouterData<F>> {
     let connector_auth_type = connector_account
         .get_connector_account_details()
@@ -70,7 +70,7 @@ pub async fn construct_relay_refund_router_data<F>(
 
     let relay_id_string = relay_record.id.get_string_repr().to_string();
 
-    let router_data = hyperswitch_domain_models::router_data::RouterData {
+    let router_data = orbix_domain_models::router_data::RouterData {
         flow: std::marker::PhantomData,
         merchant_id: merchant_id.clone(),
         customer_id: None,
@@ -83,14 +83,14 @@ pub async fn construct_relay_refund_router_data<F>(
         payment_method_type: None,
         connector_auth_type,
         description: None,
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: common_enums::AuthenticationType::default(),
         connector_meta_data: connector_account.metadata.clone(),
         connector_wallets_details: None,
         amount_captured: None,
         payment_method_status: None,
         minor_amount_captured: None,
-        request: hyperswitch_domain_models::router_request_types::RefundsData {
+        request: orbix_domain_models::router_request_types::RefundsData {
             refund_id: relay_id_string.clone(),
             payment_feature_metadata: None,
             feature_metadata: None,
@@ -170,7 +170,7 @@ pub async fn construct_relay_capture_router_data(
     state: &SessionState,
     merchant_id: &id_type::MerchantId,
     connector_account: &domain::MerchantConnectorAccount,
-    relay_record: &hyperswitch_domain_models::relay::Relay,
+    relay_record: &orbix_domain_models::relay::Relay,
 ) -> RouterResult<types::PaymentsCaptureRouterData> {
     let connector_auth_type = connector_account
         .get_connector_account_details()
@@ -219,7 +219,7 @@ pub async fn construct_relay_capture_router_data(
 
     let relay_id_string = relay_record.id.get_string_repr().to_string();
 
-    let router_data = hyperswitch_domain_models::router_data::RouterData {
+    let router_data = orbix_domain_models::router_data::RouterData {
         flow: std::marker::PhantomData,
         merchant_id: merchant_id.clone(),
         customer_id: None,
@@ -232,14 +232,14 @@ pub async fn construct_relay_capture_router_data(
         payment_method_type: None,
         connector_auth_type,
         description: None,
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: common_enums::AuthenticationType::default(),
         connector_meta_data: connector_account.metadata.clone(),
         connector_wallets_details: None,
         amount_captured: None,
         payment_method_status: None,
         minor_amount_captured: None,
-        request: hyperswitch_domain_models::router_request_types::PaymentsCaptureData {
+        request: orbix_domain_models::router_request_types::PaymentsCaptureData {
             // Relay captures do not carry payment-intent or operation feature metadata.
             feature_metadata: None,
             payment_feature_metadata: None,
@@ -249,7 +249,7 @@ pub async fn construct_relay_capture_router_data(
             payment_amount: relay_capture_data.authorized_amount.get_amount_as_i64(),
             multiple_capture_data: Some(
                 // for relay, each manual multiple capture is a separate entity i.e not related
-                hyperswitch_domain_models::router_request_types::MultipleCaptureRequestData {
+                orbix_domain_models::router_request_types::MultipleCaptureRequestData {
                     capture_sequence: 1,
                     capture_reference: relay_id_string.clone(),
                 },
@@ -321,7 +321,7 @@ pub async fn construct_relay_incremental_authorization_router_data(
     state: &SessionState,
     merchant_id: &id_type::MerchantId,
     connector_account: &domain::MerchantConnectorAccount,
-    relay_record: &hyperswitch_domain_models::relay::Relay,
+    relay_record: &orbix_domain_models::relay::Relay,
 ) -> RouterResult<types::PaymentsIncrementalAuthorizationRouterData> {
     let connector_auth_type = connector_account
         .get_connector_account_details()
@@ -366,7 +366,7 @@ pub async fn construct_relay_incremental_authorization_router_data(
 
     let relay_id_string = relay_record.id.get_string_repr().to_string();
 
-    let router_data = hyperswitch_domain_models::router_data::RouterData {
+    let router_data = orbix_domain_models::router_data::RouterData {
         flow: std::marker::PhantomData,
         merchant_id: merchant_id.clone(),
         customer_id: None,
@@ -379,7 +379,7 @@ pub async fn construct_relay_incremental_authorization_router_data(
         payment_method_type: None,
         connector_auth_type,
         description: None,
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: common_enums::AuthenticationType::default(),
         connector_meta_data: connector_account.metadata.clone(),
         connector_wallets_details: None,
@@ -387,7 +387,7 @@ pub async fn construct_relay_incremental_authorization_router_data(
         payment_method_status: None,
         minor_amount_captured: None,
         request:
-            hyperswitch_domain_models::router_request_types::PaymentsIncrementalAuthorizationData {
+            orbix_domain_models::router_request_types::PaymentsIncrementalAuthorizationData {
                 total_amount: relay_incremental_authorization_data
                     .total_amount
                     .get_amount_as_i64(),
@@ -451,7 +451,7 @@ pub async fn construct_relay_void_router_data(
     state: &SessionState,
     merchant_id: &id_type::MerchantId,
     connector_account: &domain::MerchantConnectorAccount,
-    relay_record: &hyperswitch_domain_models::relay::Relay,
+    relay_record: &orbix_domain_models::relay::Relay,
 ) -> RouterResult<types::PaymentsCancelRouterData> {
     let connector_auth_type = connector_account
         .get_connector_account_details()
@@ -500,7 +500,7 @@ pub async fn construct_relay_void_router_data(
 
     let relay_id_string = relay_record.id.get_string_repr().to_string();
 
-    let router_data = hyperswitch_domain_models::router_data::RouterData {
+    let router_data = orbix_domain_models::router_data::RouterData {
         flow: std::marker::PhantomData,
         merchant_id: merchant_id.clone(),
         customer_id: None,
@@ -513,14 +513,14 @@ pub async fn construct_relay_void_router_data(
         payment_method_type: None,
         connector_auth_type,
         description: None,
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: common_enums::AuthenticationType::default(),
         connector_meta_data: connector_account.metadata.clone(),
         connector_wallets_details: None,
         amount_captured: None,
         payment_method_status: None,
         minor_amount_captured: None,
-        request: hyperswitch_domain_models::router_request_types::PaymentsCancelData {
+        request: orbix_domain_models::router_request_types::PaymentsCancelData {
             amount: relay_void_data
                 .amount
                 .map(|value| value.get_amount_as_i64()),
@@ -590,8 +590,8 @@ pub async fn construct_relay_payments_retrieve_router_data(
     state: &SessionState,
     merchant_id: &id_type::MerchantId,
     connector_account: &domain::MerchantConnectorAccount,
-    relay_record: &hyperswitch_domain_models::relay::Relay,
-    capture_method_type: Option<hyperswitch_interfaces::api::CaptureSyncMethod>,
+    relay_record: &orbix_domain_models::relay::Relay,
+    capture_method_type: Option<orbix_interfaces::api::CaptureSyncMethod>,
 ) -> RouterResult<types::PaymentsSyncRouterData> {
     let connector_auth_type = connector_account
         .get_connector_account_details()
@@ -633,13 +633,13 @@ pub async fn construct_relay_payments_retrieve_router_data(
         .get_capture_data()?;
 
     let connector_transaction_id = match capture_method_type {
-        Some(hyperswitch_interfaces::api::CaptureSyncMethod::Bulk) => {
-            hyperswitch_domain_models::router_request_types::ResponseId::ConnectorTransactionId(
+        Some(orbix_interfaces::api::CaptureSyncMethod::Bulk) => {
+            orbix_domain_models::router_request_types::ResponseId::ConnectorTransactionId(
                 relay_record.connector_resource_id.clone(),
             )
         }
-        Some(hyperswitch_interfaces::api::CaptureSyncMethod::Individual) | None => {
-            hyperswitch_domain_models::router_request_types::ResponseId::ConnectorTransactionId(
+        Some(orbix_interfaces::api::CaptureSyncMethod::Individual) | None => {
+            orbix_domain_models::router_request_types::ResponseId::ConnectorTransactionId(
                 relay_record
                     .connector_reference_id
                     .clone()
@@ -651,7 +651,7 @@ pub async fn construct_relay_payments_retrieve_router_data(
 
     let relay_id_string = relay_record.id.get_string_repr().to_string();
 
-    let router_data = hyperswitch_domain_models::router_data::RouterData {
+    let router_data = orbix_domain_models::router_data::RouterData {
         flow: std::marker::PhantomData,
         merchant_id: merchant_id.clone(),
         customer_id: None,
@@ -664,14 +664,14 @@ pub async fn construct_relay_payments_retrieve_router_data(
         payment_method_type: None,
         connector_auth_type,
         description: None,
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: common_enums::AuthenticationType::default(),
         connector_meta_data: connector_account.metadata.clone(),
         connector_wallets_details: None,
         amount_captured: None,
         payment_method_status: None,
         minor_amount_captured: None,
-        request: hyperswitch_domain_models::router_request_types::PaymentsSyncData {
+        request: orbix_domain_models::router_request_types::PaymentsSyncData {
             currency: relay_capture_data.currency,
             connector_transaction_id,
             connector_meta: None,
@@ -680,7 +680,7 @@ pub async fn construct_relay_payments_retrieve_router_data(
             integrity_object: None,
             encoded_data: None,
             sync_type:
-                hyperswitch_domain_models::router_request_types::SyncRequestType::SinglePaymentSync,
+                orbix_domain_models::router_request_types::SyncRequestType::SinglePaymentSync,
             mandate_id: None,
             payment_method_type: None,
             payment_experience: None,

@@ -161,7 +161,7 @@ export const createPaymentBodyWithCurrencyCountry = (
   amount: 6000,
   authentication_type: "three_ds",
   description: "Joseph First Crypto",
-  email: "hyperswitch_sdk_demo_id@gmail.com",
+  email: "orbix_sdk_demo_id@gmail.com",
   setup_future_usage: "",
   metadata: {
     udf1: "value1",
@@ -212,7 +212,7 @@ export const createPaymentBodyWithCurrency = (currency) => ({
   amount: 6000,
   authentication_type: "three_ds",
   description: "Joseph First Crypto",
-  email: "hyperswitch_sdk_demo_id@gmail.com",
+  email: "orbix_sdk_demo_id@gmail.com",
   setup_future_usage: "",
   metadata: {
     udf1: "value1",

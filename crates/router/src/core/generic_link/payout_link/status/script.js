@@ -68,7 +68,7 @@ function renderStatusDetails(payoutDetails) {
   var status = payoutDetails.status;
   var statusInfo = {
     statusImageSrc:
-      "https://live.hyperswitch.io/payment-link-assets/success.png",
+      "https://live.orbix.example/payment-link-assets/success.png",
     statusText: "{{i18n_success_text}}",
     statusMessage: "{{i18n_success_message}}",
   };
@@ -79,7 +79,7 @@ function renderStatusDetails(payoutDetails) {
     case "requires_fulfillment":
     case "pending":
       statusInfo.statusImageSrc =
-        "https://live.hyperswitch.io/payment-link-assets/pending.png";
+        "https://live.orbix.example/payment-link-assets/pending.png";
       statusInfo.statusText = "{{i18n_pending_text}}";
       statusInfo.statusMessage = "{{i18n_pending_message}}";
       break;
@@ -94,7 +94,7 @@ function renderStatusDetails(payoutDetails) {
     case "requires_vendor_account_creation":
     default:
       statusInfo.statusImageSrc =
-        "https://live.hyperswitch.io/payment-link-assets/failed.png";
+        "https://live.orbix.example/payment-link-assets/failed.png";
       statusInfo.statusText = "{{i18n_failed_text}}";
       statusInfo.statusMessage = "{{i18n_failed_message}}";
       break;

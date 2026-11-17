@@ -18,8 +18,8 @@ use error_stack::ResultExt;
 use helpers::{
     enable_decision_engine_dynamic_routing_setup, update_decision_engine_dynamic_routing_setup,
 };
-use hyperswitch_domain_models::{mandates, payment_address};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::{mandates, payment_address};
+use orbix_masking::Secret;
 use payment_methods::helpers::StorageErrorExt;
 use rustc_hash::FxHashSet;
 
@@ -73,7 +73,7 @@ async fn decision_engine_token_request(
     let email = match state.global_store.find_user_by_user_id(&user.user_id).await {
         Ok(found) => {
             // `Email` wraps the masked secret we want, so one unwrap reaches it.
-            use hyperswitch_masking::ExposeInterface;
+            use orbix_masking::ExposeInterface;
             Some(domain::UserFromStorage::from(found).get_email().expose())
         }
         Err(error) => {
@@ -427,7 +427,7 @@ async fn find_de_record_for_algorithm(
     }
 }
 
-/// Maps a DE rule record onto the same api shape a Hyperswitch-authored rule returns,
+/// Maps a DE rule record onto the same api shape a Orbix Gateway-authored rule returns,
 /// converting an advanced program back into the euclid AST.
 #[cfg(feature = "v1")]
 fn de_record_to_merchant_routing_algorithm(
@@ -614,7 +614,7 @@ pub async fn retrieve_merchant_routing_dictionary(
         .map(ForeignInto::foreign_into)
         .collect::<Vec<_>>();
 
-    // The merchant-level listing (no profile filter) stays Hyperswitch-only: the DE list
+    // The merchant-level listing (no profile filter) stays Orbix Gateway-only: the DE list
     // API is unpaginated, so merging it into a limit/offset page would break paging.
     // DE-backed rules are served by the profile-scoped listing below.
     #[cfg(feature = "v1")]
@@ -629,7 +629,7 @@ pub async fn retrieve_merchant_routing_dictionary(
 }
 
 /// Merges DE-held rules into a profile-scoped listing, per profile and only for profiles
-/// effectively cut over. Profiles served by Hyperswitch keep the HS records untouched.
+/// effectively cut over. Profiles served by Orbix Gateway keep the HS records untouched.
 #[cfg(feature = "v1")]
 async fn merge_de_routing_records(
     state: &SessionState,
@@ -689,7 +689,7 @@ async fn merge_de_routing_records(
         cutover_profiles.clone(),
     )
     .await?;
-    // Profiles not cut over keep their Hyperswitch records verbatim.
+    // Profiles not cut over keep their Orbix Gateway records verbatim.
     let cutover: HashSet<_> = cutover_profiles.into_iter().collect();
     merged.extend(
         hs_result
@@ -941,7 +941,7 @@ pub async fn create_routing_algorithm_under_profile(
     };
 
     if de_routing_effective {
-        // DE-only write: hard-fail on DE errors; nothing is written to Hyperswitch.
+        // DE-only write: hard-fail on DE errors; nothing is written to Orbix Gateway.
         let static_algorithm =
             maybe_static_algorithm.ok_or(errors::ApiErrorResponse::InvalidRequestData {
                 message: "This algorithm cannot be represented on the Decision Engine".to_string(),
@@ -1691,7 +1691,7 @@ pub async fn retrieve_routing_algorithm_from_algorithm_id(
         Err(error) => router_env::logger::warn!(
             ?error,
             profile_id = %business_profile.get_id().get_string_repr(),
-            "decision_engine_euclid: DE lookup failed on retrieve, serving the Hyperswitch row"
+            "decision_engine_euclid: DE lookup failed on retrieve, serving the Orbix Gateway row"
         ),
     }
 
@@ -1809,7 +1809,7 @@ pub async fn unlink_routing_config(
                 })?;
                 let active_record = parse_de_euclid_routing_record(raw_active_record).ok_or(
                     errors::ApiErrorResponse::InvalidRequestData {
-                        message: "The active rule on the Decision Engine cannot be managed through Hyperswitch; deactivate it from the Decision Engine dashboard".to_string(),
+                        message: "The active rule on the Decision Engine cannot be managed through Orbix Gateway; deactivate it from the Decision Engine dashboard".to_string(),
                     },
                 )?;
 
@@ -1916,7 +1916,7 @@ pub async fn unlink_routing_config(
                                 routing_flow = ?"unlink_routing_algorithm",
                                 profile_id = ?profile_id.get_string_repr(),
                                 algorithm_id = ?algorithm_id.get_string_repr(),
-                                "decision_engine_euclid: rule deactivation failed on the Decision Engine for a Hyperswitch-routed profile"
+                                "decision_engine_euclid: rule deactivation failed on the Decision Engine for a Orbix Gateway-routed profile"
                             );
                         }
                     }
@@ -2182,7 +2182,7 @@ pub async fn retrieve_linked_routing_config(
     // Prefetch the Decision Engine's active rules for every eligible profile at once. The
     // engine lists one profile per call, so issuing them inside the loop cost one serial
     // round trip per profile, each up to the 5s client timeout. A profile is eligible if
-    // Hyperswitch has an active ref (the pre-existing behaviour) or it is cut over (where
+    // Orbix Gateway has an active ref (the pre-existing behaviour) or it is cut over (where
     // the rule can live only on the engine). Absent from the map means "do not consult".
     let de_active_by_profile: HashMap<
         common_utils::id_type::ProfileId,
@@ -2362,7 +2362,7 @@ pub async fn fetch_decision_engine_active_rules(
         .unwrap_or_default()
 }
 
-/// The pure half: splice in the Hyperswitch dynamic algorithms the DE cannot represent and
+/// The pure half: splice in the Orbix Gateway dynamic algorithms the DE cannot represent and
 /// keep only the requested transaction type.
 pub fn merge_decision_engine_active_rules(
     mut de_records: Vec<routing_types::RoutingDictionaryRecord>,
@@ -3010,7 +3010,7 @@ async fn get_merchant_account(
     state: &SessionState,
     merchant_id: &common_utils::id_type::MerchantId,
 ) -> RouterResult<(
-    hyperswitch_domain_models::platform::MerchantKeyStore,
+    orbix_domain_models::platform::MerchantKeyStore,
     domain::MerchantAccount,
 )> {
     let key_store = state
@@ -3096,7 +3096,7 @@ pub async fn migrate_rules_for_profiles(
                 skipped: vec![],
                 errors: vec![],
                 not_applicable: vec![],
-                not_attempted: Some("no routing rules in Hyperswitch".to_string()),
+                not_attempted: Some("no routing rules in Orbix Gateway".to_string()),
             });
             totals.profiles_not_attempted += 1;
             continue;
@@ -3207,10 +3207,10 @@ async fn migrate_rules_for_profile(
         .await
         .to_not_found_response(errors::ApiErrorResponse::ResourceIdNotFound)?;
 
-    // The decision engine keys rule create on the Hyperswitch algorithm id, so re-writing an
+    // The decision engine keys rule create on the Orbix Gateway algorithm id, so re-writing an
     // existing rule is a key conflict — without this a finished migration reads as total failure.
     // A read failure here is not fatal: the set stays empty and every rule is attempted.
-    // Raw records: a rule shape Hyperswitch cannot represent is still present on the DE, and
+    // Raw records: a rule shape Orbix Gateway cannot represent is still present on the DE, and
     // reading it as absent would re-create it on every run.
     let already_in_decision_engine: HashSet<String> = match fetch_de_euclid_routing_records_raw(
         &state,
@@ -3511,7 +3511,7 @@ pub async fn routing_migration_status(
             .map(|ids| i64::try_from(ids.len()).unwrap_or(i64::MAX));
 
         let hs_ids = hs_rule_ids.get(&profile_id).cloned().unwrap_or_default();
-        let rules_hyperswitch = i64::try_from(hs_ids.len()).unwrap_or(i64::MAX);
+        let rules_orbix = i64::try_from(hs_ids.len()).unwrap_or(i64::MAX);
         let (mut missing_in_de, mut only_in_de) = (Vec::new(), Vec::new());
         if let Some(de_ids) = de_rule_ids.as_ref() {
             missing_in_de = hs_ids.difference(de_ids).cloned().collect();
@@ -3524,7 +3524,7 @@ pub async fn routing_migration_status(
         let dimensions = dimension_state::Dimensions::new()
             .with_processor_merchant_id(merchant_id.clone().into())
             .with_provider_merchant_id(
-                hyperswitch_domain_models::platform::ProviderMerchantId::new(provider_merchant_id),
+                orbix_domain_models::platform::ProviderMerchantId::new(provider_merchant_id),
             )
             .with_profile_id(profile_id.clone());
         let routing_source = Some(
@@ -3547,7 +3547,7 @@ pub async fn routing_migration_status(
             None => routing_types::RoutingMigrationState::Unknown,
             Some(0) if cut_over => routing_types::RoutingMigrationState::EnabledWithoutRules,
             Some(0) => routing_types::RoutingMigrationState::Pending,
-            Some(count) if !missing_in_de.is_empty() && count == rules_hyperswitch => {
+            Some(count) if !missing_in_de.is_empty() && count == rules_orbix => {
                 routing_types::RoutingMigrationState::Diverged
             }
             Some(_) if !missing_in_de.is_empty() => routing_types::RoutingMigrationState::Partial,
@@ -3571,7 +3571,7 @@ pub async fn routing_migration_status(
             rules_out_of_scope: out_of_scope.get(&profile_id).copied().unwrap_or_default(),
             profile_id,
             merchant_id,
-            rules_hyperswitch,
+            rules_orbix,
             rules_decision_engine,
             rules_missing_in_decision_engine: missing_in_de,
             rules_only_in_decision_engine: only_in_de,

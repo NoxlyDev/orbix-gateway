@@ -1,9 +1,9 @@
 use common_types::payment_methods::PayViaSingleUseToken;
 use error_stack::report;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payment_method_data::PaymentMethodData, router_data::PaymentMethodToken,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::{ConnectorSpecifications, SingleUseTokenSupport},
     connector_integration_interface::ConnectorEnum,
 };

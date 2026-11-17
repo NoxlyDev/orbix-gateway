@@ -3,11 +3,11 @@ use api_models::payment_methods as pm_api;
 use common_utils::{errors::CustomResult, id_type};
 use csv::Reader;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     api::ApplicationResponse, errors::api_error_response as errors,
     payment_methods::StoragePaymentMethodUpdate as PaymentMethodUpdate, platform,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_masking::{ExposeInterface, PeekInterface};
 use payment_methods::core::migration::MerchantConnectorValidator;
 use rdkafka::message::ToBytes;
 use router_env::logger;
@@ -55,7 +55,7 @@ pub async fn update_payment_method_record(
 
     use common_enums::enums;
     use common_utils::pii;
-    use hyperswitch_domain_models::mandates::{
+    use orbix_domain_models::mandates::{
         CommonMandateReference, PaymentsMandateReference, PaymentsMandateReferenceRecord,
         PayoutsMandateReference, PayoutsMandateReferenceRecord,
     };

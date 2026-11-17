@@ -100,32 +100,32 @@ impl OutgoingWebhookEventMetric for OutgoingWebhookContent {
         match self {
             Self::PaymentDetails(payment_payload) => Some(OutgoingWebhookEventContent::Payment {
                 payment_id: payment_payload.payment_id.clone(),
-                content: hyperswitch_masking::masked_serialize(&payment_payload)
+                content: orbix_masking::masked_serialize(&payment_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             Self::RefundDetails(refund_payload) => Some(OutgoingWebhookEventContent::Refund {
                 payment_id: refund_payload.payment_id.clone(),
                 refund_id: refund_payload.get_refund_id_as_string(),
-                content: hyperswitch_masking::masked_serialize(&refund_payload)
+                content: orbix_masking::masked_serialize(&refund_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             Self::DisputeDetails(dispute_payload) => Some(OutgoingWebhookEventContent::Dispute {
                 payment_id: dispute_payload.payment_id.clone(),
                 attempt_id: dispute_payload.attempt_id.clone(),
                 dispute_id: dispute_payload.dispute_id.clone(),
-                content: hyperswitch_masking::masked_serialize(&dispute_payload)
+                content: orbix_masking::masked_serialize(&dispute_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             Self::MandateDetails(mandate_payload) => Some(OutgoingWebhookEventContent::Mandate {
                 payment_method_id: mandate_payload.payment_method_id.clone(),
                 mandate_id: mandate_payload.mandate_id.clone(),
-                content: hyperswitch_masking::masked_serialize(&mandate_payload)
+                content: orbix_masking::masked_serialize(&mandate_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             #[cfg(feature = "payouts")]
             Self::PayoutDetails(payout_payload) => Some(OutgoingWebhookEventContent::Payout {
                 payout_id: payout_payload.payout_id.clone(),
-                content: hyperswitch_masking::masked_serialize(&payout_payload)
+                content: orbix_masking::masked_serialize(&payout_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             Self::SubscriptionDetails(subscription) => {
@@ -133,7 +133,7 @@ impl OutgoingWebhookEventMetric for OutgoingWebhookContent {
                     subscription_id: subscription.id.clone(),
                     invoice_id: subscription.get_optional_invoice_id(),
                     payment_id: subscription.get_optional_payment_id(),
-                    content: hyperswitch_masking::masked_serialize(&subscription)
+                    content: orbix_masking::masked_serialize(&subscription)
                         .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
                 })
             }
@@ -147,13 +147,13 @@ impl OutgoingWebhookEventMetric for OutgoingWebhookContent {
         match self {
             Self::PaymentDetails(payment_payload) => Some(OutgoingWebhookEventContent::Payment {
                 payment_id: payment_payload.id.clone(),
-                content: hyperswitch_masking::masked_serialize(&payment_payload)
+                content: orbix_masking::masked_serialize(&payment_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             Self::RefundDetails(refund_payload) => Some(OutgoingWebhookEventContent::Refund {
                 payment_id: refund_payload.payment_id.clone(),
                 refund_id: refund_payload.id.clone(),
-                content: hyperswitch_masking::masked_serialize(&refund_payload)
+                content: orbix_masking::masked_serialize(&refund_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             Self::DisputeDetails(dispute_payload) => {
@@ -163,19 +163,19 @@ impl OutgoingWebhookEventMetric for OutgoingWebhookContent {
             Self::MandateDetails(mandate_payload) => Some(OutgoingWebhookEventContent::Mandate {
                 payment_method_id: mandate_payload.payment_method_id.clone(),
                 mandate_id: mandate_payload.mandate_id.clone(),
-                content: hyperswitch_masking::masked_serialize(&mandate_payload)
+                content: orbix_masking::masked_serialize(&mandate_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             #[cfg(feature = "payouts")]
             Self::PayoutDetails(payout_payload) => Some(OutgoingWebhookEventContent::Payout {
                 payout_id: payout_payload.payout_id.clone(),
-                content: hyperswitch_masking::masked_serialize(&payout_payload)
+                content: orbix_masking::masked_serialize(&payout_payload)
                     .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
             }),
             Self::RecoveryRetryDetails(retry_payload) => {
                 Some(OutgoingWebhookEventContent::RevenueRecovery {
                     payment_id: retry_payload.id.clone(),
-                    content: hyperswitch_masking::masked_serialize(&retry_payload)
+                    content: orbix_masking::masked_serialize(&retry_payload)
                         .unwrap_or(serde_json::json!({"error":"failed to serialize"})),
                 })
             }

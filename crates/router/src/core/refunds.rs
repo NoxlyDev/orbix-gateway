@@ -15,17 +15,17 @@ use common_utils::{
 use diesel_models::{process_tracker::business_status, refund as diesel_refund};
 use error_stack::{report, ResultExt};
 use external_services::grpc_client::LineageIds;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payment_method_data::ApiPaymentMethodDataMandateIds, payments::HeaderPayload,
     refunds::RefundAmountDetails, router_data::ErrorResponse,
     router_request_types::SplitRefundsRequest,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     consts as interfaces_consts,
     errors::not_supported_message,
     integrity::{CheckIntegrity, FlowIntegrity, GetIntegrityObject},
 };
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use router_env::{instrument, tracing, tracing::Instrument};
 use scheduler::{errors as sch_errors, utils as process_tracker_utils};
 #[cfg(feature = "olap")]
@@ -69,7 +69,7 @@ struct VoidPostRefundStateMetadata {
 
 struct RefundReverseResponse {
     state_metadata: Option<pii::SecretSerdeValue>,
-    raw_connector_response: Option<hyperswitch_masking::Secret<String>>,
+    raw_connector_response: Option<orbix_masking::Secret<String>>,
     connector_refund_id: String,
     status: common_enums::RefundStatus,
     error_details: Option<ErrorResponse>,
@@ -513,7 +513,7 @@ pub async fn trigger_refund_to_gateway(
     payment_method_data: Option<api_models::payments::PaymentMethodData>,
 ) -> RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let routed_through = payment_attempt
         .connector
@@ -1036,7 +1036,7 @@ async fn execute_refund_execute_via_direct_with_ucs_shadow(
             let ucs_for_compare = ucs_result.map_err(|e| format!("{:?}", e));
 
             Box::pin(
-                hyperswitch_interfaces::helpers::serialize_comparison_results_and_send(
+                orbix_interfaces::helpers::serialize_comparison_results_and_send(
                     &ucs_state,
                     connector_name,
                     direct_for_compare,
@@ -1105,7 +1105,7 @@ pub async fn refund_retrieve_core(
     refund: diesel_refund::Refund,
 ) -> RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let db = &*state.store;
     let processor_merchant_id = platform.get_processor().get_processor_merchant_id();
@@ -1224,7 +1224,7 @@ pub async fn sync_refund_with_gateway(
     all_keys_required: Option<bool>,
 ) -> RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let connector_id = refund.connector.to_string();
     let connector: api::ConnectorData = api::ConnectorData::get_connector_by_name(
@@ -1612,7 +1612,7 @@ async fn execute_refund_sync_via_direct_with_ucs_shadow(
             let ucs_for_compare = ucs_result.map_err(|e| format!("{:?}", e));
 
             Box::pin(
-                hyperswitch_interfaces::helpers::serialize_comparison_results_and_send(
+                orbix_interfaces::helpers::serialize_comparison_results_and_send(
                     &state,
                     connector_name,
                     direct_for_compare,
@@ -2013,7 +2013,7 @@ pub async fn refund_list_for_platform(
     let limit = req.limit.unwrap_or_default();
     let offset = req.offset;
     let platform_merchant_id = platform.get_provider().get_account().get_id();
-    let refund_constraints: hyperswitch_domain_models::refunds::RefundListConstraints = req.into();
+    let refund_constraints: orbix_domain_models::refunds::RefundListConstraints = req.into();
 
     let refund_list = db
         .filter_refund_by_platform_merchant_id(
@@ -2193,7 +2193,7 @@ pub async fn refund_retrieve_core_with_refund_id(
     request: refunds::RefundsRetrieveRequest,
 ) -> RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let refund_id = request.refund_id.clone();
     let db = &*state.store;
@@ -2423,13 +2423,13 @@ impl ForeignFrom<diesel_refund::Refund> for api_models::refunds::PlatformRefundL
 impl
     ForeignFrom<(
         diesel_refund::Refund,
-        Option<hyperswitch_masking::Secret<String>>,
+        Option<orbix_masking::Secret<String>>,
     )> for api::RefundResponse
 {
     fn foreign_from(
         item: (
             diesel_refund::Refund,
-            Option<hyperswitch_masking::Secret<String>>,
+            Option<orbix_masking::Secret<String>>,
         ),
     ) -> Self {
         let (refund, raw_connector_response) = item;
@@ -2484,7 +2484,7 @@ pub async fn schedule_refund_execution(
     payment_method_data: Option<api_models::payments::PaymentMethodData>,
 ) -> RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     // refunds::RefundResponse> {
     let db = &*state.store;

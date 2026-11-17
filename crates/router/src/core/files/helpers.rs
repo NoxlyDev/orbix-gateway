@@ -2,7 +2,7 @@ use actix_multipart::Field;
 use common_utils::errors::CustomResult;
 use error_stack::ResultExt;
 use futures::TryStreamExt;
-use hyperswitch_domain_models::router_response_types::disputes::FileInfo;
+use orbix_domain_models::router_response_types::disputes::FileInfo;
 
 use crate::{
     core::{

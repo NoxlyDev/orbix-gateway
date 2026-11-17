@@ -7,8 +7,8 @@ use api_models::payments;
 use common_enums::Currency;
 use common_utils::{errors::CustomResult, ext_traits::ValueExt};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::authentication;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_domain_models::authentication;
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 
 use super::errors::StorageErrorExt;
 use crate::{
@@ -37,8 +37,8 @@ pub async fn perform_authentication(
     authentication_connector: String,
     payment_method_data: domain::PaymentMethodData,
     payment_method: common_enums::PaymentMethod,
-    billing_address: hyperswitch_domain_models::address::Address,
-    shipping_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: orbix_domain_models::address::Address,
+    shipping_address: Option<orbix_domain_models::address::Address>,
     browser_details: Option<core_types::BrowserInformation>,
     merchant_connector_account: payments_core::helpers::MerchantConnectorAccountType,
     amount: Option<common_utils::types::MinorUnit>,
@@ -55,7 +55,7 @@ pub async fn perform_authentication(
     psd2_sca_exemption_type: Option<common_enums::ScaExemptionType>,
     payment_id: common_utils::id_type::PaymentId,
     force_3ds_challenge: bool,
-    merchant_key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+    merchant_key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
     storage_scheme: diesel_models::enums::MerchantStorageScheme,
 ) -> CustomResult<api::authentication::AuthenticationResponse, ApiErrorResponse> {
     let router_data = transformers::construct_authentication_router_data(
@@ -91,7 +91,7 @@ pub async fn perform_authentication(
     .await?;
 
     let authentication_info =
-        hyperswitch_domain_models::router_request_types::authentication::AuthenticationInfo {
+        orbix_domain_models::router_request_types::authentication::AuthenticationInfo {
             billing_address: Some(billing_address),
             shipping_address,
             browser_info: browser_details,
@@ -131,7 +131,7 @@ pub async fn perform_post_authentication(
     authentication_id: common_utils::id_type::AuthenticationId,
     payment_id: &common_utils::id_type::PaymentId,
 ) -> CustomResult<
-    hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore,
+    orbix_domain_models::router_request_types::authentication::AuthenticationStore,
     ApiErrorResponse,
 > {
     let key_state = &state.into();
@@ -181,7 +181,7 @@ pub async fn perform_post_authentication(
         .await?;
 
         let authentication_info =
-            hyperswitch_domain_models::router_request_types::authentication::AuthenticationInfo {
+            orbix_domain_models::router_request_types::authentication::AuthenticationInfo {
                 billing_address: None,
                 shipping_address: None,
                 browser_info: None,
@@ -220,7 +220,7 @@ pub async fn perform_post_authentication(
     .ok();
 
     let authentication_store =
-        hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore {
+        orbix_domain_models::router_request_types::authentication::AuthenticationStore {
             cavv: tokenized_data.map(|data| Secret::new(data.value1)),
             authentication: authentication_update,
         };
@@ -233,7 +233,7 @@ pub async fn perform_pre_authentication(
     state: &SessionState,
     processor: &domain::Processor,
     provider_merchant_id: common_utils::id_type::MerchantId,
-    card: hyperswitch_domain_models::payment_method_data::Card,
+    card: orbix_domain_models::payment_method_data::Card,
     token: String,
     business_profile: &domain::Profile,
     acquirer_details: Option<types::AcquirerDetails>,
@@ -241,14 +241,14 @@ pub async fn perform_pre_authentication(
     organization_id: common_utils::id_type::OrganizationId,
     force_3ds_challenge: Option<bool>,
     psd2_sca_exemption_type: Option<common_enums::ScaExemptionType>,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
-    shipping_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
+    shipping_address: Option<orbix_domain_models::address::Address>,
     browser_info: Option<core_types::BrowserInformation>,
     initiator: Option<&domain::Initiator>,
     amount: Option<common_utils::types::MinorUnit>,
     currency: Option<Currency>,
 ) -> CustomResult<
-    hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore,
+    orbix_domain_models::router_request_types::authentication::AuthenticationStore,
     ApiErrorResponse,
 > {
     let (authentication_connector, three_ds_connector_account) =
@@ -298,7 +298,7 @@ pub async fn perform_pre_authentication(
         .await?;
 
         let authentication_info =
-            hyperswitch_domain_models::router_request_types::authentication::AuthenticationInfo {
+            orbix_domain_models::router_request_types::authentication::AuthenticationInfo {
                 billing_address: billing_address.clone(),
                 shipping_address: shipping_address.clone(),
                 browser_info: None,
@@ -322,7 +322,7 @@ pub async fn perform_pre_authentication(
         // from version call response, we will get to know the maximum supported 3ds version.
         // If the version is not greater than or equal to 3DS 2.0, We should not do the successive pre authentication call.
         if !updated_authentication.is_separate_authn_required() {
-            return Ok(hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore{
+            return Ok(orbix_domain_models::router_request_types::authentication::AuthenticationStore{
                 authentication: updated_authentication,
                 cavv: None, // since cavv wont be present in pre_authentication step
             });
@@ -349,7 +349,7 @@ pub async fn perform_pre_authentication(
     .await?;
 
     let authentication_info =
-        hyperswitch_domain_models::router_request_types::authentication::AuthenticationInfo {
+        orbix_domain_models::router_request_types::authentication::AuthenticationInfo {
             billing_address,
             shipping_address,
             browser_info: None,
@@ -372,7 +372,7 @@ pub async fn perform_pre_authentication(
     .await?;
 
     Ok(
-        hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore {
+        orbix_domain_models::router_request_types::authentication::AuthenticationStore {
             authentication: authentication_update,
             cavv: None, // since cavv wont be present in pre_authentication step
         },
@@ -501,7 +501,7 @@ async fn call_ucs_pre_authenticate_proxy(
     >,
     external_vault_pmd: &domain::ExternalVaultPaymentMethodData,
     state: &SessionState,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
     lineage_ids: external_services::grpc_client::LineageIds,
     auth_merchant_connector_account: payments_core::helpers::MerchantConnectorAccountType,
     external_vault_merchant_connector_account: payments_core::helpers::MerchantConnectorAccountType,
@@ -547,7 +547,7 @@ async fn call_ucs_pre_authenticate_proxy(
         Err(err) => Ok(Err(err)),
         Ok((ucs_authentication_data, ddc_redirection_data)) => {
             let (three_ds_method_data, three_ds_method_url) = match &ddc_redirection_data {
-                Some(hyperswitch_domain_models::router_response_types::RedirectForm::Form {
+                Some(orbix_domain_models::router_response_types::RedirectForm::Form {
                     form_fields,
                     ..
                 }) => (
@@ -602,7 +602,7 @@ pub async fn perform_pre_authentication_proxy<F: Clone>(
 ) -> CustomResult<
     (
         Option<
-            hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore,
+            orbix_domain_models::router_request_types::authentication::AuthenticationStore,
         >,
         Option<String>,
     ),
@@ -763,7 +763,7 @@ pub async fn perform_pre_authentication_proxy<F: Clone>(
         business_profile.merchant_id.clone(),
         business_profile.get_id().clone(),
     );
-    let header_payload = hyperswitch_domain_models::payments::HeaderPayload::default();
+    let header_payload = orbix_domain_models::payments::HeaderPayload::default();
 
     let pre_authenticate_response_data = call_ucs_pre_authenticate_proxy(
         &pre_authenticate_router_data,
@@ -797,7 +797,7 @@ pub async fn perform_pre_authentication_proxy<F: Clone>(
     pre_authenticate_router_data.response = pre_authenticate_response_data;
 
     let authentication_info =
-        hyperswitch_domain_models::router_request_types::authentication::AuthenticationInfo {
+        orbix_domain_models::router_request_types::authentication::AuthenticationInfo {
             billing_address: payment_data.address.get_payment_method_billing().cloned(),
             shipping_address: payment_data.address.get_shipping().cloned(),
             browser_info,
@@ -830,7 +830,7 @@ pub async fn perform_pre_authentication_proxy<F: Clone>(
 
     Ok((
         Some(
-            hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore {
+            orbix_domain_models::router_request_types::authentication::AuthenticationStore {
                 cavv: None,
                 authentication,
             },
@@ -900,7 +900,7 @@ async fn call_ucs_post_authenticate_proxy<F: Clone>(
             .threeds_server_transaction_id
             .clone()
             .map(|tds| {
-                hyperswitch_domain_models::router_request_types::CompleteAuthorizeRedirectResponse {
+                orbix_domain_models::router_request_types::CompleteAuthorizeRedirectResponse {
                     params: Some(Secret::new(tds)),
                     payload: None,
                 }
@@ -975,7 +975,7 @@ async fn call_ucs_post_authenticate_proxy<F: Clone>(
     )
     .await?;
 
-    let header_payload = hyperswitch_domain_models::payments::HeaderPayload::default();
+    let header_payload = orbix_domain_models::payments::HeaderPayload::default();
 
     let post_authenticate_router_data = Box::pin(
         payments_core::flows::complete_authorize_flow::call_unified_connector_service_post_authenticate_proxy(
@@ -1062,7 +1062,7 @@ pub async fn perform_post_authentication_proxy<F: Clone>(
     payment_data: &payments_core::PaymentData<F>,
     authentication_id: common_utils::id_type::AuthenticationId,
 ) -> CustomResult<
-    hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore,
+    orbix_domain_models::router_request_types::authentication::AuthenticationStore,
     ApiErrorResponse,
 > {
     let key_store = processor.get_key_store();
@@ -1141,7 +1141,7 @@ pub async fn perform_post_authentication_proxy<F: Clone>(
         post_authenticate_tracker_router_data.response = post_authenticate_response_data;
 
         let authentication_info =
-            hyperswitch_domain_models::router_request_types::authentication::AuthenticationInfo {
+            orbix_domain_models::router_request_types::authentication::AuthenticationInfo {
                 billing_address: None,
                 shipping_address: None,
                 browser_info: None,
@@ -1178,7 +1178,7 @@ pub async fn perform_post_authentication_proxy<F: Clone>(
     .ok();
 
     Ok(
-        hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore {
+        orbix_domain_models::router_request_types::authentication::AuthenticationStore {
             cavv: tokenized_data.map(|data| Secret::new(data.value1)),
             authentication,
         },
@@ -1222,14 +1222,14 @@ impl AcquirerMetadata {
 async fn call_ucs_authenticate_proxy(
     state: &SessionState,
     platform: &domain::Platform,
-    payment_intent: &hyperswitch_domain_models::payments::PaymentIntent,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_intent: &orbix_domain_models::payments::PaymentIntent,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
     business_profile: &domain::Profile,
     amount: common_utils::types::MinorUnit,
     currency: Currency,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
     optional_email: Option<common_utils::pii::Email>,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
     device_channel: payments::DeviceChannel,
     sdk_information: Option<payments::SdkInformation>,
 ) -> CustomResult<AuthenticateProxyContext, ApiErrorResponse> {
@@ -1314,7 +1314,7 @@ async fn call_ucs_authenticate_proxy(
         .attach_printable("Error while fetching external vault authentication record")?;
 
     let ucs_authentication_data =
-        hyperswitch_domain_models::router_request_types::UcsAuthenticationData {
+        orbix_domain_models::router_request_types::UcsAuthenticationData {
             eci: authentication.eci.clone(),
             cavv: None,
             threeds_server_transaction_id: authentication.threeds_server_transaction_id.clone(),
@@ -1358,7 +1358,7 @@ async fn call_ucs_authenticate_proxy(
         router_return_url: None,
     };
 
-    let payment_address = hyperswitch_domain_models::payment_address::PaymentAddress::new(
+    let payment_address = orbix_domain_models::payment_address::PaymentAddress::new(
         None,
         billing_address.clone(),
         None,
@@ -1568,7 +1568,7 @@ fn parse_ucs_authenticate_response(
     });
 
     let (acs_url, challenge_request) = match &redirection_data {
-        Some(hyperswitch_domain_models::router_response_types::RedirectForm::Form {
+        Some(orbix_domain_models::router_response_types::RedirectForm::Form {
             endpoint,
             form_fields,
             ..
@@ -1619,8 +1619,8 @@ fn parse_ucs_authenticate_response(
 
     let authn_flow_type = match authentication_type {
         common_enums::DecoupledAuthenticationType::Challenge => {
-            hyperswitch_domain_models::router_request_types::authentication::AuthNFlowType::Challenge(Box::new(
-                hyperswitch_domain_models::router_request_types::authentication::ChallengeParams {
+            orbix_domain_models::router_request_types::authentication::AuthNFlowType::Challenge(Box::new(
+                orbix_domain_models::router_request_types::authentication::ChallengeParams {
                     acs_url: acs_url.clone(),
                     challenge_request: challenge_request.clone().map(ExposeInterface::expose),
                     challenge_request_key: None,
@@ -1632,7 +1632,7 @@ fn parse_ucs_authenticate_response(
             ))
         }
         common_enums::DecoupledAuthenticationType::Frictionless => {
-            hyperswitch_domain_models::router_request_types::authentication::AuthNFlowType::Frictionless
+            orbix_domain_models::router_request_types::authentication::AuthNFlowType::Frictionless
         }
     };
 
@@ -1678,15 +1678,15 @@ fn parse_ucs_authenticate_response(
 pub async fn perform_authentication_proxy(
     state: &SessionState,
     platform: &domain::Platform,
-    payment_intent: &hyperswitch_domain_models::payments::PaymentIntent,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_intent: &orbix_domain_models::payments::PaymentIntent,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
     business_profile: &domain::Profile,
     amount: common_utils::types::MinorUnit,
     currency: Currency,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
-    shipping_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
+    shipping_address: Option<orbix_domain_models::address::Address>,
     optional_email: Option<common_utils::pii::Email>,
-    header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: orbix_domain_models::payments::HeaderPayload,
     device_channel: payments::DeviceChannel,
     sdk_information: Option<payments::SdkInformation>,
 ) -> CustomResult<api::authentication::AuthenticationResponse, ApiErrorResponse> {
@@ -1750,7 +1750,7 @@ pub async fn perform_authentication_proxy(
         auth_connector_enum.to_string(),
         payment_method,
         business_profile.merchant_id.clone(),
-        hyperswitch_domain_models::payment_address::PaymentAddress::new(
+        orbix_domain_models::payment_address::PaymentAddress::new(
             None,
             billing_address.clone(),
             None,
@@ -1764,7 +1764,7 @@ pub async fn perform_authentication_proxy(
     authenticate_tracker_router_data.response = Ok(authenticate_response_data);
 
     let authentication_info =
-        hyperswitch_domain_models::router_request_types::authentication::AuthenticationInfo {
+        orbix_domain_models::router_request_types::authentication::AuthenticationInfo {
             billing_address,
             shipping_address,
             browser_info,

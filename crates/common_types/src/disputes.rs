@@ -14,7 +14,7 @@ use crate::primitive_wrappers::RapidDisputeResolutionAppliedBool;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema, SmithyModel)]
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AdditionalDetails {
     /// Network specific details of the dispute
     #[smithy(value_type = "Option<DisputeNetworkDetails>")]
@@ -26,7 +26,7 @@ impl_to_sql_from_sql_json!(AdditionalDetails);
 /// Card network specific details of a dispute
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema, SmithyModel)]
 #[serde(tag = "type", rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum DisputeNetworkDetails {
     /// Visa specific dispute details
     #[smithy(nested_value_type)]
@@ -39,7 +39,7 @@ pub enum DisputeNetworkDetails {
 
 /// Visa Rapid Dispute Resolution details
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RapidDisputeResolution {
     /// Whether Rapid Dispute Resolution has been applied
     #[schema(value_type = bool)]

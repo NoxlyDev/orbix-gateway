@@ -11,8 +11,8 @@ use common_utils::{
 };
 use error_stack::{report, ResultExt};
 use futures::future;
-use hyperswitch_domain_models::api::{GenericLinks, GenericLinksData};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_domain_models::api::{GenericLinks, GenericLinksData};
+use orbix_masking::{PeekInterface, Secret};
 use payment_link::consts::DEFAULT_MERCHANT_LOGO;
 use router_env::logger;
 use time::PrimitiveDateTime;

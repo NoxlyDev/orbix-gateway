@@ -1,6 +1,6 @@
 use diesel_models::configs as storage;
 use error_stack::report;
-use hyperswitch_domain_models::configs::ConfigInterface;
+use orbix_domain_models::configs::ConfigInterface;
 use router_env::instrument;
 
 use crate::{

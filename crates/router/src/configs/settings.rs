@@ -24,7 +24,7 @@ use external_services::{
     },
     superposition::SuperpositionClientConfig,
 };
-pub use hyperswitch_interfaces::{
+pub use orbix_interfaces::{
     configs::{
         Connectors, GlobalTenant, InternalMerchantIdProfileIdAuthSettings, InternalServicesConfig,
         Tenant, TenantUserConfig,
@@ -34,7 +34,7 @@ pub use hyperswitch_interfaces::{
     },
     types::{ComparisonServiceConfig, Proxy},
 };
-use hyperswitch_masking::{Maskable, PeekInterface, Secret};
+use orbix_masking::{Maskable, PeekInterface, Secret};
 pub use payment_methods::configs::{
     settings::{
         BankRedirectConfig, BanksVector, ConnectorBankNames, ConnectorFields,
@@ -396,11 +396,11 @@ pub struct OnSessionConfig {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum AccountUpdaterConfig {
-    Juspay(JuspayAccountUpdaterConfig),
+    Orbix(OrbixAccountUpdaterConfig),
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct JuspayAccountUpdaterConfig {
+pub struct OrbixAccountUpdaterConfig {
     pub base_url: url::Url,
     pub api_key: Secret<String>,
     pub merchant_id: String,
@@ -646,9 +646,9 @@ impl Default for GenericLinkEnvUiConfig {
     fn default() -> Self {
         Self {
             #[allow(clippy::expect_used)]
-            logo: url::Url::parse("https://hyperswitch.io/favicon.ico")
+            logo: url::Url::parse("https://orbix.example/favicon.ico")
                 .expect("Failed to parse default logo URL"),
-            merchant_name: Secret::new("HyperSwitch".to_string()),
+            merchant_name: Secret::new("Orbix".to_string()),
             theme: "#4285F4".to_string(),
         }
     }
@@ -663,7 +663,7 @@ impl Default for PaymentLink {
     fn default() -> Self {
         Self {
             #[allow(clippy::expect_used)]
-            sdk_url: url::Url::parse("https://beta.hyperswitch.io/v0/HyperLoader.js")
+            sdk_url: url::Url::parse("https://beta.orbix.example/v0/HyperLoader.js")
                 .expect("Failed to parse default SDK URL"),
         }
     }
@@ -846,7 +846,7 @@ pub struct NotifyIframeExitAndRedirectConnectors {
     pub connector_list: HashSet<enums::Connector>,
 }
 
-/// Connectors that support only dispute list API for syncing disputes with Hyperswitch
+/// Connectors that support only dispute list API for syncing disputes with Orbix Gateway
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct ListDiputeSupportedConnectors {
     #[serde(deserialize_with = "deserialize_hashset")]
@@ -1076,7 +1076,7 @@ impl OidcSettings {
 mod oidc_signing_key_tests {
     use std::collections::HashMap;
 
-    use hyperswitch_masking::Secret;
+    use orbix_masking::Secret;
 
     use super::{OidcClient, OidcKey, OidcSettings};
 
@@ -1424,7 +1424,7 @@ pub struct PazeDecryptConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct GooglePayDecryptConfig {
     pub google_pay_root_signing_keys: Secret<String>,
-    /// Private key of Hyperswitch's own registered Google Pay gateway. Used by the
+    /// Private key of Orbix Gateway's own registered Google Pay gateway. Used by the
     /// `INTERNAL_GATEWAY` tokenization flow, where the merchant registers no key of its own.
     pub google_pay_private_key: Option<Secret<String>>,
     /// Google Pay Business Console merchant id used when an `INTERNAL_GATEWAY` merchant chooses

@@ -1,6 +1,6 @@
 use common_utils::id_type;
 #[cfg(feature = "v2")]
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use utoipa::ToSchema;
 
 #[cfg(feature = "v2")]

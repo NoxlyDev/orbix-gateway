@@ -1,4 +1,4 @@
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router::types::{self, api, domain, storage::enums};
 use test_utils::connector_auth;
 

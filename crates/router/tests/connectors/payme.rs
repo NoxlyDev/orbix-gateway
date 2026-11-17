@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use common_utils::{pii::Email, types::MinorUnit};
 use diesel_models::types::OrderDetailsWithAmount;
-use hyperswitch_domain_models::address::{Address, AddressDetails};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::address::{Address, AddressDetails};
+use orbix_masking::Secret;
 use router::types::{self, domain, storage::enums, PaymentAddress};
 
 use crate::{
@@ -103,8 +103,8 @@ fn payment_method_details() -> Option<types::PaymentsAuthorizeData> {
             discount_percentage: None,
             discount_type: None,
         }]),
-        router_return_url: Some("https://hyperswitch.io".to_string().into()),
-        webhook_url: Some("https://hyperswitch.io".to_string()),
+        router_return_url: Some("https://orbix.example".to_string().into()),
+        webhook_url: Some("https://orbix.example".to_string()),
         email: Some(Email::from_str("test@gmail.com").unwrap()),
         payment_method_data: domain::PaymentMethodData::Card(domain::Card {
             card_number: cards::CardNumber::from_str("4111111111111111").unwrap(),
@@ -416,8 +416,8 @@ async fn should_fail_payment_for_incorrect_cvc() {
                     discount_percentage: None,
                     discount_type: None,
                 }]),
-                router_return_url: Some("https://hyperswitch.io".to_string().into()),
-                webhook_url: Some("https://hyperswitch.io".to_string()),
+                router_return_url: Some("https://orbix.example".to_string().into()),
+                webhook_url: Some("https://orbix.example".to_string()),
                 email: Some(Email::from_str("test@gmail.com").unwrap()),
                 ..PaymentAuthorizeType::default().0
             }),
@@ -468,8 +468,8 @@ async fn should_fail_payment_for_invalid_exp_month() {
                     discount_percentage: None,
                     discount_type: None,
                 }]),
-                router_return_url: Some("https://hyperswitch.io".to_string().into()),
-                webhook_url: Some("https://hyperswitch.io".to_string()),
+                router_return_url: Some("https://orbix.example".to_string().into()),
+                webhook_url: Some("https://orbix.example".to_string()),
                 email: Some(Email::from_str("test@gmail.com").unwrap()),
                 ..PaymentAuthorizeType::default().0
             }),
@@ -520,8 +520,8 @@ async fn should_fail_payment_for_incorrect_expiry_year() {
                     discount_percentage: None,
                     discount_type: None,
                 }]),
-                router_return_url: Some("https://hyperswitch.io".to_string().into()),
-                webhook_url: Some("https://hyperswitch.io".to_string()),
+                router_return_url: Some("https://orbix.example".to_string().into()),
+                webhook_url: Some("https://orbix.example".to_string()),
                 email: Some(Email::from_str("test@gmail.com").unwrap()),
                 ..PaymentAuthorizeType::default().0
             }),

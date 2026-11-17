@@ -1,7 +1,7 @@
 use common_utils::id_type::PaymentId;
-use hyperswitch_domain_models::router_response_types::RedirectCallback;
-use hyperswitch_interfaces::api::ConnectorRedirectResponse;
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::router_response_types::RedirectCallback;
+use orbix_interfaces::api::ConnectorRedirectResponse;
+use orbix_masking::PeekInterface;
 use router::{
     core::{
         configs::payment_callback::PaymentCallbackMode,

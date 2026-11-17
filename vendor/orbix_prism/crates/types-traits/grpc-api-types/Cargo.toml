@@ -17,7 +17,7 @@ error-stack = "0.5.0"
 
 # First-party dependencies
 cards = { path = "../cards", package = "ucs_cards" }
-hyperswitch_masking = { version = "0.0.1", default-features = false, features = [ "proto_tonic","alloc", "serde", "time"] }
+orbix_masking = { path = "../../../../orbix_framework/crates/orbix_masking", default-features = false, features = [ "proto_tonic","alloc", "serde", "time"] }
 
 [build-dependencies]
 tonic-build = { workspace = true }

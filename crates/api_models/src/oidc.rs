@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use common_utils::events::ApiEventMetric;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -110,19 +110,19 @@ pub enum Claim {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct OidcDiscoveryResponse {
     /// The issuer identifier for the OpenID Provider
-    #[schema(example = "https://sandbox.hyperswitch.io")]
+    #[schema(example = "https://sandbox.orbix.example")]
     pub issuer: String,
 
     /// URL of the authorization endpoint
-    #[schema(example = "https://app.hyperswitch.io/oauth2/authorize")]
+    #[schema(example = "https://app.orbix.example/oauth2/authorize")]
     pub authorization_endpoint: String,
 
     /// URL of the token endpoint
-    #[schema(example = "https://sandbox.hyperswitch.io/oauth2/token")]
+    #[schema(example = "https://sandbox.orbix.example/oauth2/token")]
     pub token_endpoint: String,
 
     /// URL of the JSON Web Key Set document
-    #[schema(example = "https://sandbox.hyperswitch.io/oauth2/jwks")]
+    #[schema(example = "https://sandbox.orbix.example/oauth2/jwks")]
     pub jwks_uri: String,
 
     /// List of OAuth 2.0 response_type values supported

@@ -5,7 +5,7 @@ pub mod utils;
 use api_models::proxy as proxy_api_models;
 use error_stack::ResultExt;
 use external_services::http_client::outbound_destination;
-use hyperswitch_interfaces::types::Response;
+use orbix_interfaces::types::Response;
 
 pub async fn proxy_core(
     state: SessionState,

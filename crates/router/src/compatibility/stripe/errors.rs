@@ -1,6 +1,6 @@
 use actix_web::http;
 use common_utils::{errors::ErrorSwitch, id_type};
-use hyperswitch_domain_models::errors::api_error_response as errors;
+use orbix_domain_models::errors::api_error_response as errors;
 
 use crate::core::errors::CustomersErrorResponse;
 
@@ -237,41 +237,41 @@ pub enum StripeErrorCode {
         reason: String,
     },
 
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "The connector provided in the request is incorrect or not available")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "The connector provided in the request is incorrect or not available")]
     IncorrectConnectorNameGiven,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "No such {object}: '{id}'")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "No such {object}: '{id}'")]
     ResourceMissing { object: String, id: String },
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "File validation failed")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "File validation failed")]
     FileValidationFailed,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "File not found in the request")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "File not found in the request")]
     MissingFile,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "File puropse not found in the request")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "File puropse not found in the request")]
     MissingFilePurpose,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "File content type not found")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "File content type not found")]
     MissingFileContentType,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Dispute id not found in the request")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Dispute id not found in the request")]
     MissingDisputeId,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "File does not exists in our records")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "File does not exists in our records")]
     FileNotFound,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "File not available")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "File not available")]
     FileNotAvailable,
     #[error(error_type = StripeErrorType::InvalidRequestError, code = "", message = "Not Supported because provider is not Router")]
     FileProviderNotSupported,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "There was an issue with processing webhooks")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "There was an issue with processing webhooks")]
     WebhookProcessingError,
     #[error(error_type = StripeErrorType::InvalidRequestError, code = "payment_method_unactivated", message = "The operation cannot be performed as the payment method used has not been activated. Activate the payment method in the Dashboard, then try again.")]
     PaymentMethodUnactivated,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "{message}")]
-    HyperswitchUnprocessableEntity { message: String },
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "{message}")]
+    OrbixUnprocessableEntity { message: String },
     #[error(error_type = StripeErrorType::InvalidRequestError, code = "", message = "{message}")]
     CurrencyNotSupported { message: String },
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Payment Link does not exist in our records")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Payment Link does not exist in our records")]
     PaymentLinkNotFound,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Resource Busy. Please try again later")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Resource Busy. Please try again later")]
     LockTimeout,
     #[error(error_type = StripeErrorType::InvalidRequestError, code = "", message = "Merchant connector account is configured with invalid {config}")]
     InvalidConnectorConfiguration { config: String },
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "HE_01", message = "Failed to convert currency to minor unit")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "HE_01", message = "Failed to convert currency to minor unit")]
     CurrencyConversionFailed,
     #[error(error_type = StripeErrorType::InvalidRequestError, code = "IR_25", message = "Cannot delete the default payment method")]
     PaymentMethodDeleteFailed,
@@ -288,21 +288,21 @@ pub enum StripeErrorCode {
     },
     #[error(error_type = StripeErrorType::InvalidRequestError, code = "IR_28", message = "Invalid tenant")]
     InvalidTenant,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "HE_01", message = "Failed to convert amount to {amount_type} type")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "HE_01", message = "Failed to convert amount to {amount_type} type")]
     AmountConversionFailed { amount_type: &'static str },
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Platform Bad Request")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Platform Bad Request")]
     PlatformBadRequest,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Platform Unauthorized Request")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Platform Unauthorized Request")]
     PlatformUnauthorizedRequest,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Connected Bad Request")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Connected Bad Request")]
     ConnectedBadRequest,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Connected Unauthorized Request")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Connected Unauthorized Request")]
     ConnectedUnauthorizedRequest,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "", message = "Profile Acquirer not found")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "", message = "Profile Acquirer not found")]
     ProfileAcquirerNotFound,
-    #[error(error_type = StripeErrorType::HyperswitchError, code = "Subscription Error", message = "Subscription operation: {operation} failed with connector")]
+    #[error(error_type = StripeErrorType::OrbixError, code = "Subscription Error", message = "Subscription operation: {operation} failed with connector")]
     SubscriptionError { operation: String },
-    // [#216]: https://github.com/juspay/hyperswitch/issues/216
+    // [#216]: https://github.com/orbix/orbix/issues/216
     // Implement the remaining stripe error codes
 
     /*
@@ -457,7 +457,7 @@ pub enum StripeErrorType {
     CardError,
     InvalidRequestError,
     ConnectorError,
-    HyperswitchError,
+    OrbixError,
 }
 
 impl From<errors::ApiErrorResponse> for StripeErrorCode {
@@ -483,7 +483,7 @@ impl From<errors::ApiErrorResponse> for StripeErrorCode {
                 }
             }
             errors::ApiErrorResponse::UnprocessableEntity { message } => {
-                Self::HyperswitchUnprocessableEntity { message }
+                Self::OrbixUnprocessableEntity { message }
             }
             errors::ApiErrorResponse::MissingRequiredFields { field_names } => {
                 // Instead of creating a new error variant in StripeErrorCode for MissingRequiredFields, converted vec<&str> to String
@@ -743,7 +743,7 @@ impl actix_web::ResponseError for StripeErrorCode {
             | Self::PlatformUnauthorizedRequest
             | Self::ConnectedUnauthorizedRequest => StatusCode::UNAUTHORIZED,
             Self::InvalidRequestUrl | Self::GenericNotFoundError { .. } => StatusCode::NOT_FOUND,
-            Self::ParameterUnknown { .. } | Self::HyperswitchUnprocessableEntity { .. } => {
+            Self::ParameterUnknown { .. } | Self::OrbixUnprocessableEntity { .. } => {
                 StatusCode::UNPROCESSABLE_ENTITY
             }
             Self::ParameterMissing { .. }

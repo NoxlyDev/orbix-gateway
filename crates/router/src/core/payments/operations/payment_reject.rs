@@ -42,7 +42,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, PaymentsCancelRequest
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         _payment_method_fetch_data: operations::PaymentMethodFetchData,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -243,7 +243,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, PaymentsCancelRequest> fo
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         _should_decline_transaction: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(PaymentRejectOperation<'b, F>, PaymentData<F>)>
     where

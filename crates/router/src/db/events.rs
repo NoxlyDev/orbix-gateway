@@ -1641,7 +1641,7 @@ mod tests {
         events::EventMetadata,
     };
     use futures::future::join_all;
-    use hyperswitch_domain_models::{
+    use orbix_domain_models::{
         master_key::MasterKeyInterface, merchant_account::MerchantAccountSetter,
     };
     use time::macros::datetime;
@@ -1921,7 +1921,7 @@ mod tests {
             .map_err(|_| "failed to get session state")?;
 
         let merchant_id =
-            common_utils::id_type::MerchantId::try_from(std::borrow::Cow::from("juspay_merchant"))?;
+            common_utils::id_type::MerchantId::try_from(std::borrow::Cow::from("orbix_merchant"))?;
         let business_profile_id =
             common_utils::id_type::ProfileId::try_from(std::borrow::Cow::from("profile1"))?;
         let key_manager_state = &(&state).into();
@@ -1958,7 +1958,7 @@ mod tests {
                 webhook_version: None,
                 webhook_username: None,
                 webhook_password: None,
-                webhook_url: Some(hyperswitch_masking::Secret::new(
+                webhook_url: Some(orbix_masking::Secret::new(
                     "https://example.com/webhooks".to_string(),
                 )),
                 payment_created_enabled: None,
@@ -2033,7 +2033,7 @@ mod tests {
                 webhook_version: None,
                 webhook_username: None,
                 webhook_password: None,
-                webhook_url: Some(hyperswitch_masking::Secret::new(
+                webhook_url: Some(orbix_masking::Secret::new(
                     "https://example.com/webhooks".to_string(),
                 )),
                 payment_created_enabled: None,

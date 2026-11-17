@@ -15,10 +15,10 @@ pub fn generate_card_from_details(
             .change_context(errors::ApiErrorResponse::InternalServerError)
             .attach_printable("Error while parsing card number")?,
         card_issuer: None,
-        card_cvc: hyperswitch_masking::Secret::new(card_cvv),
+        card_cvc: orbix_masking::Secret::new(card_cvv),
         card_network: None,
-        card_exp_year: hyperswitch_masking::Secret::new(card_exp_year),
-        card_exp_month: hyperswitch_masking::Secret::new(card_exp_month),
+        card_exp_year: orbix_masking::Secret::new(card_exp_year),
+        card_exp_month: orbix_masking::Secret::new(card_exp_month),
         nick_name: None,
         card_type: None,
         card_subtype: None,

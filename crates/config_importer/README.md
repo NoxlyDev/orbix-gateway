@@ -1,6 +1,6 @@
 # config_importer
 
-A simple utility tool to import a Hyperswitch TOML configuration file, convert
+A simple utility tool to import a Orbix Gateway TOML configuration file, convert
 it into environment variable key-value pairs, and export it in the specified
 format.
 As of now, it supports only exporting the environment variables to a JSON format

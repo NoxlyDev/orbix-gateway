@@ -1,5 +1,5 @@
 use api_models::{connector_onboarding as api, enums};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use crate::{
     core::errors::{ApiErrorResponse, RouterResponse, RouterResult},

@@ -13,17 +13,17 @@ use common_utils::{
 use diesel_models::business_profile::ExternalVaultConnectorDetails;
 use error_stack::{report, ResultExt};
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     callback_mapper::CallbackMapper,
     mandates::{CommonMandateReference, PaymentsMandateReference, PaymentsMandateReferenceRecord},
     payment_method_data,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates::ConnectorMandateReferenceId,
     payment_method_data::{get_applepay_wallet_info, get_googlepay_wallet_info},
     transformers::ForeignFrom as _,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::instrument;
 
 use super::helpers;
@@ -164,7 +164,7 @@ pub struct SavePaymentMethodData<Req> {
     payment_method_token: Option<types::PaymentMethodToken>,
     payment_method: PaymentMethod,
     attempt_status: common_enums::AttemptStatus,
-    connector_response: Option<hyperswitch_domain_models::router_data::ConnectorResponseData>,
+    connector_response: Option<orbix_domain_models::router_data::ConnectorResponseData>,
 }
 
 impl<F, Req: Clone> From<&types::RouterData<F, Req, types::PaymentsResponseData>>
@@ -198,13 +198,13 @@ pub async fn save_payment_method<FData>(
     platform: &domain::Platform,
     payment_method_type: Option<storage_enums::PaymentMethodType>,
     billing_name: Option<Secret<String>>,
-    payment_method_billing_address: Option<&hyperswitch_domain_models::address::Address>,
+    payment_method_billing_address: Option<&orbix_domain_models::address::Address>,
     business_profile: &domain::Profile,
     mut original_connector_mandate_reference_id: Option<ConnectorMandateReferenceId>,
     merchant_connector_id: Option<id_type::MerchantConnectorAccountId>,
-    vault_operation: Option<hyperswitch_domain_models::payments::VaultOperation>,
+    vault_operation: Option<orbix_domain_models::payments::VaultOperation>,
     payment_method_info: Option<domain::PaymentMethod>,
-    payment_method_token: Option<hyperswitch_domain_models::router_data::PaymentMethodToken>,
+    payment_method_token: Option<orbix_domain_models::router_data::PaymentMethodToken>,
     customer_details: Option<api_models::customers::CustomerDocumentDetails>,
     dimensions: &DimensionsWithProcessorAndProviderMerchantId,
 ) -> RouterResult<SavePaymentMethodDataResponse>
@@ -566,10 +566,10 @@ where
                 let external_vault_profile =
                     helpers::resolve_provider_profile(state, platform, business_profile).await?;
                 let (external_vault_details, vault_type) = match &external_vault_profile.external_vault_details{
-                    hyperswitch_domain_models::business_profile::ExternalVaultDetails::ExternalVaultEnabled(external_vault_connector_details) => {
+                    orbix_domain_models::business_profile::ExternalVaultDetails::ExternalVaultEnabled(external_vault_connector_details) => {
                         (Some(external_vault_connector_details), Some(common_enums::VaultType::External))
                     },
-                    hyperswitch_domain_models::business_profile::ExternalVaultDetails::Skip => (None, Some(common_enums::VaultType::Internal)),
+                    orbix_domain_models::business_profile::ExternalVaultDetails::Skip => (None, Some(common_enums::VaultType::Internal)),
                 };
                 let external_vault_mca_id = external_vault_details
                     .map(|connector_details| connector_details.vault_connector_id.clone());
@@ -1599,7 +1599,7 @@ pub async fn save_in_locker_external(
     // For external vault, we need to convert the card data to PaymentMethodVaultingData
     if let Some(card) = card_detail {
         let payment_method_custom_vaulting_data = get_payment_method_custom_data(
-            hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(card.clone()),
+            orbix_domain_models::vault::PaymentMethodVaultingData::Card(card.clone()),
             external_vault_connector_details
                 .vault_token_selector
                 .clone(),
@@ -1942,7 +1942,7 @@ pub fn update_router_data_with_payment_method_token_result<F: Clone, T>(
         match payment_method_token_result.payment_method_token_result {
             Ok(pm_token_result) => {
                 router_data.payment_method_token = pm_token_result.map(|pm_token| {
-                    hyperswitch_domain_models::router_data::PaymentMethodToken::Token(Secret::new(
+                    orbix_domain_models::router_data::PaymentMethodToken::Token(Secret::new(
                         pm_token,
                     ))
                 });
@@ -2124,7 +2124,7 @@ pub async fn add_token_for_payment_method(
     >,
     payment_method_data_request: types::PaymentMethodTokenizationData,
     state: SessionState,
-    merchant_connector_account_details: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+    merchant_connector_account_details: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
 ) -> RouterResult<types::PspTokenResult> {
     let connector_id = merchant_connector_account_details.id.clone();
     let connector_data = api::ConnectorData::get_connector_by_name(
@@ -2188,7 +2188,7 @@ pub async fn save_card_and_network_token_in_locker(
     customer_id: id_type::CustomerId,
     payment_method_status: common_enums::PaymentMethodStatus,
     _payment_method_data: domain::PaymentMethodData,
-    vault_operation: Option<hyperswitch_domain_models::payments::VaultOperation>,
+    vault_operation: Option<orbix_domain_models::payments::VaultOperation>,
     payment_method_info: Option<domain::PaymentMethod>,
     platform: &domain::Platform,
     payment_method_create_request: api::PaymentMethodCreate,
@@ -2207,7 +2207,7 @@ pub async fn save_card_and_network_token_in_locker(
         .and_then(|pm_info| pm_info.network_token_requestor_reference_id.clone());
 
     match vault_operation {
-        Some(hyperswitch_domain_models::payments::VaultOperation::SaveCardData(card)) => {
+        Some(orbix_domain_models::payments::VaultOperation::SaveCardData(card)) => {
             let card_data = api::CardDetail::from(card.card_data.clone());
             if let (Some(nt_ref_id), Some(tokenization_service)) = (
                 card.network_token_req_ref_id.clone(),
@@ -2242,7 +2242,7 @@ pub async fn save_card_and_network_token_in_locker(
 
             Ok(((res, dc, None), None))
         }
-        Some(hyperswitch_domain_models::payments::VaultOperation::SaveCardAndNetworkTokenData(
+        Some(orbix_domain_models::payments::VaultOperation::SaveCardAndNetworkTokenData(
             save_card_and_network_token_data,
         )) => {
             let card_data =
@@ -2348,7 +2348,7 @@ async fn generate_network_token_and_update_payment_method(
     payment_method_type: Option<storage_enums::PaymentMethodType>,
     customer_id: Option<id_type::CustomerId>,
     billing_name: Option<Secret<String>>,
-    payment_method_billing_address: Option<&hyperswitch_domain_models::address::Address>,
+    payment_method_billing_address: Option<&orbix_domain_models::address::Address>,
     payment_method_info: Option<domain::PaymentMethod>,
 ) -> RouterResult<()> {
     // check if payment method already has a network token associated

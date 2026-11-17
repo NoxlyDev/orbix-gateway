@@ -1,4 +1,4 @@
-use hyperswitch_domain_models::mandates;
+use orbix_domain_models::mandates;
 #[cfg(feature = "v1")]
 pub mod payment_approve;
 #[cfg(feature = "v1")]
@@ -388,7 +388,7 @@ pub trait GetTracker<F: Clone, D, R>: Send {
         platform: &domain::Platform,
         auth_flow: services::AuthFlow,
         flow_kind: PaymentFlowKind,
-        header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: &orbix_domain_models::payments::HeaderPayload,
         payment_method_fetch_data: PaymentMethodFetchData,
         dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         payment_pre_fetched_info: Option<PaymentPreFetchedInformation>,
@@ -404,7 +404,7 @@ pub trait GetTracker<F: Clone, D, R>: Send {
         request: &R,
         platform: &domain::Platform,
         profile: &domain::Profile,
-        header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<GetTrackerResponse<D>>;
 
     #[cfg(feature = "v2")]
@@ -416,7 +416,7 @@ pub trait GetTracker<F: Clone, D, R>: Send {
         _request: &R,
         _merchant_context: &domain::Platform,
         _profile: &domain::Profile,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         _pm_split_amount_data: domain::PaymentMethodDetailsWithSplitAmount,
         _attempts_group_id: &common_utils::id_type::GlobalAttemptGroupId,
     ) -> RouterResult<GetTrackerResponse<D>> {
@@ -704,7 +704,7 @@ pub trait Domain<F: Clone, R, D>: Send + Sync {
     //     _payment_data: &mut D,
     //     _call_connector_action: common_enums::CallConnectorAction,
     // ) -> CustomResult<
-    //     hyperswitch_domain_models::router_data::RouterData<F, RouterDataReq, PaymentsResponseData>,
+    //     orbix_domain_models::router_data::RouterData<F, RouterDataReq, PaymentsResponseData>,
     //     errors::ApiErrorResponse,
     // > {
     //     // TODO: raise an error here
@@ -726,7 +726,7 @@ pub trait UpdateTracker<F, D, Req>: Send {
         processor: &domain::Processor,
         payment_data: D,
         frm_suggestion: Option<FrmSuggestion>,
-        header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: orbix_domain_models::payments::HeaderPayload,
         dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(BoxedOperation<'b, F, Req, D>, D)>
     where
@@ -788,7 +788,7 @@ pub trait PostUpdateTracker<F, D, R: Send>: Send {
     where
         F: 'b + Send + Sync,
         types::RouterData<F, R, PaymentsResponseData>:
-            hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, R, D>;
+            orbix_domain_models::router_data::TrackerPostUpdateObjects<F, R, D>;
 
     async fn save_pm_and_mandate<'b>(
         &self,

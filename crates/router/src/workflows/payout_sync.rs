@@ -5,7 +5,7 @@ use common_utils::{
 };
 use diesel_models::process_tracker::business_status;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::merchant_key_store::MerchantKeyStore;
+use orbix_domain_models::merchant_key_store::MerchantKeyStore;
 use scheduler::{
     consumer::{self, types::process_data, workflows::ProcessTrackerWorkflow},
     errors, utils as scheduler_utils,
@@ -42,7 +42,7 @@ impl ProcessTrackerWorkflow<SessionState> for PayoutSyncWorkFlow {
     ) -> Result<(), errors::ProcessTrackerError> {
         // Gather context
 
-        use hyperswitch_domain_models::payments::HeaderPayload;
+        use orbix_domain_models::payments::HeaderPayload;
         let db = &*state.store;
         let tracking_data: api::PayoutRetrieveRequest = process
             .tracking_data

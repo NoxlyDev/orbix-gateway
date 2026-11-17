@@ -1201,7 +1201,7 @@ pub async fn connector_webhook_register(
 
 /// Configure Connector Webhook - Register
 ///
-/// List webhooks configured with hyperswitch at the connector
+/// List webhooks configured with orbix at the connector
 #[cfg(feature = "v1")]
 #[
     instrument(skip_all, fields(flow = ?Flow::MerchantConnectorWebhookList))]

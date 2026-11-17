@@ -8,7 +8,7 @@ use api_models::merchant_connector_webhook_management::{
 use common_utils::id_type;
 use error_stack::{Report, ResultExt};
 use futures::future::join_all;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     merchant_connector_account::MerchantConnectorAccountUpdate,
     router_request_types::{
         merchant_connector_webhook_management::{
@@ -20,7 +20,7 @@ use hyperswitch_domain_models::{
         ConnectorWebhookGenerateSecretResponse, ConnectorWebhookRegisterResponse,
     },
 };
-use hyperswitch_interfaces::api::{ConnectorSpecifications, ConnectorValidation};
+use orbix_interfaces::api::{ConnectorSpecifications, ConnectorValidation};
 use storage_impl::behaviour::ForeignInto;
 use transformers as configure_connector_webhook_flow;
 
@@ -273,7 +273,7 @@ pub async fn register_connector_webhook(
                     .attach_printable("Invalid base_url in webhook registration plan")?,
                 webhook_url: webhook_url
                     .parse::<url::Url>()
-                    .map(hyperswitch_masking::Secret::new)
+                    .map(orbix_masking::Secret::new)
                     .change_context(errors::ApiErrorResponse::InternalServerError)
                     .attach_printable("Invalid webhook_url for connector registration")?,
             };

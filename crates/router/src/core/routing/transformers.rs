@@ -13,8 +13,8 @@ use diesel_models::{
     routing_algorithm::{RoutingAlgorithm, RoutingProfileMetadata},
 };
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_domain_models::payments::payment_attempt::PaymentAttempt;
+use orbix_masking::{PeekInterface, Secret};
 
 use crate::{
     core::{errors, routing},

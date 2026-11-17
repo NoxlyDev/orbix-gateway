@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use api_models::enums::FrmSuggestion;
 use async_trait::async_trait;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::mandates;
+use orbix_domain_models::mandates;
 use router_env::instrument;
 
 use super::{BoxedOperation, Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -44,7 +44,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsExtendAu
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         _payment_method_fetch_data: operations::PaymentMethodFetchData,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -304,7 +304,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsExtendAuthor
         _processor: &domain::Processor,
         payment_data: PaymentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(PaymentExtendAuthorizationOperation<'b, F>, PaymentData<F>)>
     where

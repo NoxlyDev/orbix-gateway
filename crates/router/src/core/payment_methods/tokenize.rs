@@ -7,8 +7,8 @@ use common_utils::{
     transformers::{ForeignFrom, ForeignTryFrom},
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::router_request_types as domain_request_types;
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_domain_models::router_request_types as domain_request_types;
+use orbix_masking::{ExposeInterface, Secret};
 use router_env::logger;
 
 use crate::{

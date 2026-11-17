@@ -928,7 +928,7 @@ export const connectorDetails = {
             country_code: "+91",
           },
         },
-        email: "hyperswitch.example@gmail.com",
+        email: "orbix.example@gmail.com",
       },
       Response: {
         status: 200,

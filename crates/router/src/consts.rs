@@ -7,11 +7,11 @@ use std::{collections::HashSet, str::FromStr, sync};
 
 use api_models::enums::Country;
 use common_utils::{consts, id_type};
-pub use hyperswitch_domain_models::consts::{
+pub use orbix_domain_models::consts::{
     CONNECTOR_MANDATE_REQUEST_REFERENCE_ID_LENGTH, ROUTING_ENABLED_PAYMENT_METHODS,
     ROUTING_ENABLED_PAYMENT_METHOD_TYPES,
 };
-pub use hyperswitch_interfaces::consts::{NO_ERROR_CODE, NO_ERROR_MESSAGE};
+pub use orbix_interfaces::consts::{NO_ERROR_CODE, NO_ERROR_MESSAGE};
 
 // ID generation
 pub(crate) const ID_LENGTH: usize = 20;
@@ -181,7 +181,7 @@ pub const DEFAULT_BACKGROUND_COLOR: &str = "#212E46";
 
 /// Default product Img Link
 pub const DEFAULT_PRODUCT_IMG: &str =
-    "https://live.hyperswitch.io/payment-link-assets/cart_placeholder.png";
+    "https://live.orbix.example/payment-link-assets/cart_placeholder.png";
 
 /// Show merchant name by default for payment links
 pub const DEFAULT_SHOW_MERCHANT_NAME: bool = true;
@@ -577,7 +577,7 @@ pub mod superposition {
     pub const PAYOUT_TRACKER_MAPPING: &str = "payouts.payout_tracker_mapping";
     /// client session validation enabled configuration key
     pub const CLIENT_SESSION_VALIDATION_ENABLED: &str = "client_session_validation_enabled";
-    /// routing result source configuration key (selects between Hyperswitch and Decision Engine)
+    /// routing result source configuration key (selects between Orbix Gateway and Decision Engine)
     pub const ROUTING_RESULT_SOURCE: &str = "routing.routing_result_source";
     /// 3DS routing region configuration key for UAS
     pub const THREEDS_ROUTING_REGION_UAS: &str = "routing.threeds_routing_region_uas";

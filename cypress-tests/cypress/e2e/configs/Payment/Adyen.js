@@ -1019,7 +1019,7 @@ export const connectorDetails = {
       Request: {
         currency: "USD",
         billing_descriptor: {
-          name: "Juspay",
+          name: "Orbix",
           city: "San Francisco",
           phone: "8056594427",
           statement_descriptor: "QA-BillingDesc",
@@ -1048,7 +1048,7 @@ export const connectorDetails = {
         body: {
           status: "succeeded",
           billing_descriptor: {
-            name: "Juspay",
+            name: "Orbix",
             city: "San Francisco",
             phone: "8056594427",
             statement_descriptor: "QA-BillingDesc",
@@ -2044,13 +2044,13 @@ export const connectorDetails = {
         payment_method_data: {
           pay_later: {
             klarna_redirect: {
-              billing_email: "guest@juspay.in",
+              billing_email: "guest@orbix.example",
               billing_country: "DE",
             },
           },
         },
         billing: {
-          email: "guest@juspay.in",
+          email: "guest@orbix.example",
           address: {
             line1: "1467",
             line2: "Harrison Street",
@@ -2086,7 +2086,7 @@ export const connectorDetails = {
         payment_method_data: {
           pay_later: {
             klarna_redirect: {
-              billing_email: "guest@juspay.in",
+              billing_email: "guest@orbix.example",
               billing_country: "DE",
             },
           },
@@ -2094,7 +2094,7 @@ export const connectorDetails = {
         setup_future_usage: "off_session",
         customer_acceptance: customerAcceptance,
         billing: {
-          email: "guest@juspay.in",
+          email: "guest@orbix.example",
           address: {
             line1: "1467",
             line2: "Harrison Street",

@@ -11,7 +11,7 @@ use common_utils::{
 };
 use diesel_models::generic_link::PayoutLink;
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payment_method_data::{self, PaymentMethodData},
     payment_methods::PaymentMethod,
 };

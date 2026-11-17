@@ -5,7 +5,7 @@ use common_utils::{
 use error_stack::ResultExt;
 use external_services::http_client::client;
 use futures::TryFutureExt;
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_masking::{ExposeInterface, Secret};
 use oidc::TokenResponse;
 use openidconnect::{self as oidc, core as oidc_core};
 use redis_interface::RedisConnectionWithContext;

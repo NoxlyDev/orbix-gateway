@@ -45,7 +45,7 @@ pub async fn link_token_create(
     };
 
     let header_payload =
-        match hyperswitch_domain_models::payments::HeaderPayload::foreign_try_from(req.headers()) {
+        match orbix_domain_models::payments::HeaderPayload::foreign_try_from(req.headers()) {
             Ok(headers) => headers,
             Err(err) => {
                 return api::log_and_return_error_response(err);

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use hyperswitch_domain_models::router_data_v2::PaymentFlowData;
+use orbix_domain_models::router_data_v2::PaymentFlowData;
 
 use super::ConstructFlowSpecificData;
 use crate::{
@@ -29,7 +29,7 @@ impl
         business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _payment_method: Option<common_enums::PaymentMethod>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         connector_callback_urls: &mut ConnectorCallbackUrls,
@@ -58,7 +58,7 @@ impl
 #[async_trait]
 impl
     ConstructFlowSpecificData<api::Capture, types::PaymentsCaptureData, types::PaymentsResponseData>
-    for hyperswitch_domain_models::payments::PaymentCaptureData<api::Capture>
+    for orbix_domain_models::payments::PaymentCaptureData<api::Capture>
 {
     async fn construct_router_data<'a>(
         &self,
@@ -68,7 +68,7 @@ impl
         customer: &Option<domain::Customer>,
         merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
     ) -> RouterResult<
         types::RouterData<api::Capture, types::PaymentsCaptureData, types::PaymentsResponseData>,
@@ -98,7 +98,7 @@ impl Feature<api::Capture, types::PaymentsCaptureData>
         call_connector_action: payments::CallConnectorAction,
         connector_request: Option<services::Request>,
         _business_profile: &domain::Profile,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         return_raw_connector_response: Option<bool>,
         gateway_context: payments::gateway::context::RouterGatewayContext,
     ) -> RouterResult<Self> {

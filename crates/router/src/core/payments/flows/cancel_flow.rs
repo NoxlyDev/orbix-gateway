@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use hyperswitch_domain_models::router_data_v2::PaymentFlowData;
+use orbix_domain_models::router_data_v2::PaymentFlowData;
 
 use super::{ConstructFlowSpecificData, Feature};
 use crate::{
@@ -27,7 +27,7 @@ impl ConstructFlowSpecificData<api::Void, types::PaymentsCancelData, types::Paym
         business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _payment_method: Option<common_enums::PaymentMethod>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         connector_callback_urls: &mut ConnectorCallbackUrls,
@@ -54,7 +54,7 @@ impl ConstructFlowSpecificData<api::Void, types::PaymentsCancelData, types::Paym
 #[cfg(feature = "v2")]
 #[async_trait]
 impl ConstructFlowSpecificData<api::Void, types::PaymentsCancelData, types::PaymentsResponseData>
-    for hyperswitch_domain_models::payments::PaymentCancelData<api::Void>
+    for orbix_domain_models::payments::PaymentCancelData<api::Void>
 {
     async fn construct_router_data<'a>(
         &self,
@@ -64,7 +64,7 @@ impl ConstructFlowSpecificData<api::Void, types::PaymentsCancelData, types::Paym
         customer: &Option<domain::Customer>,
         merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
     ) -> RouterResult<types::PaymentsCancelRouterData> {
         Box::pin(transformers::construct_router_data_for_cancel(
@@ -92,7 +92,7 @@ impl Feature<api::Void, types::PaymentsCancelData>
         call_connector_action: payments::CallConnectorAction,
         connector_request: Option<services::Request>,
         _business_profile: &domain::Profile,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         return_raw_connector_response: Option<bool>,
         gateway_context: payments::gateway::context::RouterGatewayContext,
     ) -> RouterResult<Self> {

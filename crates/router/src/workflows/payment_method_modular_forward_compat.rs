@@ -2,7 +2,7 @@ use std::{marker::PhantomData, str::FromStr};
 
 use common_utils::ext_traits::{Encode, OptionExt, StringExt, ValueExt};
 use error_stack::ResultExt;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use scheduler::{
     consumer::types::process_data, utils as pt_utils, workflows::ProcessTrackerWorkflow,
 };
@@ -260,7 +260,7 @@ impl ForwardCompatWorkflowBuilder<ForwardDbCompatPrepared> {
                     locker_card.get_card(),
                     card_network.clone(),
                 ));
-                let pmd = hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(
+                let pmd = orbix_domain_models::vault::PaymentMethodVaultingData::Card(
                     card_detail.clone(),
                 );
 
@@ -317,7 +317,7 @@ impl ForwardCompatWorkflowBuilder<ForwardDbCompatPrepared> {
 
                 let locker_network_token_card = locker_network_token.get_card();
                 let network_token_details =
-                    hyperswitch_domain_models::payment_method_data::NetworkTokenDetails {
+                    orbix_domain_models::payment_method_data::NetworkTokenDetails {
                         network_token: locker_network_token_card.card_number.into(),
                         network_token_exp_month: locker_network_token_card.card_exp_month,
                         network_token_exp_year: locker_network_token_card.card_exp_year,
@@ -332,7 +332,7 @@ impl ForwardCompatWorkflowBuilder<ForwardDbCompatPrepared> {
                     };
 
                 let network_token_pmd =
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::NetworkToken(
+                    orbix_domain_models::vault::PaymentMethodVaultingData::NetworkToken(
                         network_token_details,
                     );
 
@@ -404,13 +404,13 @@ impl ForwardCompatWorkflowBuilder<ForwardDbCompatPrepared> {
         merchant_id: &common_utils::id_type::MerchantId,
         customer_id: &common_utils::id_type::CustomerId,
         vault_id: domain::VaultId,
-        data: &hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+        data: &orbix_domain_models::vault::PaymentMethodVaultingData,
     ) -> Result<(), errors::ProcessTrackerError> {
         let should_trigger_fingerprint_migration =
             payment_method_utils::get_should_trigger_fingerprint_migration(
                 state,
                 Some(customer_id),
-                hyperswitch_domain_models::platform::ProviderMerchantId::new(merchant_id.clone()),
+                orbix_domain_models::platform::ProviderMerchantId::new(merchant_id.clone()),
             )
             .await;
 

@@ -89,8 +89,8 @@ pub enum PaymentTokenData {
 #[cfg(feature = "v2")]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TemporaryCardTokenData {
-    pub card_cvc: Option<hyperswitch_masking::Secret<String>>,
-    pub card_holder_name: Option<hyperswitch_masking::Secret<String>>,
+    pub card_cvc: Option<orbix_masking::Secret<String>>,
+    pub card_holder_name: Option<orbix_masking::Secret<String>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -143,8 +143,8 @@ impl PaymentTokenData {
 
     #[cfg(feature = "v2")]
     pub fn temporary_card_token(
-        card_cvc: Option<hyperswitch_masking::Secret<String>>,
-        card_holder_name: Option<hyperswitch_masking::Secret<String>>,
+        card_cvc: Option<orbix_masking::Secret<String>>,
+        card_holder_name: Option<orbix_masking::Secret<String>>,
     ) -> Self {
         Self::TemporaryCardToken(TemporaryCardTokenData {
             card_cvc,
@@ -185,11 +185,11 @@ impl PaymentTokenData {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PaymentMethodListContext {
     pub card_details: Option<api::CardDetailFromLocker>,
-    pub hyperswitch_token_data: Option<PaymentTokenData>,
+    pub orbix_token_data: Option<PaymentTokenData>,
     #[cfg(feature = "payouts")]
     pub bank_transfer_details: Option<api::BankTransferPayout>,
     #[cfg(feature = "payouts")]
-    pub wallet_details: Option<hyperswitch_domain_models::payment_method_data::WalletDetail>,
+    pub wallet_details: Option<orbix_domain_models::payment_method_data::WalletDetail>,
 }
 
 #[cfg(feature = "v2")]
@@ -258,7 +258,7 @@ pub struct NetworkTokenizationTrackingData {
     pub customer_id: common_utils::id_type::CustomerId,
     pub payment_method: common_enums::PaymentMethod,
     pub payment_method_type: Option<common_enums::PaymentMethodType>,
-    pub billing_name: Option<hyperswitch_masking::Secret<String>>,
+    pub billing_name: Option<orbix_masking::Secret<String>>,
     /// Card network captured at payment time, used as a fallback when the card fetched from
     /// the locker does not carry the brand (see `mk_get_card_response`).
     ///

@@ -4,7 +4,7 @@ use api_models::enums::FrmSuggestion;
 use async_trait::async_trait;
 use common_utils::ext_traits::{AsyncExt, ValueExt};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::mandates;
+use orbix_domain_models::mandates;
 use router_derive::PaymentOperation;
 use router_env::instrument;
 
@@ -52,7 +52,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         payment_method_fetch_data: operations::PaymentMethodFetchData,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -330,7 +330,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
             .map(serde_json::to_value)
             .transpose()
             .change_context(errors::ApiErrorResponse::InternalServerError)?
-            .map(hyperswitch_masking::Secret::new);
+            .map(orbix_masking::Secret::new);
 
         payment_intent.metadata = request.metadata.clone().or(payment_intent.metadata);
 
@@ -667,7 +667,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(CompleteAuthorizeOperation<'b, F>, PaymentData<F>)>
     where
@@ -676,7 +676,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         let storage_scheme = processor.get_storage_scheme();
         let key_store = processor.get_key_store();
 
-        let payment_intent_update = hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::CompleteAuthorizeUpdate {
+        let payment_intent_update = orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::CompleteAuthorizeUpdate {
             shipping_address_id: payment_data.payment_intent.shipping_address_id.clone()
         };
 

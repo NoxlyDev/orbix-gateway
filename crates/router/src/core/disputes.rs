@@ -10,7 +10,7 @@ use strum::IntoEnumIterator;
 pub mod transformers;
 
 use common_enums;
-use hyperswitch_interfaces::webhooks::WebhookResourceData;
+use orbix_interfaces::webhooks::WebhookResourceData;
 
 use super::{
     errors::{self, ConnectorErrorExt, RouterResponse, StorageErrorExt},

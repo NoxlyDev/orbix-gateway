@@ -11,13 +11,13 @@ use common_utils::{
     fp_utils,
 };
 use error_stack::{Report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_request_types::VerifyWebhookSourceRequestData,
     router_response_types::{VerifyWebhookSourceResponseData, VerifyWebhookStatus},
 };
-use hyperswitch_interfaces::webhooks::IncomingWebhook;
+use orbix_interfaces::webhooks::IncomingWebhook;
 #[cfg(feature = "olap")]
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use redis_interface as redis;
 use router_env::tracing;
 
@@ -177,7 +177,7 @@ pub(super) async fn verify_webhook_source_verification_call(
     .change_context(errors::ConnectorError::WebhookSourceVerificationFailed)
     .attach_printable("invalid connector name received in payment attempt")?;
     let connector_integration: services::BoxedWebhookSourceVerificationConnectorIntegrationInterface<
-        hyperswitch_domain_models::router_flow_types::VerifyWebhookSource,
+        orbix_domain_models::router_flow_types::VerifyWebhookSource,
         VerifyWebhookSourceRequestData,
         VerifyWebhookSourceResponseData,
     > = connector_data.connector.get_connector_integration();

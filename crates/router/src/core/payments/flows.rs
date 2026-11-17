@@ -23,10 +23,10 @@ use common_enums;
 use common_types::payments::CustomerAcceptance;
 use external_services::grpc_client;
 #[cfg(all(feature = "v2", feature = "revenue_recovery"))]
-use hyperswitch_domain_models::router_flow_types::{
+use orbix_domain_models::router_flow_types::{
     BillingConnectorInvoiceSync, BillingConnectorPaymentsSync, InvoiceRecordBack,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments as domain_payments,
     router_request_types::{CurrentFlowInfo, PaymentsCaptureData},
 };
@@ -155,7 +155,7 @@ pub trait ConstructFlowSpecificData<F, Req, Res> {
     fn add_guest_customer(
         &self,
         _router_data: &mut types::RouterData<F, Req, Res>,
-        _guest_customer: &Option<hyperswitch_domain_models::payments::GuestCustomer>,
+        _guest_customer: &Option<orbix_domain_models::payments::GuestCustomer>,
     ) -> RouterResult<()> {
         Ok(())
     }

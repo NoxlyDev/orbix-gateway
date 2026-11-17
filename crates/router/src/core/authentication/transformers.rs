@@ -4,8 +4,8 @@ use api_models::payments;
 use common_enums::PaymentMethod;
 use common_utils::ext_traits::ValueExt;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::authentication;
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_domain_models::authentication;
+use orbix_masking::{ExposeInterface, Secret};
 
 use crate::{
     core::{
@@ -32,8 +32,8 @@ pub fn construct_authentication_router_data(
     authentication_connector: String,
     payment_method_data: domain::PaymentMethodData,
     payment_method: PaymentMethod,
-    billing_address: hyperswitch_domain_models::address::Address,
-    shipping_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: orbix_domain_models::address::Address,
+    shipping_address: Option<orbix_domain_models::address::Address>,
     browser_details: Option<types::BrowserInformation>,
     amount: Option<common_utils::types::MinorUnit>,
     currency: Option<common_enums::Currency>,
@@ -116,7 +116,7 @@ pub fn construct_post_authentication_router_data(
 pub fn construct_pre_authentication_router_data<F: Clone>(
     state: &SessionState,
     authentication_connector: String,
-    card: hyperswitch_domain_models::payment_method_data::Card,
+    card: orbix_domain_models::payment_method_data::Card,
     merchant_connector_account: &payments_helpers::MerchantConnectorAccountType,
     merchant_id: common_utils::id_type::MerchantId,
     payment_id: common_utils::id_type::PaymentId,

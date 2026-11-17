@@ -4,20 +4,20 @@ set -euo pipefail
 # Configuration
 VERSION="unknown"
 STATUS=""
-SERVER_BASE_URL="http://hyperswitch-server:8080"
-HYPERSWITCH_HEALTH_URL="${SERVER_BASE_URL}/health"
-HYPERSWITCH_DEEP_HEALTH_URL="${SERVER_BASE_URL}/health/ready"
+SERVER_BASE_URL="http://orbix-server:8080"
+ORBIX_HEALTH_URL="${SERVER_BASE_URL}/health"
+ORBIX_DEEP_HEALTH_URL="${SERVER_BASE_URL}/health/ready"
 ONE_CLICK_SETUP="${ONE_CLICK_SETUP:-false}"
 
 if [[ "${ONE_CLICK_SETUP}" == "true" ]]; then
-    SCARF_URL="https://hyperswitch.gateway.scarf.sh/docker"
+    SCARF_URL="https://orbix.gateway.scarf.sh/docker"
 else
-    SCARF_URL="https://hyperswitch.gateway.scarf.sh/only-docker"
+    SCARF_URL="https://orbix.gateway.scarf.sh/only-docker"
 fi
 
 # Fetch health status
 echo "Fetching app server health status..."
-HEALTH_RESPONSE=$(curl --silent --fail "${HYPERSWITCH_HEALTH_URL}") || HEALTH_RESPONSE="connection_error"
+HEALTH_RESPONSE=$(curl --silent --fail "${ORBIX_HEALTH_URL}") || HEALTH_RESPONSE="connection_error"
 
 if [[ "${HEALTH_RESPONSE}" == "connection_error" ]]; then
     STATUS="error"
@@ -32,11 +32,11 @@ if [[ "${HEALTH_RESPONSE}" == "connection_error" ]]; then
     exit 0
 fi
 
-# Fetch Hyperswitch version
-VERSION=$(curl --silent --output /dev/null --request GET --write-out '%header{x-hyperswitch-version}' "${HYPERSWITCH_DEEP_HEALTH_URL}" | sed 's/-dirty$//')
+# Fetch Orbix Gateway version
+VERSION=$(curl --silent --output /dev/null --request GET --write-out '%header{x-orbix-version}' "${ORBIX_DEEP_HEALTH_URL}" | sed 's/-dirty$//')
 
-echo "Fetching Hyperswitch health status..."
-HEALTH_RESPONSE=$(curl --silent "${HYPERSWITCH_DEEP_HEALTH_URL}")
+echo "Fetching Orbix Gateway health status..."
+HEALTH_RESPONSE=$(curl --silent "${ORBIX_DEEP_HEALTH_URL}")
 
 # Prepare curl command
 CURL_COMMAND=("curl" "--get" "${SCARF_URL}" "--data-urlencode" "version=${VERSION}")

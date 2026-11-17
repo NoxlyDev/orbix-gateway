@@ -14,7 +14,7 @@ pub mod domain;
 pub mod fraud_check;
 pub mod payment_methods;
 pub mod pm_auth;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 pub mod storage;
 pub mod transformers;
 use std::marker::PhantomData;
@@ -28,8 +28,8 @@ pub use common_utils::{pii, pii::Email, request::RequestContent, types::MinorUni
 #[cfg(feature = "v2")]
 use error_stack::ResultExt;
 #[cfg(feature = "frm")]
-pub use hyperswitch_domain_models::router_data_v2::FrmFlowData;
-use hyperswitch_domain_models::router_flow_types::{
+pub use orbix_domain_models::router_data_v2::FrmFlowData;
+use orbix_domain_models::router_flow_types::{
     self,
     access_token_auth::AccessTokenAuth,
     dispute::{Accept, Defend, Dsync, Evidence, Fetch},
@@ -50,7 +50,7 @@ use hyperswitch_domain_models::router_flow_types::{
     refunds::{Execute, RSync},
     webhooks::VerifyWebhookSource,
 };
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     payment_address::PaymentAddress,
     router_data::{
         AccessToken, AccessTokenAuthenticationResponse, AdditionalPaymentMethodConnectorResponse,
@@ -114,16 +114,16 @@ pub use hyperswitch_domain_models::{
     },
 };
 #[cfg(feature = "payouts")]
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     router_data_v2::PayoutFlowData, router_request_types::PayoutsData,
     router_response_types::PayoutsResponseData,
 };
 #[cfg(feature = "payouts")]
-pub use hyperswitch_interfaces::types::{
+pub use orbix_interfaces::types::{
     PayoutCancelType, PayoutCreateType, PayoutEligibilityType, PayoutFulfillType, PayoutQuoteType,
     PayoutRecipientAccountType, PayoutRecipientType, PayoutSyncType,
 };
-pub use hyperswitch_interfaces::{
+pub use orbix_interfaces::{
     disputes::DisputePayload,
     types::{
         AcceptDisputeType, ConnectorCustomerType, DefendDisputeType, FetchDisputesType,

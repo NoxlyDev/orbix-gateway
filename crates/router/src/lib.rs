@@ -31,7 +31,7 @@ use actix_web::{
     middleware::ErrorHandlers,
 };
 use http::StatusCode;
-use hyperswitch_interfaces::secrets_interface::secret_state::SecuredSecret;
+use orbix_interfaces::secrets_interface::secret_state::SecuredSecret;
 use router_env::tracing::Instrument;
 use routes::{AppState, SessionState};
 use storage_impl::errors::ApplicationResult;
@@ -184,7 +184,7 @@ pub mod pii {
 
     pub(crate) use common_utils::pii::Email;
     #[doc(inline)]
-    pub use hyperswitch_masking::*;
+    pub use orbix_masking::*;
 }
 
 pub fn mk_app(

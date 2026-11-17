@@ -11,7 +11,7 @@ CREATE TABLE account_updater_events_queue
     `created_at` DateTime64(9)
 )
 ENGINE = Kafka
-SETTINGS kafka_broker_list = 'kafka0:29092', kafka_topic_list = 'hyperswitch-account-updater-events', kafka_group_name = 'hyper', kafka_format = 'JSONEachRow', kafka_handle_error_mode = 'stream';
+SETTINGS kafka_broker_list = 'kafka0:29092', kafka_topic_list = 'orbix-account-updater-events', kafka_group_name = 'hyper', kafka_format = 'JSONEachRow', kafka_handle_error_mode = 'stream';
 
 CREATE MATERIALIZED VIEW account_updater_events_parse_errors (
     `topic` String,

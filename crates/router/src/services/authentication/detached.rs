@@ -6,7 +6,7 @@ use common_utils::{
     id_type::{ApiKeyId, MerchantId},
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::errors::api_error_response::ApiErrorResponse;
+use orbix_domain_models::errors::api_error_response::ApiErrorResponse;
 
 use crate::core::errors::RouterResult;
 

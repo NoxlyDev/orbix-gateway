@@ -11,7 +11,7 @@ use crate::{
 pub fn populate_browser_info(
     req: &actix_web::HttpRequest,
     payload: &mut api::PaymentsRequest,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
 ) -> RouterResult<()> {
     let mut browser_info: types::BrowserInformation = payload
         .browser_info
@@ -83,7 +83,7 @@ pub fn populate_browser_info(
     {
         *req_ip = req_ip
             .clone()
-            .or_else(|| ip_address.map(|ip| hyperswitch_masking::Secret::new(ip.to_string())));
+            .or_else(|| ip_address.map(|ip| orbix_masking::Secret::new(ip.to_string())));
     }
 
     let encoded = browser_info

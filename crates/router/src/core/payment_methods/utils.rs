@@ -11,9 +11,9 @@ use common_utils::ext_traits::{OptionExt, StringExt};
 #[cfg(feature = "v2")]
 use error_stack::ResultExt;
 use euclid::frontend::dir;
-use hyperswitch_constraint_graph as cgraph;
-use hyperswitch_domain_models::platform::ProviderMerchantId;
-use hyperswitch_masking::ExposeInterface;
+use orbix_constraint_graph as cgraph;
+use orbix_domain_models::platform::ProviderMerchantId;
+use orbix_masking::ExposeInterface;
 use kgraph_utils::{error::KgraphError, transformers::IntoDirValue};
 #[cfg(feature = "v1")]
 use router_env::logger;
@@ -36,7 +36,7 @@ use crate::{
 pub fn make_pm_graph(
     builder: &mut cgraph::ConstraintGraphBuilder<dir::DirValue>,
     domain_id: cgraph::DomainId,
-    payment_methods: &[hyperswitch_masking::Secret<serde_json::value::Value>],
+    payment_methods: &[orbix_masking::Secret<serde_json::value::Value>],
     connector: String,
     pm_config_mapping: &settings::ConnectorFilters,
     supported_payment_methods_for_mandate: &settings::SupportedPaymentMethodsForMandate,
@@ -63,12 +63,12 @@ pub fn make_pm_graph(
 pub async fn get_merchant_pm_filter_graph(
     state: &SessionState,
     key: &str,
-) -> Option<Arc<hyperswitch_constraint_graph::ConstraintGraph<dir::DirValue>>> {
+) -> Option<Arc<orbix_constraint_graph::ConstraintGraph<dir::DirValue>>> {
     state
         .store
         .caches()
         .pm_filters_cgraph
-        .get_val::<Arc<hyperswitch_constraint_graph::ConstraintGraph<dir::DirValue>>>(CacheKey {
+        .get_val::<Arc<orbix_constraint_graph::ConstraintGraph<dir::DirValue>>>(CacheKey {
             key: key.to_string(),
             prefix: state.tenant.redis_key_prefix.clone(),
         })
@@ -79,7 +79,7 @@ pub async fn refresh_pm_filters_cache(
     state: &SessionState,
     key: &str,
     graph: cgraph::ConstraintGraph<dir::DirValue>,
-) -> Arc<hyperswitch_constraint_graph::ConstraintGraph<dir::DirValue>> {
+) -> Arc<orbix_constraint_graph::ConstraintGraph<dir::DirValue>> {
     let pm_filter_graph = Arc::new(graph);
     state
         .store
@@ -1002,7 +1002,7 @@ pub(super) async fn retrieve_payment_token_data(
         .change_context(errors::ApiErrorResponse::InternalServerError)
         .attach_printable("Failed to get redis connection")?;
 
-    let key = format!("pm_token_{}_hyperswitch", token);
+    let key = format!("pm_token_{}_orbix", token);
 
     let token_data_string = redis_conn
         .get_key::<Option<String>>(&key.into())
@@ -1019,7 +1019,7 @@ pub(super) async fn retrieve_payment_token_data(
         .clone()
         .parse_struct("PaymentTokenData")
         .change_context(errors::ApiErrorResponse::InternalServerError)
-        .attach_printable("failed to deserialize hyperswitch token data")
+        .attach_printable("failed to deserialize orbix token data")
 }
 
 #[cfg(feature = "v2")]

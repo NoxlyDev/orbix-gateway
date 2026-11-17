@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt, ops::Deref, str::FromStr, sync::LazyLock};
 
 use common_utils::errors::ValidationError;
 use error_stack::report;
-use hyperswitch_masking::{PeekInterface, Strategy, StrongSecret, WithType};
+use orbix_masking::{PeekInterface, Strategy, StrongSecret, WithType};
 use regex::Regex;
 #[cfg(not(target_arch = "wasm32"))]
 use router_env::{logger, which as router_env_which, Env};
@@ -408,7 +408,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use hyperswitch_masking::Secret;
+    use orbix_masking::Secret;
 
     use super::*;
 

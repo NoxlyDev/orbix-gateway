@@ -22,7 +22,7 @@ use diesel_models::{
     user::dashboard_metadata::{DashboardMetadata, DashboardMetadataNew, DashboardMetadataUpdate},
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::logger;
 
 use crate::{
@@ -338,15 +338,15 @@ fn not_contains_string(value: Option<&str>, value_to_be_checked: &str) -> bool {
 pub fn is_prod_email_required(data: &ProdIntent, user_email: String) -> bool {
     let poc_email_check = not_contains_string(
         data.poc_email.as_ref().map(|email| email.peek().as_str()),
-        "juspay",
+        "orbix",
     );
     let business_website_check =
-        not_contains_string(data.business_website.as_ref().map(|s| s.as_str()), "juspay")
+        not_contains_string(data.business_website.as_ref().map(|s| s.as_str()), "orbix")
             && not_contains_string(
                 data.business_website.as_ref().map(|s| s.as_str()),
-                "hyperswitch",
+                "orbix",
             );
-    let user_email_check = not_contains_string(Some(&user_email), "juspay");
+    let user_email_check = not_contains_string(Some(&user_email), "orbix");
 
     if (poc_email_check && business_website_check && user_email_check).not() {
         logger::info!(prod_intent_email = poc_email_check);

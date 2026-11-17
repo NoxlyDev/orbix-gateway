@@ -1,8 +1,8 @@
-//! Hyperswitch adapter over the shared OCI KMS client in [`cloud_services::kms::oci`].
+//! Orbix Gateway adapter over the shared OCI KMS client in [`cloud_services::kms::oci`].
 //!
 //! The client itself (authentication, request signing, timeouts and retries) lives in the
 //! standalone `oci_kms` crate so other services can share it. This adapter routes its clock
-//! and entropy reads through `common_utils`, and adds Hyperswitch's logging and metrics.
+//! and entropy reads through `common_utils`, and adds Orbix Gateway's logging and metrics.
 
 use std::{sync::Arc, time::Instant};
 
@@ -107,8 +107,8 @@ pub enum OciKmsError {
 
 #[cfg(test)]
 mod tests {
-    use hyperswitch_interfaces::secrets_interface::SecretManagementInterface;
-    use hyperswitch_masking::{PeekInterface, Secret};
+    use orbix_interfaces::secrets_interface::SecretManagementInterface;
+    use orbix_masking::{PeekInterface, Secret};
 
     use super::*;
 
@@ -116,7 +116,7 @@ mod tests {
         std::env::var(name).unwrap_or_else(|_| panic!("{name} must be set for live tests"))
     }
 
-    /// The call Hyperswitch makes at startup for every secret in its config, through this
+    /// The call Orbix Gateway makes at startup for every secret in its config, through this
     /// adapter and its `common_utils` seams. Skipped by default; the `oci_kms` crate's `live`
     /// tests document the environment variables.
     #[tokio::test]

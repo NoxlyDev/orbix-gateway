@@ -5,10 +5,10 @@ pub use api_models::payouts::{
     PayoutRequest, PayoutRetrieveBody, PayoutRetrieveRequest, PixBankTransfer, SepaBankTransfer,
     Wallet as WalletPayout,
 };
-pub use hyperswitch_domain_models::router_flow_types::payouts::{
+pub use orbix_domain_models::router_flow_types::payouts::{
     PoCancel, PoCreate, PoEligibility, PoFulfill, PoQuote, PoRecipient, PoRecipientAccount, PoSync,
 };
-pub use hyperswitch_interfaces::api::payouts_v2::{
+pub use orbix_interfaces::api::payouts_v2::{
     PayoutCancelV2, PayoutCreateV2, PayoutEligibilityV2, PayoutFulfillV2, PayoutQuoteV2,
     PayoutRecipientAccountV2, PayoutRecipientV2, PayoutSyncV2,
 };

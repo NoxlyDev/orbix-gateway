@@ -1,4 +1,4 @@
-//! Subscription management crate for Hyperswitch
+//! Subscription management crate for Orbix Gateway
 //!
 //! This crate provides functionality for managing subscriptions, including:
 //! - Subscription creation and management

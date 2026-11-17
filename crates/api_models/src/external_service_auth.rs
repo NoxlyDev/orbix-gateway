@@ -1,5 +1,5 @@
 use common_utils::{id_type, pii};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 #[derive(Debug, serde::Serialize)]
 pub struct ExternalTokenResponse {

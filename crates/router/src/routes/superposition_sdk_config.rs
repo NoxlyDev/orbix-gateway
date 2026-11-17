@@ -2,8 +2,8 @@ use actix_web::{web, HttpRequest, HttpResponse};
 #[cfg(feature = "v1")]
 use error_stack::ResultExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::sdk_auth::SdkAuthorization;
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::sdk_auth::SdkAuthorization;
+use orbix_masking::PeekInterface;
 use router_env::{instrument, Flow};
 
 use super::app::AppState;

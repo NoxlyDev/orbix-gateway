@@ -1,8 +1,8 @@
 use common_enums::enums;
 use serde::{Deserialize, Serialize};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use common_utils::types::{StringMinorUnit};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payment_method_data::PaymentMethodData,
     router_data::{ConnectorAuthType, RouterData},
     router_flow_types::refunds::{Execute, RSync},
@@ -10,7 +10,7 @@ use hyperswitch_domain_models::{
     router_response_types::{PaymentsResponseData, RefundsResponseData},
     types::{PaymentsAuthorizeRouterData, RefundsRouterData},
 };
-use hyperswitch_interfaces::errors;
+use orbix_interfaces::errors;
 use crate::types::{RefundsResponseRouterData, ResponseRouterData};
 
 //TODO: Fill the struct with respective fields

@@ -119,7 +119,7 @@ impl ProcessTrackerWorkflow<SessionState> for DisputeListWorkflow {
             platform,
             None,
             tracking_data.merchant_connector_id,
-            hyperswitch_domain_models::router_request_types::FetchDisputesRequestData {
+            orbix_domain_models::router_request_types::FetchDisputesRequestData {
                 created_from: tracking_data.created_from,
                 created_till: tracking_data.created_till,
             },
@@ -219,7 +219,7 @@ pub async fn schedule_next_dispute_list_task(
         .checked_add(time::Duration::hours(i64::from(dispute_polling_interval)))
         .ok_or(sch_errors::ProcessTrackerError::TypeConversionError)?;
 
-    let fetch_request = hyperswitch_domain_models::router_request_types::FetchDisputesRequestData {
+    let fetch_request = orbix_domain_models::router_request_types::FetchDisputesRequestData {
         created_from: tracking_data.created_till,
         created_till: new_created_till,
     };

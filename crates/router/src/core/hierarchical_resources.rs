@@ -6,7 +6,7 @@ use common_utils::{
     types::keymanager::{self as km_types, EncryptionTransferRequest, KeyManagerState},
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use openssl::{
     ec::{EcGroup, EcKey},
     nid::Nid,
@@ -913,7 +913,7 @@ async fn create_organization_key_store(
         key_manager_state,
         EncryptionTransferRequest {
             identifier: identifier.clone(),
-            key: hyperswitch_masking::StrongSecret::new(crate::consts::BASE64_ENGINE.encode(key)),
+            key: orbix_masking::StrongSecret::new(crate::consts::BASE64_ENGINE.encode(key)),
         },
     )
     .await

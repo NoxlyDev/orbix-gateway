@@ -53,7 +53,7 @@ jobs:
         env:
           POSTGRES_USER: db_user
           POSTGRES_PASSWORD: db_pass
-          POSTGRES_DB: hyperswitch_db
+          POSTGRES_DB: orbix_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -136,7 +136,7 @@ jobs:
         if: ${{ (github.event_name == 'pull_request') && (github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name) }}
         shell: bash
         env:
-          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
+          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/orbix_db
         run: diesel migration run
 
       - name: Build project

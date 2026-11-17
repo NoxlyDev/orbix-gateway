@@ -3,7 +3,7 @@
 use api_models::payments::{
     NextActionData, PollConfigResponse, RedirectionResponse, ThreeDsData, ThreeDsMethodData,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 const CALLBACK_TOKEN: &str = "d9dc53cc-d1a1-4f57-9077-d20c2d614daa";
 const CALLBACK_URL: &str = "https://router.test/payments/pay/merchant/redirect/token/d9dc53cc-d1a1-4f57-9077-d20c2d614daa/authorize/stripe";
@@ -20,7 +20,7 @@ fn assert_secret_serialization<T: serde::Serialize + std::fmt::Debug>(
             Some(CALLBACK_URL)
         );
     }
-    let logged = hyperswitch_masking::masked_serialize(response).expect("masked response");
+    let logged = orbix_masking::masked_serialize(response).expect("masked response");
     assert!(!logged.to_string().contains(CALLBACK_TOKEN));
     assert!(!format!("{response:?}").contains(CALLBACK_TOKEN));
 }

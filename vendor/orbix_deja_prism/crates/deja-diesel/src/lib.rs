@@ -38,7 +38,7 @@
 //! # Adoption
 //!
 //! One swap at pool construction covers every query on every pooled
-//! connection (design doc, "adoption inversion"). In hyperswitch:
+//! connection (design doc, "adoption inversion"). In orbix:
 //!
 //! ```text
 //! // crates/storage_impl/src/database/store.rs
@@ -167,7 +167,7 @@ impl<C> DejaLoadConnection<C> {
 /// lookups (and therefore `QueryFragment::collect_binds`) require.
 ///
 /// This exists to close a hole rather than to add a feature. Without it a
-/// caller needing the lookup — hyperswitch's KV bind collection is the one in
+/// caller needing the lookup — orbix's KV bind collection is the one in
 /// practice — had to reach past the wrapper for the concrete connection, and
 /// the accessor that allowed it (`inner_mut`) was an unenforced way to execute
 /// a query with no capture at all: silent, because a missing physical image is

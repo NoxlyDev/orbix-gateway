@@ -14,15 +14,15 @@ use common_utils::{
 };
 use error_stack::{report, ResultExt};
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::router_flow_types::{
+use orbix_domain_models::router_flow_types::{
     ExternalVaultDeleteFlow, ExternalVaultRetrieveFlow,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_data_v2::flow_common_types::VaultConnectorFlowData, types::VaultRouterData,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_masking::ExposeInterface;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::ExposeInterface;
+use orbix_masking::PeekInterface;
 #[cfg(feature = "v2")]
 use payment_methods::controller::DeleteCardResp;
 use router_env::instrument;
@@ -159,7 +159,7 @@ impl Vaultable for domain::Card {
             card_subtype: None,
             card_segment_type: None,
             funding_source: None,
-            nick_name: value1.nickname.map(hyperswitch_masking::Secret::new),
+            nick_name: value1.nickname.map(orbix_masking::Secret::new),
             card_holder_name: value1.card_holder_name,
             co_badged_card_data: None,
         };
@@ -556,7 +556,7 @@ impl Vaultable for api::CardPayout {
                 .map_err(|_| errors::VaultError::FetchCardFailed)?,
             expiry_month: value1.exp_month.into(),
             expiry_year: value1.exp_year.into(),
-            card_holder_name: value1.name_on_card.map(hyperswitch_masking::Secret::new),
+            card_holder_name: value1.name_on_card.map(orbix_masking::Secret::new),
             card_network: value1.card_network,
         };
 
@@ -572,13 +572,13 @@ impl Vaultable for api::CardPayout {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct TokenizedWalletSensitiveValues {
     pub email: Option<Email>,
-    pub telephone_number: Option<hyperswitch_masking::Secret<String>>,
-    pub wallet_id: Option<hyperswitch_masking::Secret<String>>,
+    pub telephone_number: Option<orbix_masking::Secret<String>>,
+    pub wallet_id: Option<orbix_masking::Secret<String>>,
     pub wallet_type: PaymentMethodType,
     pub dpan: Option<cards::CardNumber>,
-    pub expiry_month: Option<hyperswitch_masking::Secret<String>>,
-    pub expiry_year: Option<hyperswitch_masking::Secret<String>>,
-    pub card_holder_name: Option<hyperswitch_masking::Secret<String>>,
+    pub expiry_month: Option<orbix_masking::Secret<String>>,
+    pub expiry_year: Option<orbix_masking::Secret<String>>,
+    pub card_holder_name: Option<orbix_masking::Secret<String>>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -744,18 +744,18 @@ impl Vaultable for api::WalletPayout {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct TokenizedBankSensitiveValues {
-    pub bank_account_number: Option<hyperswitch_masking::Secret<String>>,
-    pub bank_routing_number: Option<hyperswitch_masking::Secret<String>>,
-    pub bic: Option<hyperswitch_masking::Secret<String>>,
-    pub bank_sort_code: Option<hyperswitch_masking::Secret<String>>,
-    pub cellphone: Option<hyperswitch_masking::Secret<String>>,
-    pub shap_id: Option<hyperswitch_masking::Secret<String>>,
-    pub iban: Option<hyperswitch_masking::Secret<String>>,
-    pub pix_key: Option<hyperswitch_masking::Secret<String>>,
-    pub emv: Option<hyperswitch_masking::Secret<String>>,
-    pub tax_id: Option<hyperswitch_masking::Secret<String>>,
-    pub bank_number: Option<hyperswitch_masking::Secret<String>>,
-    pub account_holder_name: Option<hyperswitch_masking::Secret<String>>,
+    pub bank_account_number: Option<orbix_masking::Secret<String>>,
+    pub bank_routing_number: Option<orbix_masking::Secret<String>>,
+    pub bic: Option<orbix_masking::Secret<String>>,
+    pub bank_sort_code: Option<orbix_masking::Secret<String>>,
+    pub cellphone: Option<orbix_masking::Secret<String>>,
+    pub shap_id: Option<orbix_masking::Secret<String>>,
+    pub iban: Option<orbix_masking::Secret<String>>,
+    pub pix_key: Option<orbix_masking::Secret<String>>,
+    pub emv: Option<orbix_masking::Secret<String>>,
+    pub tax_id: Option<orbix_masking::Secret<String>>,
+    pub bank_number: Option<orbix_masking::Secret<String>>,
+    pub account_holder_name: Option<orbix_masking::Secret<String>>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -1872,8 +1872,8 @@ impl Vaultable for api::PassthroughPayout {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct TokenizedBankRedirectSensitiveValues {
     pub email: Option<Email>,
-    pub iban: Option<hyperswitch_masking::Secret<String>>,
-    pub account_holder_name: Option<hyperswitch_masking::Secret<String>>,
+    pub iban: Option<orbix_masking::Secret<String>>,
+    pub account_holder_name: Option<orbix_masking::Secret<String>>,
     pub bank_redirect_type: PaymentMethodType,
 }
 
@@ -1884,8 +1884,8 @@ pub struct TokenizedBankRedirectInsensitiveValues {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct TokenizedPassthroughSensitiveValues {
-    pub psp_token: hyperswitch_masking::Secret<String>,
-    pub psp_customer_id: Option<hyperswitch_masking::Secret<String>>,
+    pub psp_token: orbix_masking::Secret<String>,
+    pub psp_customer_id: Option<orbix_masking::Secret<String>>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -2041,7 +2041,7 @@ pub async fn create_tokenize_without_configurable_expiry(
     value1: String,
     value2: Option<String>,
     lookup_key: String,
-    encryption_key: &hyperswitch_masking::Secret<Vec<u8>>,
+    encryption_key: &orbix_masking::Secret<Vec<u8>>,
 ) -> RouterResult<String> {
     create_tokenize(state, value1, value2, lookup_key, encryption_key, None).await
 }
@@ -2052,7 +2052,7 @@ pub async fn create_tokenize_with_configurable_expiry(
     value1: String,
     value2: Option<String>,
     lookup_key: String,
-    encryption_key: &hyperswitch_masking::Secret<Vec<u8>>,
+    encryption_key: &orbix_masking::Secret<Vec<u8>>,
     expiry_time: Option<i64>,
 ) -> RouterResult<String> {
     create_tokenize(
@@ -2072,7 +2072,7 @@ async fn create_tokenize(
     value1: String,
     value2: Option<String>,
     lookup_key: String,
-    encryption_key: &hyperswitch_masking::Secret<Vec<u8>>,
+    encryption_key: &orbix_masking::Secret<Vec<u8>>,
     expiry_time: Option<i64>,
 ) -> RouterResult<String> {
     let redis_key = get_redis_locker_key(lookup_key.as_str());
@@ -2137,7 +2137,7 @@ pub async fn get_tokenized_data(
     state: &routes::SessionState,
     lookup_key: &str,
     _should_get_value2: bool,
-    encryption_key: &hyperswitch_masking::Secret<Vec<u8>>,
+    encryption_key: &orbix_masking::Secret<Vec<u8>>,
 ) -> RouterResult<api::TokenizePayloadRequest> {
     let redis_key = get_redis_locker_key(lookup_key);
     let func = || async {
@@ -2158,7 +2158,7 @@ pub async fn get_tokenized_data(
                 let decrypted_payload = GcmAes256
                     .decode_message(
                         encryption_key.peek().as_ref(),
-                        hyperswitch_masking::Secret::new(resp.into()),
+                        orbix_masking::Secret::new(resp.into()),
                     )
                     .change_context(errors::ApiErrorResponse::InternalServerError)
                     .attach_printable("Failed to decode redis temp locker data")?;
@@ -2434,7 +2434,7 @@ pub type FingerprintTask = tokio::task::JoinHandle<RouterResult<Option<String>>>
 pub fn spawn_fingerprint_task(
     state: &routes::SessionState,
     payment_method_data: &domain::PaymentMethodVaultingData,
-    key: hyperswitch_masking::Secret<String>,
+    key: orbix_masking::Secret<String>,
     kind: &'static str,
 ) -> FingerprintTask {
     use router_env::tracing::Instrument;
@@ -2485,7 +2485,7 @@ pub async fn get_fingerprints_for_payment_method(
     state: &routes::SessionState,
     payment_method_data: &domain::PaymentMethodVaultingData,
     customer_id: String,
-    merchant_fingerprint_secret: Option<hyperswitch_masking::Secret<String>>,
+    merchant_fingerprint_secret: Option<orbix_masking::Secret<String>>,
 ) -> CustomResult<PaymentMethodFingerprints, errors::VaultError> {
     let vault_data = payment_method_data.to_fingerprint_data();
     // Absent for payment methods that carry nothing to fingerprint beyond the vault payload.
@@ -2499,13 +2499,13 @@ pub async fn get_fingerprints_for_payment_method(
                 Some(batch_fingerprint_entry(
                     consts::VAULT_FINGERPRINT_LABEL,
                     &vault_data,
-                    hyperswitch_masking::Secret::new(customer_id.clone()),
+                    orbix_masking::Secret::new(customer_id.clone()),
                 )),
                 auxiliary_data.as_ref().map(|data| {
                     batch_fingerprint_entry(
                         consts::AUXILIARY_FINGERPRINT_LABEL,
                         data,
-                        hyperswitch_masking::Secret::new(customer_id.clone()),
+                        orbix_masking::Secret::new(customer_id.clone()),
                     )
                 }),
                 merchant_request.map(|(data, key)| {
@@ -2559,14 +2559,14 @@ pub async fn get_fingerprints_for_payment_method(
 fn batch_fingerprint_entry<D: serde::Serialize>(
     label: &str,
     data: &D,
-    key: hyperswitch_masking::Secret<String>,
+    key: orbix_masking::Secret<String>,
 ) -> CustomResult<pm_types::VaultBatchFingerprintEntry, errors::VaultError> {
     serde_json::to_string(data)
         .change_context(errors::VaultError::RequestEncodingFailed)
         .attach_printable("Failed to encode fingerprint data to string")
         .map(|data| pm_types::VaultBatchFingerprintEntry {
             label: label.to_owned(),
-            data: hyperswitch_masking::Secret::new(data),
+            data: orbix_masking::Secret::new(data),
             key,
         })
 }
@@ -2906,7 +2906,7 @@ pub async fn retrieve_payment_method_from_vault_using_payment_token(
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TemporaryVaultCvc {
-    card_cvc: hyperswitch_masking::Secret<String>,
+    card_cvc: orbix_masking::Secret<String>,
 }
 
 /// Controls whether reading a CVC also removes it from Redis.
@@ -2921,7 +2921,7 @@ pub enum CvcReadMode {
 pub async fn store_cvc_in_redis(
     state: &routes::SessionState,
     token: &str,
-    card_cvc: hyperswitch_masking::Secret<String>,
+    card_cvc: orbix_masking::Secret<String>,
     fulfillment_time: i64,
     key_store: &domain::MerchantKeyStore,
 ) -> RouterResult<()> {
@@ -2931,7 +2931,7 @@ pub async fn store_cvc_in_redis(
         .change_context(errors::ApiErrorResponse::InternalServerError)
         .attach_printable("Failed to get redis connection")?;
 
-    let key = format!("pm_token_{token}_hyperswitch_cvc");
+    let key = format!("pm_token_{token}_orbix_cvc");
 
     let payload_to_be_encrypted = TemporaryVaultCvc { card_cvc };
 
@@ -2967,7 +2967,7 @@ pub async fn store_cvc_in_redis(
 pub async fn insert_cvc_using_payment_token(
     state: &routes::SessionState,
     token: &str,
-    card_cvc: hyperswitch_masking::Secret<String>,
+    card_cvc: orbix_masking::Secret<String>,
     fulfillment_time: i64,
     key_store: &domain::MerchantKeyStore,
 ) -> RouterResult<api_models::payment_methods::CardCVCTokenStorageDetails> {
@@ -2987,14 +2987,14 @@ pub async fn retrieve_cvc_from_payment_token(
     payment_method_id: &String,
     key_store: &domain::MerchantKeyStore,
     read_mode: CvcReadMode,
-) -> RouterResult<hyperswitch_masking::Secret<String>> {
+) -> RouterResult<orbix_masking::Secret<String>> {
     let redis_conn = state
         .store
         .get_redis_conn()
         .change_context(errors::ApiErrorResponse::InternalServerError)
         .attach_printable("Failed to get redis connection")?;
 
-    let key = format!("pm_token_{payment_method_id}_hyperswitch_cvc");
+    let key = format!("pm_token_{payment_method_id}_orbix_cvc");
 
     let resp: Encryption = redis_conn
         .get_and_deserialize_key::<Encryption>(&key.clone().into(), "Vec<u8>")
@@ -3041,7 +3041,7 @@ pub async fn delete_cvc_from_payment_token(
         .change_context(errors::ApiErrorResponse::InternalServerError)
         .attach_printable("Failed to get redis connection")?;
 
-    let key = format!("pm_token_{payment_method_id}_hyperswitch_cvc");
+    let key = format!("pm_token_{payment_method_id}_orbix_cvc");
 
     redis_conn
         .delete_key(&key.into())
@@ -3070,7 +3070,7 @@ pub async fn retrieve_key_and_ttl_for_cvc_from_payment_method_id(
         .attach_printable("Failed to get redis connection")?;
 
     let key = format!(
-        "pm_token_{}_hyperswitch_cvc",
+        "pm_token_{}_orbix_cvc",
         payment_method_id.get_string_repr()
     );
 
@@ -3443,8 +3443,8 @@ pub async fn retrieve_payment_method_from_vault_external_v1(
     state: &routes::SessionState,
     merchant_id: &id_type::MerchantId,
     pm: &domain::PaymentMethod,
-    merchant_connector_account: hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
-) -> RouterResult<hyperswitch_domain_models::vault::PaymentMethodVaultingData> {
+    merchant_connector_account: orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
+) -> RouterResult<orbix_domain_models::vault::PaymentMethodVaultingData> {
     let connector_vault_id = pm.locker_id.clone().map(|id| id.to_string());
 
     let router_data = core_utils::construct_vault_router_data(
@@ -3481,7 +3481,7 @@ pub async fn retrieve_payment_method_from_vault_external_v1(
 
     if old_router_data.response.is_ok() {
         let connector_integration: services::BoxedVaultConnectorIntegrationInterface<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultRetrieveFlow,
+            orbix_domain_models::router_flow_types::ExternalVaultRetrieveFlow,
             types::VaultRequestData,
             types::VaultResponseData,
         > = connector_data.connector.get_connector_integration();
@@ -3509,7 +3509,7 @@ pub async fn retrieve_payment_method_from_vault_external_v1(
 
 pub fn get_vault_response_for_retrieve_payment_method_data_v1<F>(
     router_data: VaultRouterData<F>,
-) -> RouterResult<hyperswitch_domain_models::vault::PaymentMethodVaultingData> {
+) -> RouterResult<orbix_domain_models::vault::PaymentMethodVaultingData> {
     match router_data.response {
         Ok(response) => match response {
             types::VaultResponseData::ExternalVaultRetrieveResponse { vault_data } => {

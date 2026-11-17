@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use common_utils::ext_traits::ValueExt;
 use error_stack::ResultExt;
-use hyperswitch_connectors::types::PoFrmRouterData;
+use orbix_connectors::types::PoFrmRouterData;
 
 use super::{ConstructFlowSpecificData, FeatureFrm};
 use crate::{
@@ -34,7 +34,7 @@ impl ConstructFlowSpecificData<frm_api::PoFrm, FraudCheckPayoutData, FraudCheckR
         _business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         _merchant_recipient_data: Option<MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _payment_method: Option<common_enums::PaymentMethod>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
@@ -54,7 +54,7 @@ impl ConstructFlowSpecificData<frm_api::PoFrm, FraudCheckPayoutData, FraudCheckR
             .map(From::from));
 
         let billing_address = self.billing_address.clone();
-        let address = hyperswitch_domain_models::payment_address::PaymentAddress::new(
+        let address = orbix_domain_models::payment_address::PaymentAddress::new(
             None,
             billing_address,
             None,

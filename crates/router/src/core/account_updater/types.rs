@@ -2,15 +2,15 @@ use std::{collections::HashSet, time::Duration};
 
 use common_enums::{connector_enums::Connector, CardNetwork};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::router_data::ConnectorAuthType;
-use hyperswitch_masking::Secret;
+use orbix_domain_models::router_data::ConnectorAuthType;
+use orbix_masking::Secret;
 use unified_connector_service_client::payments as payments_grpc;
 
 use crate::{
     configs::settings,
     core::{
         errors::{self, RouterResult},
-        unified_connector_service::connector_config::JuspayMetadata,
+        unified_connector_service::connector_config::OrbixMetadata,
     },
 };
 
@@ -34,26 +34,26 @@ pub enum AccountUpdaterCredentialSource {
 
 #[derive(Debug, Clone)]
 pub enum ResolvedAccountUpdaterConfig {
-    Juspay(JuspayConfig),
+    Orbix(OrbixConfig),
 }
 
 impl ResolvedAccountUpdaterConfig {
     pub fn supported_card_networks(&self) -> &HashSet<CardNetwork> {
         match self {
-            Self::Juspay(juspay) => &juspay.supported_card_networks,
+            Self::Orbix(orbix) => &orbix.supported_card_networks,
         }
     }
 
     pub fn refresh_timeout(&self) -> Duration {
         match self {
-            Self::Juspay(juspay) => juspay.refresh_timeout,
+            Self::Orbix(orbix) => orbix.refresh_timeout,
         }
     }
 
     /// The account updater service backing this config, recorded against every row it writes.
     pub fn service(&self) -> Connector {
         match self {
-            Self::Juspay(_) => Connector::Juspay,
+            Self::Orbix(_) => Connector::Orbix,
         }
     }
 
@@ -62,21 +62,21 @@ impl ResolvedAccountUpdaterConfig {
         &self,
     ) -> RouterResult<(Connector, ConnectorAuthType, serde_json::Value)> {
         match self {
-            Self::Juspay(juspay) => {
-                let metadata = serde_json::to_value(JuspayMetadata {
-                    merchant_id: juspay.merchant_id.clone(),
-                    base_url: juspay.base_url.to_string(),
-                    juspay_encryption_public_key: juspay.euler_encryption_public_key.clone(),
-                    response_decryption_private_key: juspay.au_decryption_pvt_key.clone(),
-                    card_sync_key_id: juspay.card_sync_key_id.clone(),
+            Self::Orbix(orbix) => {
+                let metadata = serde_json::to_value(OrbixMetadata {
+                    merchant_id: orbix.merchant_id.clone(),
+                    base_url: orbix.base_url.to_string(),
+                    orbix_encryption_public_key: orbix.euler_encryption_public_key.clone(),
+                    response_decryption_private_key: orbix.au_decryption_pvt_key.clone(),
+                    card_sync_key_id: orbix.card_sync_key_id.clone(),
                 })
                 .change_context(errors::ApiErrorResponse::InternalServerError)
-                .attach_printable("Failed to serialize the Juspay Account Updater metadata")?;
+                .attach_printable("Failed to serialize the Orbix Account Updater metadata")?;
 
                 Ok((
-                    Connector::Juspay,
+                    Connector::Orbix,
                     ConnectorAuthType::HeaderKey {
-                        api_key: juspay.api_key.clone(),
+                        api_key: orbix.api_key.clone(),
                     },
                     metadata,
                 ))
@@ -86,7 +86,7 @@ impl ResolvedAccountUpdaterConfig {
 }
 
 #[derive(Debug, Clone)]
-pub struct JuspayConfig {
+pub struct OrbixConfig {
     pub base_url: url::Url,
     pub api_key: Secret<String>,
     pub merchant_id: String,
@@ -97,8 +97,8 @@ pub struct JuspayConfig {
     pub refresh_timeout: Duration,
 }
 
-impl From<&settings::JuspayAccountUpdaterConfig> for JuspayConfig {
-    fn from(config: &settings::JuspayAccountUpdaterConfig) -> Self {
+impl From<&settings::OrbixAccountUpdaterConfig> for OrbixConfig {
+    fn from(config: &settings::OrbixAccountUpdaterConfig) -> Self {
         Self {
             base_url: config.base_url.clone(),
             api_key: config.api_key.clone(),
@@ -115,7 +115,7 @@ impl From<&settings::JuspayAccountUpdaterConfig> for JuspayConfig {
 impl From<&settings::AccountUpdaterConfig> for ResolvedAccountUpdaterConfig {
     fn from(config: &settings::AccountUpdaterConfig) -> Self {
         match config {
-            settings::AccountUpdaterConfig::Juspay(juspay) => Self::Juspay(juspay.into()),
+            settings::AccountUpdaterConfig::Orbix(orbix) => Self::Orbix(orbix.into()),
         }
     }
 }

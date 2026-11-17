@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema)]
-/// Connector details for webhook configuration via hyperswitch API
+/// Connector details for webhook configuration via orbix API
 pub struct WebhookSetupCapabilities {
     /// Indicates if the connector supports webhooks configuration via API
     pub is_webhook_auto_configuration_supported: bool,
@@ -17,7 +17,7 @@ pub struct WebhookSetupCapabilities {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema)]
 /// Enum to represent the type of webhook configuration
 pub enum WebhookConfigType {
-    /// Standard webhook configuration supporting all events hyperswitch provides
+    /// Standard webhook configuration supporting all events orbix provides
     AllEvents,
     /// Custom webhook configuration supporting only specific events
     #[schema(value_type = Option<EventType>)]

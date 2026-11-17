@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use cards::CardNumber;
 use common_utils::{pii::Email, types::MinorUnit};
-use hyperswitch_domain_models::types::OrderDetailsWithAmount;
-use hyperswitch_masking::Secret;
+use orbix_domain_models::types::OrderDetailsWithAmount;
+use orbix_masking::Secret;
 use router::types::{self, domain, storage::enums};
 
 use crate::{

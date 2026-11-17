@@ -1,6 +1,6 @@
 use common_utils::DbConnectionParams;
-use hyperswitch_domain_models::master_key::MasterKeyInterface;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_domain_models::master_key::MasterKeyInterface;
+use orbix_masking::{PeekInterface, Secret};
 
 use crate::{kv_router_store, DatabaseStore, MockDb, RouterStore};
 

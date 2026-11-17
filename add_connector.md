@@ -11,7 +11,7 @@
 7. [Common Payment Flow Types](#common-payment-flow-types)  
 8. [Integrate a New Connector](#integrate-a-new-connector)  
 9. [Code Walkthrough](#code-walkthrough)  
-10. [Error Handling in Hyperswitch Connectors](#error-handling-in-hyperswitch-connectors)  
+10. [Error Handling in Orbix Gateway Connectors](#error-handling-in-orbix-connectors)  
 11. [Implementing the Connector Interface](#implementing-the-connector-interface)  
 12. [ConnectorCommon: The Foundation Trait](#connectorcommon-the-foundation-trait)  
 13. [ConnectorIntegration – The Payment Flow Orchestrator](#connectorintegration--the-payment-flow-orchestrator)  
@@ -39,40 +39,40 @@ By the end, you’ll learn how to create a fully functional, production-ready co
 
 ## Prerequisites
 
-* Before you begin, ensure you’ve completed the initial setup in our [Hyperswitch Contributor Guide](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/docs/CONTRIBUTING.md?plain=1#L1), which covers cloning, tool installation, and access.
-* You should also understanding [connectors and payment methods](https://hyperswitch.io/pm-list).
+* Before you begin, ensure you’ve completed the initial setup in our [Orbix Gateway Contributor Guide](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/docs/CONTRIBUTING.md?plain=1#L1), which covers cloning, tool installation, and access.
+* You should also understanding [connectors and payment methods](https://orbix.example/pm-list).
 * Familiarity with the Connector API you’re integrating
 * A locally set up and running Router repository
 * API credentials for testing (sign up for sandbox/UAT credentials on the connector’s website).
-* Need help? Join the [Hyperswitch Slack Channel](https://inviter.co/hyperswitch-slack). We also have weekly office hours every Thursday at 8:00 AM PT (11:00 AM ET, 4:00 PM BST, 5:00 PM CEST, and 8:30 PM IST). Link to office hours are shared in the **#general channel**.
+* Need help? Join the [Orbix Gateway Slack Channel](https://inviter.co/orbix-slack). We also have weekly office hours every Thursday at 8:00 AM PT (11:00 AM ET, 4:00 PM BST, 5:00 PM CEST, and 8:30 PM IST). Link to office hours are shared in the **#general channel**.
 
 ## Development Environment Setup & Configuration
 
 This guide will walk you through your environment setup and configuration.
 
-### Clone the Hyperswitch monorepo
+### Clone the Orbix Gateway monorepo
 
 ```bash
-git clone git@github.com:juspay/hyperswitch.git
-cd hyperswitch
+git clone git@github.com:orbix/orbix.git
+cd orbix
 ```
 
 ### Rust Environment & Dependencies Setup
 
-Before running Hyperswitch locally, make sure your Rust environment and system dependencies are properly configured.
+Before running Orbix Gateway locally, make sure your Rust environment and system dependencies are properly configured.
 
 **Follow the guide**:
 
-[Configure Rust and install required dependencies based on your OS](https://github.com/juspay/hyperswitch/blob/main/docs/try_local_system.md#set-up-a-rust-environment-and-other-dependencies)
+[Configure Rust and install required dependencies based on your OS](https://github.com/orbix/orbix/blob/main/docs/try_local_system.md#set-up-a-rust-environment-and-other-dependencies)
 
 **Quick links by OS**:
-* [Ubuntu-based systems](https://github.com/juspay/hyperswitch/blob/main/docs/try_local_system.md#set-up-dependencies-on-ubuntu-based-systems)
-* [Windows (WSL2)](https://github.com/juspay/hyperswitch/blob/main/docs/try_local_system.md#set-up-dependencies-on-windows-ubuntu-on-wsl2)
-* [Windows (native)](https://github.com/juspay/hyperswitch/blob/main/docs/try_local_system.md#set-up-dependencies-on-windows)
-* [macOS](https://github.com/juspay/hyperswitch/blob/main/docs/try_local_system.md#set-up-dependencies-on-macos)
+* [Ubuntu-based systems](https://github.com/orbix/orbix/blob/main/docs/try_local_system.md#set-up-dependencies-on-ubuntu-based-systems)
+* [Windows (WSL2)](https://github.com/orbix/orbix/blob/main/docs/try_local_system.md#set-up-dependencies-on-windows-ubuntu-on-wsl2)
+* [Windows (native)](https://github.com/orbix/orbix/blob/main/docs/try_local_system.md#set-up-dependencies-on-windows)
+* [macOS](https://github.com/orbix/orbix/blob/main/docs/try_local_system.md#set-up-dependencies-on-macos)
 
 **All OS Systems**:
-* [Set up the database](https://github.com/juspay/hyperswitch/blob/main/docs/try_local_system.md#set-up-the-database)
+* [Set up the database](https://github.com/orbix/orbix/blob/main/docs/try_local_system.md#set-up-the-database)
 
 * Set up the Rust nightly toolchain installed for code formatting:
 
@@ -116,7 +116,7 @@ sh scripts/add_connector.sh <ConnectorName> <ConnectorBaseUrl>
 When you run the script, you should see that some files were created
 
 ```bash
-# Done! New project created /absolute/path/hyperswitch/crates/hyperswitch_connectors/src/connectors/connectorname
+# Done! New project created /absolute/path/orbix/crates/orbix_connectors/src/connectors/connectorname
 ```
 
 > ⚠️ **Warning**  
@@ -130,24 +130,24 @@ When you run the script, you should see that some files were created
 > You can also ignore GRPC errors too.
 
 ## Test the connection 
-Once you've successfully created your connector using the `add_connector.sh` script, you can verify the integration by starting the Hyperswitch Router Service:
+Once you've successfully created your connector using the `add_connector.sh` script, you can verify the integration by starting the Orbix Gateway Router Service:
 
 ```bash
 cargo r
 ```
 
-This launches the router application locally on `port 8080`, providing access to the complete Hyperswitch API. You can now test your connector implementation by making HTTP requests to the payment endpoints for operations like:
+This launches the router application locally on `port 8080`, providing access to the complete Orbix Gateway API. You can now test your connector implementation by making HTTP requests to the payment endpoints for operations like:
 
 - Payment authorization and capture
 - Payment synchronization
 - Refund processing
 - Webhook handling
 
-Once your connector logic is implemented, this environment lets you ensure it behaves correctly within the Hyperswitch orchestration flow—before moving to staging or production.
+Once your connector logic is implemented, this environment lets you ensure it behaves correctly within the Orbix Gateway orchestration flow—before moving to staging or production.
 
 ### Verify Server Health
 
-Once the Hyperswitch Router Service is running, you can verify it's operational by checking the health endpoint in a separate terminal window:
+Once the Orbix Gateway Router Service is running, you can verify it's operational by checking the health endpoint in a separate terminal window:
 
 ```bash
 curl --head --request GET 'http://localhost:8080/health'
@@ -160,9 +160,9 @@ When you run the script, it creates a specific folder structure for your new con
 
 **Main Connector Files**
 
-The script creates the primary connector structure in the hyperswitch_connectors crate:
+The script creates the primary connector structure in the orbix_connectors crate:
 
-crates/hyperswitch_connectors/src/connectors/  
+crates/orbix_connectors/src/connectors/  
 ├── <connector_name>/  
 │   └── transformers.rs  
 └── <connector_name>.rs
@@ -177,8 +177,8 @@ crates/router/tests/connectors/
 **What Each File Contains**
 
 - `<connector_name>.rs`: The main connector implementation file where you implement the connector traits
-- `transformers.rs`: Contains data structures and conversion logic between Hyperswitch's internal format and your payment processor's API format
-- **Test file**: [Contains boilerplate test cases for your connector](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/connector-template/test.rs#L1-L36).
+- `transformers.rs`: Contains data structures and conversion logic between Orbix Gateway's internal format and your payment processor's API format
+- **Test file**: [Contains boilerplate test cases for your connector](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/connector-template/test.rs#L1-L36).
 
 ## Common Payment Flow Types
 
@@ -188,23 +188,23 @@ This section gives you:
 - A quick reference table for all flows  
 - Examples of the two most common patterns: **Tokenization‑first** and **Direct Authorization**
 
-> For full details, see [Connector Payment Flow documentation](https://docs.hyperswitch.io/learn-more/hyperswitch-architecture/connector-payment-flows) or ask us in Slack.
+> For full details, see [Connector Payment Flow documentation](https://docs.orbix.example/learn-more/orbix-architecture/connector-payment-flows) or ask us in Slack.
 
 ---
 
 ### 1. Flow Summary Table
 
-| Flow Name           | Description                                      | Implementation in Hyperswitch |
+| Flow Name           | Description                                      | Implementation in Orbix Gateway |
 |---------------------|--------------------------------------------------|--------------------------------|
-| **Access Token**      | Obtain OAuth access token                        | [crates/hyperswitch_interfaces/src/types.rs#L7](https://github.com/juspay/hyperswitch/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/hyperswitch_interfaces/src/types.rs#L7) |
-| **Tokenization**      | Exchange credentials for a payment token         | [crates/hyperswitch_interfaces/src/types.rs#L148](https://github.com/juspay/hyperswitch/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/hyperswitch_interfaces/src/types.rs#L148) |
-| **Customer Creation** | Create or update customer records                | [crates/router/src/types.rs#L40](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L40) |
-| **Pre‑Processing**    | Validation or enrichment before auth             | [crates/router/src/types.rs#L41](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L41) |
-| **Authorization**     | Authorize and immediately capture payment        | [crates/hyperswitch_interfaces/src/types.rs#L12](https://github.com/juspay/hyperswitch/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/hyperswitch_interfaces/src/types.rs#L12) |
-| **Authorization‑Only**| Authorize payment for later capture              | [crates/router/src/types.rs#L39](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39) |
-| **Capture**           | Capture a previously authorized payment          | [crates/router/src/types.rs#L39](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39) |
-| **Refund**            | Issue a refund                                   | [crates/router/src/types.rs#L44](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L44) |
-| **Webhook Handling**  | Process asynchronous events from PSP             | [crates/router/src/types.rs#L45](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L45) |
+| **Access Token**      | Obtain OAuth access token                        | [crates/orbix_interfaces/src/types.rs#L7](https://github.com/orbix/orbix/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/orbix_interfaces/src/types.rs#L7) |
+| **Tokenization**      | Exchange credentials for a payment token         | [crates/orbix_interfaces/src/types.rs#L148](https://github.com/orbix/orbix/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/orbix_interfaces/src/types.rs#L148) |
+| **Customer Creation** | Create or update customer records                | [crates/router/src/types.rs#L40](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L40) |
+| **Pre‑Processing**    | Validation or enrichment before auth             | [crates/router/src/types.rs#L41](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L41) |
+| **Authorization**     | Authorize and immediately capture payment        | [crates/orbix_interfaces/src/types.rs#L12](https://github.com/orbix/orbix/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/orbix_interfaces/src/types.rs#L12) |
+| **Authorization‑Only**| Authorize payment for later capture              | [crates/router/src/types.rs#L39](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39) |
+| **Capture**           | Capture a previously authorized payment          | [crates/router/src/types.rs#L39](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39) |
+| **Refund**            | Issue a refund                                   | [crates/router/src/types.rs#L44](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L44) |
+| **Webhook Handling**  | Process asynchronous events from PSP             | [crates/router/src/types.rs#L45](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L45) |
 
 ---
 ### Flow Type Definitions
@@ -221,8 +221,8 @@ Some PSPs require payment data to be tokenized before it can be authorized.
 This is a **two‑step process**:  
 
 1. **Tokenization** – e.g., Billwerk’s implementation:  
-   - [Tokenization](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L178-L271)  
-   - [Authorization](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L273-L366)  
+   - [Tokenization](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L178-L271)  
+   - [Authorization](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L273-L366)  
 
 2. **Authorization** – Uses the returned token rather than raw payment details.  
 
@@ -234,13 +234,13 @@ This is a **two‑step process**:
 
 Many connectors skip tokenization and send payment data directly in the authorization request.  
 
-- **Authorize.net** – [code](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/authorizedotnet.rs#L401-L497)  
+- **Authorize.net** – [code](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/authorizedotnet.rs#L401-L497)  
   Builds `CreateTransactionRequest` directly from payment data in `get_request_body()`.  
 
-- **Helcim** – [code](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/helcim.rs#L295-L385)  
+- **Helcim** – [code](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/helcim.rs#L295-L385)  
   Chooses purchase (auto‑capture) or preauth endpoint in `get_url()` and processes payment data directly.  
 
-- **Deutsche Bank** – [code](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/deutschebank.rs#L330-L461)  
+- **Deutsche Bank** – [code](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/deutschebank.rs#L330-L461)  
   Selects flow based on 3DS and payment type (card or direct debit).  
 
 **Key differences from tokenization‑first:**
@@ -291,7 +291,7 @@ For other connectors, check their developer documentation for similar endpoints 
 
 After running the complete command, you'll have:
 
-`crates/hyperswitch_connectors/src/connectors/{CONNECTORNAME}/temp.rs `
+`crates/orbix_connectors/src/connectors/{CONNECTORNAME}/temp.rs `
 
 This single file contains all the Rust structs and types generated from your payment processor's OpenAPI specification.
 
@@ -303,7 +303,7 @@ The generated `temp.rs` file typically contains:
 - **Nested objects**: Complex data structures used within requests/responses
 - **Serde annotations**: Serialization/deserialization attributes.
 
-Otherwise, you can manually define it and create the `crates/hyperswitch_connectors/src/connectors/{CONNECTOR_NAME}/temp.rs ` file. We highly recommend using the `openapi-generator` for ease. 
+Otherwise, you can manually define it and create the `crates/orbix_connectors/src/connectors/{CONNECTOR_NAME}/temp.rs ` file. We highly recommend using the `openapi-generator` for ease. 
 
 #### Usage in Connector Development
 
@@ -328,7 +328,7 @@ export SCHEMA_PATH="/absolute/path/to/your/connector-openapi.json"
 
 We'll walk through the `transformer.rs` file, and what needs to be implemented.
 
-### 1. **Converts Hyperswitch's internal payment data into your connector's API request format**
+### 1. **Converts Orbix Gateway's internal payment data into your connector's API request format**
  This part of the code takes your internal representation of a payment request, pulls out the token, gathers all the customer and payment fields, and packages them into a clean, JSON-serializable struct ready to send to your connector of choice (in this case Billwerk). You'll have to implement the customer and payment fields, as necessary. 
 
  The code below extracts customer data and constructs a payment request:
@@ -410,7 +410,7 @@ impl TryFrom<&NadinebillwerkRouterData<&PaymentsAuthorizeRouterData>>
 
 2. **Handle Response Mapping**
 
-Response mapping is a critical component of connector implementation that translates payment processor–specific statuses into Hyperswitch’s standardized internal representation. This ensures consistent payment state management across all integrated payment processors.
+Response mapping is a critical component of connector implementation that translates payment processor–specific statuses into Orbix Gateway’s standardized internal representation. This ensures consistent payment state management across all integrated payment processors.
 
 **Define Payment Status Enum**
 
@@ -432,7 +432,7 @@ The enum uses `#[serde(rename_all = "lowercase")]` to automatically handle JSON 
 
 **Implement Status Conversion**
 
-Implement From <ConnectorStatus> for Hyperswitch’s `AttemptStatus` enum. Below is an example implementation:
+Implement From <ConnectorStatus> for Orbix Gateway’s `AttemptStatus` enum. Below is an example implementation:
 
 ```rs
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -460,7 +460,7 @@ impl From<BillwerkPaymentState> for enums::AttemptStatus {
 
 ```
 
-| Connector Status       | Hyperswitch Status            | Description                          |
+| Connector Status       | Orbix Gateway Status            | Description                          |
 |------------------------|-------------------------------|--------------------------------------|
 | `Created`, `Pending`   | `AttemptStatus::Pending`      | Payment is being processed           |
 | `Authorized`           | `AttemptStatus::Authorized`   | Payment authorized, awaiting capture |
@@ -470,11 +470,11 @@ impl From<BillwerkPaymentState> for enums::AttemptStatus {
 
 > **Note:** Default status should be `Pending`. Only explicit success or failure from the connector should mark the payment as `Charged` or `Failure`.
 
-3. **Mapping Billwerk API Responses (or any PSPs) to Hyperswitch Internal Specification**
+3. **Mapping Billwerk API Responses (or any PSPs) to Orbix Gateway Internal Specification**
 
-Billwerk, like most payment service providers (PSPs), has its own proprietary API response format with custom fields, naming conventions, and nested structures. However, Hyperswitch is designed to be connector-agnostic: it expects all connectors to normalize external data into a consistent internal format, so it can process payments uniformly across all supported PSPs.
+Billwerk, like most payment service providers (PSPs), has its own proprietary API response format with custom fields, naming conventions, and nested structures. However, Orbix Gateway is designed to be connector-agnostic: it expects all connectors to normalize external data into a consistent internal format, so it can process payments uniformly across all supported PSPs.
 
-The response struct acts as the translator between these two systems. This process ensures that regardless of which connector you're using, Hyperswitch can process payment responses consistently.
+The response struct acts as the translator between these two systems. This process ensures that regardless of which connector you're using, Orbix Gateway can process payment responses consistently.
 
 ```rs
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -492,7 +492,7 @@ pub struct BillwerkPaymentsResponse {
 - **error & error_state**: Optional error information for failure scenarios
 
 
-The `try_from` function converts connector-specific, like Billwerk, response data into Hyperswitch's standardized format: 
+The `try_from` function converts connector-specific, like Billwerk, response data into Orbix Gateway's standardized format: 
 
 ```rs
 impl<F, T> TryFrom<ResponseRouterData<F, BillwerkPaymentsResponse, T, PaymentsResponseData>>
@@ -544,12 +544,12 @@ impl<F, T> TryFrom<ResponseRouterData<F, BillwerkPaymentsResponse, T, PaymentsRe
 
 - **Error Handling**: Checks for error conditions first and creates appropriate error responses
 - **Status Mapping**: Converts BillwerkPaymentState to standardized AttemptStatus using our enum mapping
-- **Data Extraction**: Maps PSP-specific fields to Hyperswitch's PaymentsResponseData structure
+- **Data Extraction**: Maps PSP-specific fields to Orbix Gateway's PaymentsResponseData structure
 - **Metadata Preservation**: Ensures important transaction details are retained
 
 #### Critical Response Fields
 
-The transformation populates these essential Hyperswitch fields:
+The transformation populates these essential Orbix Gateway fields:
 
 - **resource_id**: Maps to connector transaction ID for future operations
 - **connector_response_reference_id**: Preserves PSP's reference for dashboard linking
@@ -560,7 +560,7 @@ The transformation populates these essential Hyperswitch fields:
 
 ### Field Mapping Patterns:
 
-Each critical response field requires specific implementation patterns to ensure consistent behavior across all Hyperswitch connectors. 
+Each critical response field requires specific implementation patterns to ensure consistent behavior across all Orbix Gateway connectors. 
 
 - **connector_request_reference_id**: This field carries the merchant’s reference ID and is populated during request construction. It is sent to the PSP to support end-to-end transaction traceability.
 
@@ -595,9 +595,9 @@ let redirection_data = item.response.links.redirect.map(|href| {
 network_txn_id: item.response.network_transaction_id.clone(),
 ```
 
-4. **Error Handling in Hyperswitch Connectors**
+4. **Error Handling in Orbix Gateway Connectors**
 
-Hyperswitch connectors implement a structured error-handling mechanism that categorizes HTTP error responses by type. By distinguishing between client-side errors (4xx) and server-side errors (5xx), the system enables more precise handling strategies tailored to the source of the failure.
+Orbix Gateway connectors implement a structured error-handling mechanism that categorizes HTTP error responses by type. By distinguishing between client-side errors (4xx) and server-side errors (5xx), the system enables more precise handling strategies tailored to the source of the failure.
 
 **Error Response Structure**
 
@@ -620,17 +620,17 @@ message: Optional additional error message
 
 **Error Handling Methods**
 
-Hyperswitch uses separate methods for different HTTP error types:
+Orbix Gateway uses separate methods for different HTTP error types:
 
-- **4xx Client Errors**: [`get_error_response`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L692) handles authentication failures, validation errors, and malformed requests.
+- **4xx Client Errors**: [`get_error_response`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L692) handles authentication failures, validation errors, and malformed requests.
 - **5xx Server Errors**: 
-[`get_5xx_error_response`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L700) handles internal server errors with potential retry logic.
+[`get_5xx_error_response`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L700) handles internal server errors with potential retry logic.
 
-Both methods delegate to [`build_error_response`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L136) for consistent processing.
+Both methods delegate to [`build_error_response`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L136) for consistent processing.
 
 **Error Processing Flow**
 
-The [`build_error_response`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L136) struct serves as the intermediate data structure that bridges Billwerk's API error format and Hyperswitch's standardized error format by taking the `BillwerkErrorResponse` struct as input:
+The [`build_error_response`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L136) struct serves as the intermediate data structure that bridges Billwerk's API error format and Orbix Gateway's standardized error format by taking the `BillwerkErrorResponse` struct as input:
 
 ```rs
 fn build_error_response(
@@ -668,27 +668,27 @@ The method performs these key operations:
 
 - Logs the response - Records the connector response for debugging via `event_builder` and `router_env::logger::info!`
 
-- Transforms error format - Maps Billwerk's error fields to Hyperswitch's standardized `ErrorResponse` structure with appropriate fallbacks:
+- Transforms error format - Maps Billwerk's error fields to Orbix Gateway's standardized `ErrorResponse` structure with appropriate fallbacks:
 - - Uses `response.code` maps to `code` (with `NO_ERROR_CODE fallback`)
 - - Uses `response.message` maps to `message` (with `NO_ERROR_MESSAGE fallback`)
 - -  Maps `response.error` to the `reason` field
 
 > [!NOTE]
-> When the connector provides only a single error message field, populate both the `message` and `reason` fields in the `ErrorResponse` with the same value. The `message` field is used for smart retries logic, while the `reason` field is displayed on the Hyperswitch dashboard.
+> When the connector provides only a single error message field, populate both the `message` and `reason` fields in the `ErrorResponse` with the same value. The `message` field is used for smart retries logic, while the `reason` field is displayed on the Orbix Gateway dashboard.
 
 
 ### Automatic Error Routing
 
-Hyperswitch's core API automatically routes errors based on HTTP status codes. You can find the details here: [`crates/router/src/services/api.rs`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/services/api.rs#L1).
+Orbix Gateway's core API automatically routes errors based on HTTP status codes. You can find the details here: [`crates/router/src/services/api.rs`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/services/api.rs#L1).
 
-- 4xx → [`get_error_response`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L256)
-- 5xx → [`get_5xx_error_response`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L264)
-- 2xx → [`handle_response`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L332)
+- 4xx → [`get_error_response`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L256)
+- 5xx → [`get_5xx_error_response`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L264)
+- 2xx → [`handle_response`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L332)
 
 
 ### Integration Pattern
 
-The `BillwerkErrorResponse` struct serves as the intermediate data structure that bridges Billwerk's API error format and Hyperswitch's internal error representation. The method essentially consumes the struct and produces Hyperswitch's standardized error format. All connectors implement a similar pattern to ensure uniform error handling. 
+The `BillwerkErrorResponse` struct serves as the intermediate data structure that bridges Billwerk's API error format and Orbix Gateway's internal error representation. The method essentially consumes the struct and produces Orbix Gateway's standardized error format. All connectors implement a similar pattern to ensure uniform error handling. 
 
 ## Implementing the Connector Interface
 The connector interface implementation follows an architectural pattern that separates concerns between data transformation and interface compliance.
@@ -696,10 +696,10 @@ The connector interface implementation follows an architectural pattern that sep
 
 - `transformers.rs` - This file is generated from `add_connector.sh` and defines the data structures and conversion logic for PSP-specific formats. This is where most of your custom connector implementation work happens.
 
-- `mod.rs` - This file implements the standardized Hyperswitch connector interface using the transformers.
+- `mod.rs` - This file implements the standardized Orbix Gateway connector interface using the transformers.
 
 ### The `mod.rs` Implementation Pattern
-The file creates the bridge between the data transformation logic (defined in `transformers.rs`) and the connector interface requirements. It serves as the main connector implementation file that brings together all the components defined in the transformers module and implements all the required traits for payment processing. Looking at the connector template structure [`connector-template/mod.rs:54-67`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/connector-template/mod.rs#L54-L67), you can see how it:
+The file creates the bridge between the data transformation logic (defined in `transformers.rs`) and the connector interface requirements. It serves as the main connector implementation file that brings together all the components defined in the transformers module and implements all the required traits for payment processing. Looking at the connector template structure [`connector-template/mod.rs:54-67`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/connector-template/mod.rs#L54-L67), you can see how it:
 
 - **Imports the transformers module** - Brings in your PSP-specific types and conversion logic
 ```rs
@@ -722,7 +722,7 @@ impl {{project-name | downcase | pascal_case}} {
 }
 ```
 
-- **Implements required traits** - Provides the standardized methods Hyperswitch expects
+- **Implements required traits** - Provides the standardized methods Orbix Gateway expects
 ```rs
 impl ConnectorCommon for {{project-name | downcase | pascal_case}} {
     fn id(&self) -> &'static str {
@@ -745,7 +745,7 @@ impl ConnectorCommon for {{project-name | downcase | pascal_case}} {
         connectors.{{project-name}}.base_url.as_ref()
     }
 
-    fn get_auth_header(&self, auth_type:&ConnectorAuthType)-> CustomResult<Vec<(String,hyperswitch_masking::Maskable<String>)>,errors::ConnectorError> {
+    fn get_auth_header(&self, auth_type:&ConnectorAuthType)-> CustomResult<Vec<(String,orbix_masking::Maskable<String>)>,errors::ConnectorError> {
         let auth =  {{project-name | downcase}}::{{project-name | downcase | pascal_case}}AuthType::try_from(auth_type)
             .change_context(errors::ConnectorError::FailedToObtainAuthType)?;
         Ok(vec![(headers::AUTHORIZATION.to_string(), auth.api_key.expose().into_masked())])
@@ -780,7 +780,7 @@ impl ConnectorCommon for {{project-name | downcase | pascal_case}} {
 ```
 
 ## ConnectorCommon: The Foundation Trait
-The `ConnectorCommon` trait defines the standardized interface required by Hyperswitch (as outlined in [`crates/hyperswitch_interfaces/src/api.rs`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_interfaces/src/api.rs#L326-L374) and acts as the bridge to your PSP-specific logic in `transformers.rs`. The `connector-template/mod.rs` file implements this trait using the data types and transformation functions from `transformers.rs`. This allows Hyperswitch to interact with your connector in a consistent, processor-agnostic manner. Every connector must implement the `ConnectorCommon` trait, which provides essential connector properties:
+The `ConnectorCommon` trait defines the standardized interface required by Orbix Gateway (as outlined in [`crates/orbix_interfaces/src/api.rs`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_interfaces/src/api.rs#L326-L374) and acts as the bridge to your PSP-specific logic in `transformers.rs`. The `connector-template/mod.rs` file implements this trait using the data types and transformation functions from `transformers.rs`. This allows Orbix Gateway to interact with your connector in a consistent, processor-agnostic manner. Every connector must implement the `ConnectorCommon` trait, which provides essential connector properties:
 
 ### Core Methods You'll Implement
 
@@ -810,7 +810,7 @@ fn id(&self) -> &'static str {
    fn get_auth_header(
         &self,
         auth_type: &ConnectorAuthType,
-    ) -> CustomResult<Vec<(String, hyperswitch_masking::Maskable<String>)>, errors::ConnectorError> {
+    ) -> CustomResult<Vec<(String, orbix_masking::Maskable<String>)>, errors::ConnectorError> {
         let auth = BillwerkAuthType::try_from(auth_type)
             .change_context(errors::ConnectorError::FailedToObtainAuthType)?;
         let encoded_api_key = BASE64_ENGINE.encode(format!("{}:", auth.api_key.peek()));
@@ -821,7 +821,7 @@ fn id(&self) -> &'static str {
     }
 ```
 
-- `build_error_response()` - How to transform your PSP's errors into Hyperswitch's format
+- `build_error_response()` - How to transform your PSP's errors into Orbix Gateway's format
 ```rs
 fn build_error_response(
         &self,
@@ -850,99 +850,99 @@ fn build_error_response(
 ```
 
 ## `ConnectorIntegration` - The Payment Flow Orchestrator
-The `ConnectorIntegration` trait serves as the central coordinator that bridges three key files in Hyperswitch's connector architecture:
+The `ConnectorIntegration` trait serves as the central coordinator that bridges three key files in Orbix Gateway's connector architecture:
 
 - **Defined in `api.rs`**  
-  [`crates/hyperswitch_interfaces/src/api.rs:150–153`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_interfaces/src/api.rs#L156-%23L159)  
+  [`crates/orbix_interfaces/src/api.rs:150–153`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_interfaces/src/api.rs#L156-%23L159)  
   Provides the standardized interface contracts for connector integration.
 
 - **Implemented in `mod.rs`**  
-  Each connector’s main file (`mod.rs`) implements the trait methods for specific payment flows like authorize, capture, refund, etc. You can see how the Tsys connector implements [ConnectorIntegration](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/tsys.rs#L219)
+  Each connector’s main file (`mod.rs`) implements the trait methods for specific payment flows like authorize, capture, refund, etc. You can see how the Tsys connector implements [ConnectorIntegration](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/tsys.rs#L219)
 
 - **Uses types from `transformers.rs`**  
-  Contains PSP-specific request/response structs and `TryFrom` implementations that convert between Hyperswitch's internal `RouterData` format and the PSP's API format. This is where most connector-specific logic lives.
+  Contains PSP-specific request/response structs and `TryFrom` implementations that convert between Orbix Gateway's internal `RouterData` format and the PSP's API format. This is where most connector-specific logic lives.
 
-This orchestration enables seamless translation between Hyperswitch’s internal data structures and each payment service provider’s unique API requirements.
+This orchestration enables seamless translation between Orbix Gateway’s internal data structures and each payment service provider’s unique API requirements.
 
 ## Method-by-Method Breakdown
 
 ### Request/Response Flow  
 These methods work together in sequence:  
 1. `get_url()` and `get_headers()` prepare the endpoint and authentication  
-2. `get_request_body()` transforms Hyperswitch data using transformers.rs  
+2. `get_request_body()` transforms Orbix Gateway data using transformers.rs  
 3. `build_request()` assembles the complete HTTP request  
-4. `handle_response()` processes the PSP response back to Hyperswitch format  
+4. `handle_response()` processes the PSP response back to Orbix Gateway format  
 5. `get_error_response()` handles any error conditions
 
 Here are more examples around these methods in the Billwerk connector:
 - **`get_url()`**  
-  Constructs API endpoints by combining base URLs (from `ConnectorCommon`) with specific paths. In the Billwerk connector, it reads the connector’s base URL from config and appends the tokenization path. [Here's 1 example](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L193-L204).
+  Constructs API endpoints by combining base URLs (from `ConnectorCommon`) with specific paths. In the Billwerk connector, it reads the connector’s base URL from config and appends the tokenization path. [Here's 1 example](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L193-L204).
 
 - **`get_headers()`**  
-  Here's an example of [get_headers](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L618). It delegates to [`build_headers()`](https://github.com/juspay/hyperswitch/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/hyperswitch_interfaces/src/api.rs#L422-L430) across all connector implementations. 
+  Here's an example of [get_headers](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L618). It delegates to [`build_headers()`](https://github.com/orbix/orbix/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/orbix_interfaces/src/api.rs#L422-L430) across all connector implementations. 
 
 - **`get_request_body()`**  
-  Uses the `TryFrom` implementations in [billwerk.rs](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L206-L213). It creates the connector request via  `BillwerkTokenRequest::try_from(req)?` to transform the tokenization router data and it 
+  Uses the `TryFrom` implementations in [billwerk.rs](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L206-L213). It creates the connector request via  `BillwerkTokenRequest::try_from(req)?` to transform the tokenization router data and it 
 returns as `RequestContent:` by wrapping it in a JSON via `RequestContent::Json(Box::new(connector_req))`  
 
 - **`build_request()`**  
-  Orchestrates `get_url()`, `get_headers()`, and `get_request_body()` to assemble the complete HTTP request via a `RequestBuilder`. For example, you can review the Billwerk connector's [`build_request()`](https://github.com/juspay/hyperswitch/blob/b133c534fb1ce40bd6cca27fac4f2d58b0863e30/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L215-L231) implementation. 
+  Orchestrates `get_url()`, `get_headers()`, and `get_request_body()` to assemble the complete HTTP request via a `RequestBuilder`. For example, you can review the Billwerk connector's [`build_request()`](https://github.com/orbix/orbix/blob/b133c534fb1ce40bd6cca27fac4f2d58b0863e30/crates/orbix_connectors/src/connectors/billwerk.rs#L215-L231) implementation. 
 
 - **`handle_response()`**  
-  You can see an example of this here: [`billwerk.rs`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L332). In this example, it parses the raw response into `BillwerkTokenResponse` using `res.response.parse_struct()`, logs the response with an `event_builder.map(|i| i.set_response_body(&response))`, finally it 
+  You can see an example of this here: [`billwerk.rs`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L332). In this example, it parses the raw response into `BillwerkTokenResponse` using `res.response.parse_struct()`, logs the response with an `event_builder.map(|i| i.set_response_body(&response))`, finally it 
 transforms back to `RouterData` using `RouterData::try_from(ResponseRouterData {...}) `.
 
 - **`get_error_response()`**
-  Here's an example of [get_error_response](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L256) in `billewerk.rs`. It delegates to [`build_error_response()`](https://github.com/juspay/hyperswitch/blob/b133c534fb1ce40bd6cca27fac4f2d58b0863e30/crates/hyperswitch_connectors/src/connectors/billwerk.rs#L136-L162) from the `ConnectorCommon` trait, providing uniform handling for all connector 4xx errors.  
+  Here's an example of [get_error_response](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/billwerk.rs#L256) in `billewerk.rs`. It delegates to [`build_error_response()`](https://github.com/orbix/orbix/blob/b133c534fb1ce40bd6cca27fac4f2d58b0863e30/crates/orbix_connectors/src/connectors/billwerk.rs#L136-L162) from the `ConnectorCommon` trait, providing uniform handling for all connector 4xx errors.  
 
 
 ### `ConnectorCommonExt` - Generic Helper Methods
-The [`ConnectorCommonExt`](https://github.com/juspay/hyperswitch/blob/06dc66c6/crates/hyperswitch_interfaces/src/api.rs#L418-L441) trait serves as an extension layer for the core `ConnectorCommon` trait, providing generic methods that work across different payment flows. It'requires both ConnectorCommon and ConnectorIntegration to be implemented.
+The [`ConnectorCommonExt`](https://github.com/orbix/orbix/blob/06dc66c6/crates/orbix_interfaces/src/api.rs#L418-L441) trait serves as an extension layer for the core `ConnectorCommon` trait, providing generic methods that work across different payment flows. It'requires both ConnectorCommon and ConnectorIntegration to be implemented.
 
 ## Connector Traits Overview
 
 ### `Payment`  
 Includes several sub-traits and represents general payment functionality.  
-- **Defined in:** [`crates/hyperswitch_interfaces/src/types.rs:11-16`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_interfaces/src/types.rs#L11-L16)  
-- **Example implementation:** [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:70`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L70)  
+- **Defined in:** [`crates/orbix_interfaces/src/types.rs:11-16`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_interfaces/src/types.rs#L11-L16)  
+- **Example implementation:** [`crates/orbix_connectors/src/connectors/novalnet.rs:70`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L70)  
 
 ### `PaymentAuthorize`  
 Extends the `api::ConnectorIntegration` trait with types for payment authorization.  
-- **Flow type defined in:** [`crates/router/src/types.rs:39`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39)  
-- **Example implementation:** [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:74`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L74)  
+- **Flow type defined in:** [`crates/router/src/types.rs:39`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39)  
+- **Example implementation:** [`crates/orbix_connectors/src/connectors/novalnet.rs:74`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L74)  
 
 ### `PaymentCapture`  
 Extends the `api::ConnectorIntegration` trait with types for manual capture of a previously authorized payment.  
-- **Flow type defined in:** [`crates/router/src/types.rs:39`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39)  
-- **Example implementation:** [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:76`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L76)  
+- **Flow type defined in:** [`crates/router/src/types.rs:39`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L39)  
+- **Example implementation:** [`crates/orbix_connectors/src/connectors/novalnet.rs:76`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L76)  
 
 ### `PaymentSync`  
 Extends the `api::ConnectorIntegration` trait with types for retrieving or synchronizing payment status.  
-- **Flow type defined in:** [`crates/router/src/types.rs:41`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L41)  
-- **Example implementation:** [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:75`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L75)  
+- **Flow type defined in:** [`crates/router/src/types.rs:41`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L41)  
+- **Example implementation:** [`crates/orbix_connectors/src/connectors/novalnet.rs:75`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L75)  
 
 ### `Refund`  
 Includes several sub-traits and represents general refund functionality.  
-- **Defined in:** [`crates/hyperswitch_interfaces/src/types.rs:17`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_interfaces/src/types.rs#L17)  
-- **Example implementation:** [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:78`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L78)  
+- **Defined in:** [`crates/orbix_interfaces/src/types.rs:17`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_interfaces/src/types.rs#L17)  
+- **Example implementation:** [`crates/orbix_connectors/src/connectors/novalnet.rs:78`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L78)  
 
 ### `RefundExecute`  
 Extends the `api::ConnectorIntegration` trait with types for creating a refund.  
-- **Flow type defined in:** [`crates/router/src/types.rs:44`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L44)  
-- **Example implementation:** [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:79`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L79)  
+- **Flow type defined in:** [`crates/router/src/types.rs:44`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L44)  
+- **Example implementation:** [`crates/orbix_connectors/src/connectors/novalnet.rs:79`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L79)  
 
 ### `RefundSync`  
 Extends the `api::ConnectorIntegration` trait with types for retrieving or synchronizing a refund.  
-- **Flow type defined in:** [`crates/router/src/types.rs:44`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L44)  
-- **Example implementation:** [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:80`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L80) 
+- **Flow type defined in:** [`crates/router/src/types.rs:44`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/types.rs#L44)  
+- **Example implementation:** [`crates/orbix_connectors/src/connectors/novalnet.rs:80`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L80) 
 
 ## Connector Required Fields Configuration
 
-The file [`crates/payment_methods/src/configs/payment_connector_required_fields.rs`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1) is the central configuration file that defines required fields for each connector and payment-method combination.
+The file [`crates/payment_methods/src/configs/payment_connector_required_fields.rs`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1) is the central configuration file that defines required fields for each connector and payment-method combination.
 
 ### Example: Billwerk Required Fields
 
-Based on the required-fields configuration, Billwerk requires only basic card details for card payments. Please see [`payment_connector_required_fields.rs:1271`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1271).
+Based on the required-fields configuration, Billwerk requires only basic card details for card payments. Please see [`payment_connector_required_fields.rs:1271`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1271).
 
 Specifically, Billwerk requires:
 - Card number  
@@ -950,14 +950,14 @@ Specifically, Billwerk requires:
 - Card expiry year  
 - Card CVC  
 
-This is defined using the `card_basic()` helper (see [`payment_connector_required_fields.rs:876–884`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L876-L884)), which specifies these four essential card fields as `RequiredField` enum variants.
+This is defined using the `card_basic()` helper (see [`payment_connector_required_fields.rs:876–884`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L876-L884)), which specifies these four essential card fields as `RequiredField` enum variants.
 
 ### Comparison with Other Connectors
 
 Billwerk has relatively minimal requirements compared to other connectors. For example:
 
-- **Bank of America** requires card details plus email, full name, and complete billing address (see [`payment_connector_required_fields.rs:1256–1262`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1256-L1262)).  
-- **Cybersource** requires card details, billing email, full name, and billing address (see [`payment_connector_required_fields.rs:1288–1294`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1288-L1294)).
+- **Bank of America** requires card details plus email, full name, and complete billing address (see [`payment_connector_required_fields.rs:1256–1262`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1256-L1262)).  
+- **Cybersource** requires card details, billing email, full name, and billing address (see [`payment_connector_required_fields.rs:1288–1294`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/payment_methods/src/configs/payment_connector_required_fields.rs#L1288-L1294)).
 
 Please review the file for your specific connector requirements.
 
@@ -965,17 +965,17 @@ Please review the file for your specific connector requirements.
 
 The derive traits are standard Rust traits that are automatically implemented:
 
-- **Debug**: Standard Rust trait for debug formatting. It's automatically derived on connector structs like [`crates/hyperswitch_connectors/src/connectors/coinbase.rs:52`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/coinbase.rs#L52)
-- **Clone**: Standard Rust trait for cloning. It's implemented on connector structs like [`crates/hyperswitch_connectors/src/connectors/novalnet.rs:57`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/connectors/novalnet.rs#L58)
+- **Debug**: Standard Rust trait for debug formatting. It's automatically derived on connector structs like [`crates/orbix_connectors/src/connectors/coinbase.rs:52`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/coinbase.rs#L52)
+- **Clone**: Standard Rust trait for cloning. It's implemented on connector structs like [`crates/orbix_connectors/src/connectors/novalnet.rs:57`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/connectors/novalnet.rs#L58)
 - **Copy**: Standard Rust trait for copy semantics. It's used where applicable for simple data structures
 
 These traits work together to provide a complete payment processing interface, with each trait extending `ConnectorIntegration` with specific type parameters for different operations.
 
 ## Connector utility functions
-Hyperswitch provides a set of standardized utility functions to streamline data extraction, validation, and formatting across all payment connectors. These are primarily defined in:
+Orbix Gateway provides a set of standardized utility functions to streamline data extraction, validation, and formatting across all payment connectors. These are primarily defined in:
 
-- [`crates/hyperswitch_connectors/src/utils.rs`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/hyperswitch_connectors/src/utils.rs#L1)
-- [`crates/router/src/connector/utils.rs`](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/connector/utils.rs#L1)
+- [`crates/orbix_connectors/src/utils.rs`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/orbix_connectors/src/utils.rs#L1)
+- [`crates/router/src/connector/utils.rs`](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/router/src/connector/utils.rs#L1)
 
 ###  Key Utilities and Traits
 
@@ -1020,7 +1020,7 @@ let json_wallet_data: CheckoutGooglePayData = wallet_data.get_wallet_token_as_js
 - `missing_field_err()` – Commonly used across connectors for standardized error reporting
 
 ## Connector Configuration for Control Center Integration
-This guide helps developers integrate custom connectors with the Hyperswitch Control Center by configuring connector settings and building the required WebAssembly components.
+This guide helps developers integrate custom connectors with the Orbix Gateway Control Center by configuring connector settings and building the required WebAssembly components.
 
 ## Prerequisites
 
@@ -1030,13 +1030,13 @@ Install the WebAssembly build tool:
 cargo install wasm-pack
 ```
 ### Step 1: Configure Your Connector
-Add your connector configuration to the [development environment file](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/connector_configs/toml/development.toml)
+Add your connector configuration to the [development environment file](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/connector_configs/toml/development.toml)
 
 The connector configuration system does support multiple environments as you mentioned. The system automatically selects the appropriate configuration file based on feature flags:
 
-- Production: [crates/connector_configs/toml/production.toml](https://github.com/juspay/hyperswitch/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/connector_configs/toml/production.toml)
-- Sandbox: [crates/connector_configs/toml/sandbox.toml](https://github.com/juspay/hyperswitch/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/connector_configs/toml/sandbox.toml)
-- Development: [crates/connector_configs/toml/development.toml (default)](https://github.com/juspay/hyperswitch/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/connector_configs/toml/development.toml)
+- Production: [crates/connector_configs/toml/production.toml](https://github.com/orbix/orbix/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/connector_configs/toml/production.toml)
+- Sandbox: [crates/connector_configs/toml/sandbox.toml](https://github.com/orbix/orbix/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/connector_configs/toml/sandbox.toml)
+- Development: [crates/connector_configs/toml/development.toml (default)](https://github.com/orbix/orbix/blob/06dc66c62e33c1c56c42aab18a7959e1648d6fae/crates/connector_configs/toml/development.toml)
 
 ```rs
 # Example: Adding a new connector configuration
@@ -1054,19 +1054,19 @@ The Control Center requires WebAssembly files for connector integration. Build t
 ```bash
 wasm-pack build \
   --target web \
-  --out-dir /path/to/hyperswitch-control-center/public/hyperswitch/wasm \
+  --out-dir /path/to/orbix-control-center/public/orbix/wasm \
   --out-name euclid \
-  /path/to/hyperswitch/crates/euclid_wasm \
+  /path/to/orbix/crates/euclid_wasm \
   -- --features dummy_connector
 ```
-- Replace `/path/to/hyperswitch-control-center` with your Control Center installation directory
+- Replace `/path/to/orbix-control-center` with your Control Center installation directory
 
-- Replace `/path/to/hyperswitch` with your Hyperswitch repository root
+- Replace `/path/to/orbix` with your Orbix Gateway repository root
 
-The build process uses the [`euclid_wasm` crate](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/euclid_wasm/Cargo.toml#L1-L44), which provides WebAssembly bindings for connector configuration and routing logic.
+The build process uses the [`euclid_wasm` crate](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/euclid_wasm/Cargo.toml#L1-L44), which provides WebAssembly bindings for connector configuration and routing logic.
 
 ### Step 3: Verify Integration
-The WebAssembly build includes [connector configuration functions](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/euclid_wasm/src/lib.rs#L376-L382) that the Control Center uses to retrieve connector settings dynamically.
+The WebAssembly build includes [connector configuration functions](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/crates/euclid_wasm/src/lib.rs#L376-L382) that the Control Center uses to retrieve connector settings dynamically.
 
 You can also use the Makefile target for convenience:
 
@@ -1074,12 +1074,12 @@ You can also use the Makefile target for convenience:
 make euclid-wasm
 ```
 
-This target is defined in the [Makefile:86-87](https://github.com/juspay/hyperswitch/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/Makefile#L86-L87) and handles the build process with appropriate feature flags.
+This target is defined in the [Makefile:86-87](https://github.com/orbix/orbix/blob/2309c5311cb9a01ef371f3a3ef7c62c88a043696/Makefile#L86-L87) and handles the build process with appropriate feature flags.
 
 ### Configuration Features
 The connector configuration system supports:
 
-- **Environment-specific configs**: [Development, sandbox, and production configurations](https://github.com/juspay/hyperswitch/blob/06dc66c6/crates/connector_configs/src/connector.rs#L323-L337)
+- **Environment-specific configs**: [Development, sandbox, and production configurations](https://github.com/orbix/orbix/blob/06dc66c6/crates/connector_configs/src/connector.rs#L323-L337)
 
 - **Authentication methods**: HeaderKey, BodyKey, SignatureKey, etc.
 
@@ -1096,12 +1096,12 @@ If the build fails, ensure:
 - The configuration system automatically loads the appropriate environment settings based on compile-time features, ensuring your connector works correctly across different deployment environments.
 
 ## Control Center Frontend Integration
-This section covers integrating your new connector with the Hyperswitch Control Center's frontend interface, enabling merchants to configure and manage your connector through the dashboard.
+This section covers integrating your new connector with the Orbix Gateway Control Center's frontend interface, enabling merchants to configure and manage your connector through the dashboard.
 
 ### Update Frontend Connector Configuration
 1. Add Connector to Type Definitions
 
-Update the connector enum in the [Control Center's type definitions](https://github.com/juspay/hyperswitch-control-center/blob/e984254b68511728b6b37890fd0c7c7e90c22f57/src/screens/Connectors/ConnectorTypes.res#L29)
+Update the connector enum in the [Control Center's type definitions](https://github.com/orbix/orbix-control-center/blob/e984254b68511728b6b37890fd0c7c7e90c22f57/src/screens/Connectors/ConnectorTypes.res#L29)
 
 ```rs
 type processorTypes =  
@@ -1110,7 +1110,7 @@ type processorTypes =
   | YourNewConnector  // Add your connector here at the bottom
 ```
 ### Update Connector Utilities
-Modify the [connector utilities](https://github.com/juspay/hyperswitch-control-center/blob/e984254b68511728b6b37890fd0c7c7e90c22f57/src/screens/Connectors/ConnectorUtils.res#L46) to include your new connector.
+Modify the [connector utilities](https://github.com/orbix/orbix-control-center/blob/e984254b68511728b6b37890fd0c7c7e90c22f57/src/screens/Connectors/ConnectorUtils.res#L46) to include your new connector.
 
 ```js
 // Add to connector list at the bottom 
@@ -1137,7 +1137,7 @@ let getProcessorInfo = (connector: ConnectorTypes.processorTypes) => {
   | YourNewConnector => YourNewConnectorInfo  
   }
 ```
-After [`bluecodeinfo`](https://github.com/juspay/hyperswitch-control-center/blob/e984254b68511728b6b37890fd0c7c7e90c22f57/src/screens/Connectors/ConnectorUtils.res#L693) definition, add the definition of your connector in a similar format: 
+After [`bluecodeinfo`](https://github.com/orbix/orbix-control-center/blob/e984254b68511728b6b37890fd0c7c7e90c22f57/src/screens/Connectors/ConnectorUtils.res#L693) definition, add the definition of your connector in a similar format: 
 
 ```js
 let YourNewConnectorInfo = {
@@ -1155,7 +1155,7 @@ Place your icon in the Control Center's gateway assets folder:
 
 ```text
 public/  
-└── hyperswitch/  
+└── orbix/  
     └── Gateway/  
         └── YOURCONNECTOR.SVG
 ```
@@ -1222,7 +1222,7 @@ direnv allow
 
 ### Test the Connector Integration
 
-1. **Start the Hyperswitch Router Service locally**:
+1. **Start the Orbix Gateway Router Service locally**:
 
 ```bash
 cargo r

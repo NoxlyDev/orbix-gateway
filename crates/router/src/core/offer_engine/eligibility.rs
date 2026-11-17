@@ -1,5 +1,5 @@
 use common_utils::{errors::CustomResult, id_type, types::MinorUnit};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use super::{
     amount,
@@ -12,7 +12,7 @@ use super::{
 use crate::routes::SessionState;
 
 pub struct OfferEligibilityContext {
-    /// Hyperswitch payment id, used as the Offer Engine order id.
+    /// Orbix Gateway payment id, used as the Offer Engine order id.
     pub payment_id: id_type::PaymentId,
     /// Order amount (not surcharge-inclusive), in minor units.
     pub order_amount: MinorUnit,

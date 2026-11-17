@@ -13,8 +13,8 @@ use common_utils::{
 use diesel_models::organization::{self, OrganizationBridge};
 use error_stack::ResultExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount as DomainMerchantConnectorAccount;
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_domain_models::merchant_connector_account::MerchantConnectorAccount as DomainMerchantConnectorAccount;
+use orbix_masking::{ExposeInterface, Secret};
 use redis_interface::RedisConnectionWithContext;
 use router_env::{env, instrument, logger, tracing::Instrument};
 
@@ -188,7 +188,7 @@ pub async fn construct_public_and_private_db_configs(
 
             let encrypted_config = domain::types::crypto_operation::<
                 serde_json::Value,
-                hyperswitch_masking::WithType,
+                orbix_masking::WithType,
             >(
                 &state.into(),
                 type_name!(diesel_models::user::User),
@@ -241,7 +241,7 @@ pub async fn decrypt_oidc_private_config(
     .attach_printable("Failed to decode DEK")?;
 
     let private_config =
-        domain::types::crypto_operation::<serde_json::Value, hyperswitch_masking::WithType>(
+        domain::types::crypto_operation::<serde_json::Value, orbix_masking::WithType>(
             &state.into(),
             type_name!(diesel_models::user::User),
             domain::types::CryptoOperation::DecryptOptional(encrypted_config),

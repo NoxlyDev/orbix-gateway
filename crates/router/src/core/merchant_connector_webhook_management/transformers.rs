@@ -7,12 +7,12 @@ use api_models::merchant_connector_webhook_management::{
 };
 use common_utils::ext_traits::{Encode, ValueExt};
 use error_stack::{ensure, Report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     connector_endpoints::Connectors,
     router_request_types::merchant_connector_webhook_management::ConnectorWebhookRegisterRequest,
 };
-use hyperswitch_interfaces::api::ConnectorSpecifications;
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_interfaces::api::ConnectorSpecifications;
+use orbix_masking::{ExposeInterface, Secret};
 use router_env::tracing::instrument;
 
 use crate::{

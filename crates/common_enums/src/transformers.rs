@@ -2292,19 +2292,19 @@ mod tests {
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
-    struct HyperswitchRequestAlpha2 {
+    struct OrbixRequestAlpha2 {
         #[serde(with = "custom_serde::alpha2_country_code")]
         pub country: Country,
     }
 
     #[derive(serde::Serialize, serde::Deserialize)]
-    struct HyperswitchRequestAlpha3 {
+    struct OrbixRequestAlpha3 {
         #[serde(with = "custom_serde::alpha3_country_code")]
         pub country: Country,
     }
 
     #[derive(serde::Serialize, serde::Deserialize, Debug)]
-    struct HyperswitchRequestNumeric {
+    struct OrbixRequestNumeric {
         #[serde(with = "custom_serde::numeric_country_code")]
         pub country: Country,
     }
@@ -2375,48 +2375,48 @@ mod tests {
     #[test]
     fn test_deserialize_alpha2() {
         let request_str = r#"{"country":"IN"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha2>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha2>(request_str).unwrap();
         assert_eq!(request.country, Country::India);
 
         let request_str = r#"{"country":"GR"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha2>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha2>(request_str).unwrap();
         assert_eq!(request.country, Country::Greece);
 
         let request_str = r#"{"country":"IQ"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha2>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha2>(request_str).unwrap();
         assert_eq!(request.country, Country::Iraq);
     }
 
     #[test]
     fn test_deserialize_alpha3() {
         let request_str = r#"{"country":"IND"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha3>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha3>(request_str).unwrap();
         assert_eq!(request.country, Country::India);
 
         let request_str = r#"{"country":"LVA"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha3>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha3>(request_str).unwrap();
         assert_eq!(request.country, Country::Latvia);
 
         let request_str = r#"{"country":"PNG"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha3>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha3>(request_str).unwrap();
         assert_eq!(request.country, Country::PapuaNewGuinea);
     }
 
     #[test]
     fn test_deserialize_numeric() {
         let request_str = r#"{"country":356}"#;
-        let request = serde_json::from_str::<HyperswitchRequestNumeric>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestNumeric>(request_str).unwrap();
         assert_eq!(request.country, Country::India);
 
         let request_str = r#"{"country":239}"#;
-        let request = serde_json::from_str::<HyperswitchRequestNumeric>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestNumeric>(request_str).unwrap();
         assert_eq!(
             request.country,
             Country::SouthGeorgiaAndTheSouthSandwichIslands
         );
 
         let request_str = r#"{"country":826}"#;
-        let request = serde_json::from_str::<HyperswitchRequestNumeric>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestNumeric>(request_str).unwrap();
         assert_eq!(
             request.country,
             Country::UnitedKingdomOfGreatBritainAndNorthernIreland
@@ -2428,7 +2428,7 @@ mod tests {
         // Deserialize the country as alpha2 code
         // Serialize the country as alpha3 code
         let request_str = r#"{"country":"IN"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha2>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha2>(request_str).unwrap();
         let alpha3_request = Alpha3Request {
             country: request.country,
         };
@@ -2439,22 +2439,22 @@ mod tests {
     #[test]
     fn test_serialize_and_deserialize() {
         let request_str = r#"{"country":"AX"}"#;
-        let request = serde_json::from_str::<HyperswitchRequestAlpha2>(request_str).unwrap();
+        let request = serde_json::from_str::<OrbixRequestAlpha2>(request_str).unwrap();
         let alpha3_request = Alpha3Request {
             country: request.country,
         };
         let response = serde_json::to_string::<Alpha3Request>(&alpha3_request).unwrap();
         assert_eq!(response, r#"{"country":"ALA"}"#);
 
-        let result = serde_json::from_str::<HyperswitchRequestAlpha3>(response.as_str()).unwrap();
+        let result = serde_json::from_str::<OrbixRequestAlpha3>(response.as_str()).unwrap();
         assert_eq!(result.country, Country::AlandIslands);
     }
 
     #[test]
     fn test_deserialize_invalid_country_code() {
         let request_str = r#"{"country": 123456}"#;
-        let result: Result<HyperswitchRequestNumeric, _> =
-            serde_json::from_str::<HyperswitchRequestNumeric>(request_str);
+        let result: Result<OrbixRequestNumeric, _> =
+            serde_json::from_str::<OrbixRequestNumeric>(request_str);
         assert!(result.is_err());
     }
 }

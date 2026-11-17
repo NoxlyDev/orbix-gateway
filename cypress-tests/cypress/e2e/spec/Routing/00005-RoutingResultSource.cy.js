@@ -6,7 +6,7 @@ let globalState;
 
 describe("Routing Result Source Test", () => {
   context(
-    "routing_result_source not set — defaults to Hyperswitch routing (Stripe first)",
+    "routing_result_source not set — defaults to Orbix Gateway routing (Stripe first)",
     () => {
       before("seed global state", () => {
         cy.task("getGlobalState").then((state) => {
@@ -74,7 +74,7 @@ describe("Routing Result Source Test", () => {
   );
 
   context(
-    "routing_result_source = hyperswitch_routing — explicitly uses Hyperswitch routing engine",
+    "routing_result_source = orbix_routing — explicitly uses Orbix Gateway routing engine",
     () => {
       before("seed global state", () => {
         cy.task("getGlobalState").then((state) => {
@@ -90,12 +90,12 @@ describe("Routing Result Source Test", () => {
         cy.ListMcaByMid(globalState);
       });
 
-      it("set-routing-result-source-to-hyperswitch-routing", () => {
+      it("set-routing-result-source-to-orbix-routing", () => {
         const profileId = globalState.get("profileId");
         cy.setupConfigs(
           globalState,
           `routing_result_source_${profileId}`,
-          "hyperswitch_routing"
+          "orbix_routing"
         );
       });
 
@@ -153,7 +153,7 @@ describe("Routing Result Source Test", () => {
         cy.setConfigs(
           globalState,
           `routing_result_source_${profileId}`,
-          "hyperswitch_routing",
+          "orbix_routing",
           "DELETE"
         );
       });
@@ -161,7 +161,7 @@ describe("Routing Result Source Test", () => {
   );
 
   context(
-    "routing_result_source = decision_engine — falls back to Hyperswitch routing when DE unavailable",
+    "routing_result_source = decision_engine — falls back to Orbix Gateway routing when DE unavailable",
     () => {
       before("seed global state", () => {
         cy.task("getGlobalState").then((state) => {

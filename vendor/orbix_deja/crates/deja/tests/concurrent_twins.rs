@@ -56,7 +56,7 @@ impl Future for YieldOnce {
 }
 
 /// One span name for both branches; `#[instrument]` on an async fn creates the
-/// span at first poll, as hyperswitch's address builders do.
+/// span at first poll, as orbix's address builders do.
 #[tracing::instrument(skip_all)]
 async fn create_address(label: &'static str, yields: usize) -> (&'static str, String) {
     for _ in 0..yields {

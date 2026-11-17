@@ -1,4 +1,4 @@
-use hyperswitch_domain_models::mandates;
+use orbix_domain_models::mandates;
 pub mod access_token;
 pub mod callback_urls;
 pub mod conditional_configs;
@@ -61,25 +61,25 @@ use events::EventInfo;
 use futures::future::join_all;
 use helpers::{decrypt_paze_token, ApplePayData};
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::payments::SurchargeMode;
+use orbix_domain_models::payments::SurchargeMode;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::{
+use orbix_domain_models::payments::{
     PaymentAttemptListData, PaymentCancelData, PaymentCaptureData, PaymentConfirmData,
     PaymentIntentData, PaymentStatusData,
 };
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     mandates::MandateData,
     payment_address::PaymentAddress,
     payments::{self as domain_payments, HeaderPayload},
     router_data::{PaymentMethodToken, RouterData},
     router_request_types::CustomerDetails,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments::{self, payment_intent::CustomerData, ClickToPayMetaData},
     router_data::{AccessToken, FeatureData},
 };
-use hyperswitch_interfaces::api::ConnectorSpecifications;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_interfaces::api::ConnectorSpecifications;
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 #[cfg(feature = "v2")]
 use operations::ValidateStatusForOperation;
 #[cfg(feature = "v1")]
@@ -226,7 +226,7 @@ where
         services::api::ConnectorIntegration<F, FData, router_types::PaymentsResponseData>,
 
     RouterData<F, FData, router_types::PaymentsResponseData>:
-        hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
+        orbix_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
 
     // To perform router related operation for PaymentResponse
     PaymentResponse: Operation<F, FData, Data = D>,
@@ -561,7 +561,7 @@ where
         services::api::ConnectorIntegration<F, FData, router_types::PaymentsResponseData>,
 
     RouterData<F, FData, router_types::PaymentsResponseData>:
-        hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
+        orbix_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
 
     // To perform router related operation for PaymentResponse
     PaymentResponse: Operation<F, FData, Data = D>,
@@ -605,7 +605,7 @@ where
         .and_then(|guest_value| {
             guest_value
                 .clone()
-                .parse_value::<hyperswitch_domain_models::payments::GuestCustomer>("guest_customer")
+                .parse_value::<orbix_domain_models::payments::GuestCustomer>("guest_customer")
                 .ok()
         });
 
@@ -1709,12 +1709,12 @@ where
             .as_ref()
             .zip(payment_data.get_payment_attempt().payment_method)
             .map(ParentPaymentMethodToken::create_key_for_token)
-            .async_map(|key_for_hyperswitch_token| async move {
-                if key_for_hyperswitch_token
+            .async_map(|key_for_orbix_token| async move {
+                if key_for_orbix_token
                     .should_delete_payment_method_token(payment_intent_status)
                     && !retain_payment_method_token_for_retry
                 {
-                    let _ = key_for_hyperswitch_token.delete(state).await;
+                    let _ = key_for_orbix_token.delete(state).await;
                 }
             })
             .await;
@@ -2086,7 +2086,7 @@ where
         services::api::ConnectorIntegration<F, FData, router_types::PaymentsResponseData>,
 
     RouterData<F, FData, router_types::PaymentsResponseData>:
-        hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
+        orbix_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
 
     // To perform router related operation for PaymentResponse
     PaymentResponse: Operation<F, FData, Data = D>,
@@ -2169,7 +2169,7 @@ where
         services::api::ConnectorIntegration<F, FData, router_types::PaymentsResponseData>,
 
     RouterData<F, FData, router_types::PaymentsResponseData>:
-        hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
+        orbix_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
 
     // To perform router related operation for PaymentResponse
     PaymentResponse: Operation<F, FData, Data = D>,
@@ -2646,7 +2646,7 @@ fn apply_external_surcharge_result<F, D>(
 
 #[cfg(feature = "v1")]
 fn cached_surcharge_to_attempt_details(
-    cached: hyperswitch_domain_models::router_request_types::ExternalSurchargeDetails,
+    cached: orbix_domain_models::router_request_types::ExternalSurchargeDetails,
 ) -> common_types::payments::ExternalSurchargeDetails {
     common_types::payments::ExternalSurchargeDetails {
         external_surcharge_id: cached.external_surcharge_id,
@@ -2722,7 +2722,7 @@ where
         .and_then(|pm| pm.payment_method_billing_address.clone())
         .and_then(|encryptable| {
             let value = encryptable.into_inner().expose();
-            match value.parse_value::<hyperswitch_domain_models::address::Address>(
+            match value.parse_value::<orbix_domain_models::address::Address>(
                 "payment_method_billing_address",
             ) {
                 Ok(address) => Some(address),
@@ -2830,7 +2830,7 @@ where
 async fn load_external_surcharge_from_redis(
     state: &SessionState,
     payment_attempt: &storage::PaymentAttempt,
-) -> Option<hyperswitch_domain_models::router_request_types::ExternalSurchargeDetails> {
+) -> Option<orbix_domain_models::router_request_types::ExternalSurchargeDetails> {
     let redis_key = payment_attempt
         .payment_id
         .get_external_surcharge_redis_key(&payment_attempt.merchant_id);
@@ -2842,7 +2842,7 @@ async fn load_external_surcharge_from_redis(
         }
     };
     match redis_conn
-        .get_and_deserialize_key::<hyperswitch_domain_models::router_request_types::ExternalSurchargeDetails>(
+        .get_and_deserialize_key::<orbix_domain_models::router_request_types::ExternalSurchargeDetails>(
             &redis_key.as_str().into(),
             "ExternalSurchargeDetails",
         )
@@ -2994,7 +2994,7 @@ pub async fn call_surcharge_decision_management_for_session_flow(
     _processor: &domain::Processor,
     _payment_attempt: &storage::PaymentAttempt,
     _payment_intent: &storage::PaymentIntent,
-    _billing_address: Option<hyperswitch_domain_models::address::Address>,
+    _billing_address: Option<orbix_domain_models::address::Address>,
     _session_connector_data: &[api::SessionConnectorData],
 ) -> RouterResult<Option<api::SessionSurchargeDetails>> {
     todo!()
@@ -3008,7 +3008,7 @@ pub async fn call_surcharge_decision_management_for_session_flow(
     _business_profile: &domain::Profile,
     payment_attempt: &storage::PaymentAttempt,
     payment_intent: &storage::PaymentIntent,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
     session_connector_data: &api::SessionConnectorDatas,
 ) -> RouterResult<Option<api::SessionSurchargeDetails>> {
     if payment_intent.is_settlement_conclusion_applied() {
@@ -4307,7 +4307,7 @@ where
     PaymentResponse: Operation<F, FData, Data = D>,
 
     RouterData<F, FData, router_types::PaymentsResponseData>:
-        hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
+        orbix_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
 {
     operation
         .to_validate_request()?
@@ -4400,7 +4400,7 @@ where
     PaymentResponse: Operation<F, FData, Data = D>,
 
     RouterData<F, FData, router_types::PaymentsResponseData>:
-        hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
+        orbix_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
 {
     operation
         .to_validate_request()?
@@ -4687,7 +4687,7 @@ pub async fn revenue_recovery_get_intent_core(
     global_payment_id: id_type::GlobalPaymentId,
     header_payload: HeaderPayload,
 ) -> RouterResponse<RevenueRecoveryGetIntentResponse> {
-    use hyperswitch_domain_models::payments::PaymentIntentData;
+    use orbix_domain_models::payments::PaymentIntentData;
 
     use crate::{
         core::revenue_recovery::{get_workflow_entries, map_recovery_status},
@@ -4878,7 +4878,7 @@ where
 
     // To create updatable objects in post update tracker
     RouterData<F, FData, router_types::PaymentsResponseData>:
-        hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
+        orbix_domain_models::router_data::TrackerPostUpdateObjects<F, FData, D>,
 {
     // Validate the request fields
     operation
@@ -5018,7 +5018,7 @@ pub(crate) async fn payments_create_and_confirm_intent(
     request: payments_api::PaymentsRequest,
     header_payload: HeaderPayload,
 ) -> RouterResponse<payments_api::PaymentsResponse> {
-    use hyperswitch_domain_models::{
+    use orbix_domain_models::{
         payments::PaymentIntentData, router_flow_types::PaymentCreateIntent,
     };
 
@@ -5082,7 +5082,7 @@ async fn decide_authorize_or_setup_intent_flow(
     payment_id: id_type::GlobalPaymentId,
     header_payload: HeaderPayload,
 ) -> RouterResponse<payments_api::PaymentsResponse> {
-    use hyperswitch_domain_models::{
+    use orbix_domain_models::{
         payments::PaymentConfirmData,
         router_flow_types::{Authorize, SetupMandate},
     };
@@ -7642,7 +7642,7 @@ pub async fn connector_service_decider<F, RouterDReq, ApiRequest, D>(
     business_profile: &domain::Profile,
     return_raw_connector_response: Option<bool>,
     merchant_connector_account_type_details: domain::MerchantConnectorAccountTypeDetails,
-    guest_customer: Option<hyperswitch_domain_models::payments::GuestCustomer>,
+    guest_customer: Option<orbix_domain_models::payments::GuestCustomer>,
 ) -> RouterResult<RouterData<F, RouterDReq, router_types::PaymentsResponseData>>
 where
     F: Send + Clone + Sync,
@@ -8421,7 +8421,7 @@ where
         .attach_printable("failed to decrypt paze token")?;
 
         let paze_decrypted_data = paze_data
-            .parse_value::<hyperswitch_domain_models::router_data::PazeDecryptedData>(
+            .parse_value::<orbix_domain_models::router_data::PazeDecryptedData>(
                 "PazeDecryptedData",
             )
             .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -8648,7 +8648,7 @@ async fn decrypt_apple_pay_wallet_data(
             .attach_printable("failed to decrypt apple pay token")?;
 
     let apple_pay_predecrypt_internal = apple_pay_data
-        .parse_value::<hyperswitch_domain_models::router_data::ApplePayPredecryptDataInternal>(
+        .parse_value::<orbix_domain_models::router_data::ApplePayPredecryptDataInternal>(
             "ApplePayPredecryptDataInternal",
         )
         .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -9306,7 +9306,7 @@ async fn get_card_brands_based_on_active_merchant_connector_account(
         state.conf.authentication_providers.click_to_pay.clone();
 
     let filtered_payment_connector_accounts: Vec<
-        hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
     > = merchant_configured_payment_connectors
         .into_iter()
         .filter(|account| {
@@ -9463,7 +9463,7 @@ where
                         .await?;
 
                     let customer_update: Option<
-                        hyperswitch_domain_models::customer::CustomerUpdate,
+                        orbix_domain_models::customer::CustomerUpdate,
                     > = customers::update_connector_customer_in_customers(
                         &label,
                         connector_customer_map,
@@ -9480,7 +9480,7 @@ where
                 ) => {
                     // Only update with generated customer ID if there's no existing connector customer
                     let customer_update: Option<
-                        hyperswitch_domain_models::customer::CustomerUpdate,
+                        orbix_domain_models::customer::CustomerUpdate,
                     > = customers::update_connector_customer_in_customers(
                         &label,
                         connector_customer_map,
@@ -9990,7 +9990,7 @@ async fn get_feature_data(
 
             // Helper closure to extract payment reference by MCA ID
             let get_payment_ref =
-                |pm: &hyperswitch_domain_models::payment_methods::PaymentMethod| {
+                |pm: &orbix_domain_models::payment_methods::PaymentMethod| {
                     pm.get_common_mandate_reference()
                         .ok()
                         .and_then(|mandate_ref| mandate_ref.payments)
@@ -10008,7 +10008,7 @@ async fn get_feature_data(
 
             paypal_payment_ref.map(|payment_ref| {
                 FeatureData::PaypalReturningCustomer(Box::new(
-                    hyperswitch_domain_models::router_data::PaypalReturningCustomerData {
+                    orbix_domain_models::router_data::PaypalReturningCustomerData {
                         paypal_vault_customer_id: payment_ref
                             .connector_mandate_request_reference_id
                             .clone()
@@ -10157,7 +10157,7 @@ async fn check_apple_pay_metadata(
                                 session_token_data.payment_processing_details_at
                             {
                                 match manual_payment_processing_details_at {
-                                    payments_api::PaymentProcessingDetailsAt::Hyperswitch(
+                                    payments_api::PaymentProcessingDetailsAt::Orbix(
                                         payment_processing_details,
                                     ) => Some(domain::ApplePayFlow::DecryptAtApplication(
                                         payment_processing_details,
@@ -10219,7 +10219,7 @@ fn get_google_pay_connector_wallet_details(
 
                                 match tokenization_specification.tokenization_type {
                                     // The merchant registered no key of its own: the token is
-                                    // encrypted to Hyperswitch's gateway key, and the recipient is
+                                    // encrypted to Orbix Gateway's gateway key, and the recipient is
                                     // derived from the same gateway id that was sent to Google in
                                     // the session response.
                                     api_models::payments::GooglePayTokenizationType::InternalGateway => {
@@ -10253,7 +10253,7 @@ fn get_google_pay_connector_wallet_details(
                                             }
                                         }
                                     }
-                                    // The connector decrypts the token, Hyperswitch never sees the card.
+                                    // The connector decrypts the token, Orbix Gateway never sees the card.
                                     api_models::payments::GooglePayTokenizationType::PaymentGateway => None,
                                     api_models::payments::GooglePayTokenizationType::Direct => {
                                         match (
@@ -10447,7 +10447,7 @@ pub struct GooglePayPaymentProcessingDetails {
     /// verification stays off, as it does for `DIRECT`, whose recipients are typed by the
     /// merchant and are therefore left unverified.
     pub google_pay_tokenization_type: api_models::payments::GooglePayTokenizationType,
-    /// Hyperswitch merchant id sent to Google as `gateway_merchant_id`, checked against the
+    /// Orbix Gateway merchant id sent to Google as `gateway_merchant_id`, checked against the
     /// decrypted token. Set for `INTERNAL_GATEWAY` only.
     pub google_pay_gateway_merchant_id: Option<String>,
 }
@@ -10868,7 +10868,7 @@ where
     pub pm_token: Option<String>,
     pub connector_customer_id: Option<String>,
     pub recurring_mandate_payment_data:
-        Option<hyperswitch_domain_models::router_data::RecurringMandatePaymentData>,
+        Option<orbix_domain_models::router_data::RecurringMandatePaymentData>,
     pub redirect_response: Option<api_models::payments::RedirectResponse>,
     pub surcharge_details: Option<types::SurchargeDetails>,
     pub frm_message: Option<FraudCheck>,
@@ -10882,7 +10882,7 @@ where
     pub session_id: Option<String>,
     pub service_details: Option<api_models::payments::CtpServiceDetails>,
     pub card_testing_guard_data:
-        Option<hyperswitch_domain_models::card_testing_guard_data::CardTestingGuardData>,
+        Option<orbix_domain_models::card_testing_guard_data::CardTestingGuardData>,
     pub vault_operation: Option<domain_payments::VaultOperation>,
     pub vault_session_details: Option<api::VaultDetails>,
     pub threeds_method_comp_ind: Option<api_models::payments::ThreeDsCompletionIndicator>,
@@ -10892,7 +10892,7 @@ where
     pub external_authentication_data: Option<api_models::payments::ExternalThreeDsData>,
     pub client_session_id: Option<id_type::ClientSessionId>,
     pub external_vault_pmd:
-        Option<hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData>,
+        Option<orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData>,
     /// Fields from the update request payload used to compare against
     /// the stored payment intent. Populated only for the payment-update flow.
     pub update_request_fields: Option<PaymentDataUpdateRequestFields>,
@@ -11385,7 +11385,7 @@ impl PaymentEligibilityData {
 
 #[derive(Clone, serde::Serialize, Debug)]
 pub struct TaxData {
-    pub shipping_details: hyperswitch_domain_models::address::Address,
+    pub shipping_details: orbix_domain_models::address::Address,
     pub payment_method_type: enums::PaymentMethodType,
 }
 
@@ -11819,7 +11819,7 @@ pub fn is_pre_network_tokenization_enabled(
 pub async fn get_vault_operation_for_pre_network_tokenization(
     state: &SessionState,
     customer_id: id_type::CustomerId,
-    card_data: &hyperswitch_domain_models::payment_method_data::Card,
+    card_data: &orbix_domain_models::payment_method_data::Card,
 ) -> payments::VaultOperation {
     let pre_tokenization_response = Box::pin(tokenization::pre_payment_tokenization(
         state,
@@ -13902,7 +13902,7 @@ pub async fn route_connector_v1_for_payouts(
 #[cfg(feature = "v1")]
 pub async fn tokenize_external_vault_alias_proxy(
     state: &SessionState,
-    external_vault_pmd: &hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+    external_vault_pmd: &orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
     payment_method: common_enums::PaymentMethod,
     business_profile: &domain::Profile,
     key_store: &domain::MerchantKeyStore,
@@ -13980,7 +13980,7 @@ pub(crate) async fn read_external_vault_alias_from_temp_locker(
     state: &SessionState,
     token: &str,
     key_store: &domain::MerchantKeyStore,
-) -> RouterResult<hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData> {
+) -> RouterResult<orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData> {
     let alias_json = vault::get_tokenized_data(state, token, false, key_store.key.get_inner())
         .await
         .attach_printable("Failed to read external_vault alias from temp locker")?
@@ -13996,7 +13996,7 @@ pub(crate) async fn resolve_external_vault_alias_from_payment_token(
     platform: &domain::Platform,
     payment_token: String,
     payment_method: common_enums::PaymentMethod,
-) -> RouterResult<hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData> {
+) -> RouterResult<orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData> {
     let key_store = platform.get_processor().get_key_store();
     let token_data =
         helpers::retrieve_payment_token_data(state, payment_token, Some(payment_method)).await?;
@@ -15393,7 +15393,7 @@ struct SurchargeCalculationInputs {
     external_surcharge_strategy: Option<common_enums::SurchargeStrategy>,
     active_attempt_id: String,
     card_iin: Option<String>,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
     payment_method: common_enums::PaymentMethod,
     payment_method_type: Option<common_enums::PaymentMethodType>,
 }
@@ -15404,7 +15404,7 @@ impl SurchargeCalculationInputs {
         data: &PaymentEligibilityData,
         req: &api_models::payments::PaymentsEligibilityCheckRequest,
     ) -> Self {
-        let pi_billing_address: Option<hyperswitch_domain_models::address::Address> =
+        let pi_billing_address: Option<orbix_domain_models::address::Address> =
             data.payment_intent.billing_details.as_ref().and_then(|b| {
                 match b
                     .clone()
@@ -15420,7 +15420,7 @@ impl SurchargeCalculationInputs {
                     }
                 }
             });
-        let req_billing_address: Option<hyperswitch_domain_models::address::Address> = req
+        let req_billing_address: Option<orbix_domain_models::address::Address> = req
             .payment_method_data
             .as_ref()
             .and_then(|pmd| pmd.billing.clone())
@@ -15484,7 +15484,7 @@ async fn store_external_surcharge_in_redis(
     state: &SessionState,
     payment_id: &id_type::PaymentId,
     merchant_id: &id_type::MerchantId,
-    surcharge_details: &hyperswitch_domain_models::router_request_types::ExternalSurchargeDetails,
+    surcharge_details: &orbix_domain_models::router_request_types::ExternalSurchargeDetails,
 ) -> RouterResult<()> {
     let redis_conn = state
         .store
@@ -15578,7 +15578,7 @@ async fn calculate_external_surcharge(
                         surcharge_percentage,
                     );
                     let cached_result =
-                        hyperswitch_domain_models::router_request_types::ExternalSurchargeDetails {
+                        orbix_domain_models::router_request_types::ExternalSurchargeDetails {
                             surcharge_amount: resp.surcharge_amount,
                             tax_amount: None,
                             payment_method: inputs.payment_method,
@@ -15591,10 +15591,10 @@ async fn calculate_external_surcharge(
                     Some((cached_result, response, true))
                 }
                 Some(Err(error)) => {
-                    let code = (error.code != hyperswitch_interfaces::consts::NO_ERROR_CODE)
+                    let code = (error.code != orbix_interfaces::consts::NO_ERROR_CODE)
                         .then(|| error.code.clone());
                     let cached_result =
-                        hyperswitch_domain_models::router_request_types::ExternalSurchargeDetails {
+                        orbix_domain_models::router_request_types::ExternalSurchargeDetails {
                             surcharge_amount: MinorUnit::zero(),
                             tax_amount: None,
                             payment_method: inputs.payment_method,
@@ -15669,8 +15669,8 @@ async fn run_external_surcharge_ucs(
 ) -> RouterResult<
     Option<
         Result<
-            hyperswitch_domain_models::router_response_types::SurchargeCalculationResponseData,
-            hyperswitch_domain_models::router_data::ErrorResponse,
+            orbix_domain_models::router_response_types::SurchargeCalculationResponseData,
+            orbix_domain_models::router_data::ErrorResponse,
         >,
     >,
 > {
@@ -15693,7 +15693,7 @@ async fn run_external_surcharge_ucs(
         .as_ref()
         .and_then(|addr| addr.address.as_ref());
     let surcharge_data =
-        hyperswitch_domain_models::router_request_types::PaymentsSurchargeCalculationData {
+        orbix_domain_models::router_request_types::PaymentsSurchargeCalculationData {
             amount: inputs.amount,
             currency,
             postal_code: billing_details.and_then(|det| det.zip.clone()),
@@ -15737,7 +15737,7 @@ async fn calculate_mit_external_surcharge(
     payment_intent: &storage::PaymentIntent,
     payment_attempt: &storage::PaymentAttempt,
     payment_method_data: Option<&domain::PaymentMethodData>,
-    payment_method_billing: Option<&hyperswitch_domain_models::address::Address>,
+    payment_method_billing: Option<&orbix_domain_models::address::Address>,
 ) -> Option<common_types::payments::ExternalSurchargeDetails> {
     let surcharge_connector_id = business_profile
         .surcharge_connector_details
@@ -15805,7 +15805,7 @@ async fn calculate_mit_external_surcharge(
             Some(payment_method),
             Some(profile_id),
         ) => {
-            let pi_billing_address: Option<hyperswitch_domain_models::address::Address> =
+            let pi_billing_address: Option<orbix_domain_models::address::Address> =
                 payment_intent.billing_details.as_ref().and_then(|billing| {
                     match billing
                         .clone()
@@ -15866,7 +15866,7 @@ async fn calculate_mit_external_surcharge(
                     surcharge_percentage: None,
                     sale_notified: false,
                     error_details: Some(common_types::payments::SurchargeErrorDetails {
-                        error_code: (error.code != hyperswitch_interfaces::consts::NO_ERROR_CODE)
+                        error_code: (error.code != orbix_interfaces::consts::NO_ERROR_CODE)
                             .then_some(error.code),
                         error_message: Some(error.message),
                         error_reason: error.reason,
@@ -16244,7 +16244,7 @@ pub trait OperationSessionGetters<F> {
     fn get_poll_config(&self) -> Option<router_types::PollConfig>;
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>;
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>;
     fn get_frm_message(&self) -> Option<FraudCheck>;
     fn get_refunds(&self) -> Vec<diesel_refund::Refund>;
     fn get_disputes(&self) -> Vec<storage::Dispute>;
@@ -16256,7 +16256,7 @@ pub trait OperationSessionGetters<F> {
     fn get_currency(&self) -> storage_enums::Currency;
     fn get_amount(&self) -> api::Amount;
     fn get_payment_attempt_connector(&self) -> Option<&str>;
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address>;
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address>;
     fn get_payment_method_data(&self) -> Option<&domain::PaymentMethodData>;
     fn get_sessions_token(&self) -> Vec<api::SessionToken>;
     fn get_token_data(&self) -> Option<&storage::PaymentTokenData>;
@@ -16303,7 +16303,7 @@ pub trait OperationSessionGetters<F> {
     #[cfg(feature = "v1")]
     fn get_external_vault_pmd(
         &self,
-    ) -> Option<&hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData>;
+    ) -> Option<&orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData>;
 }
 
 pub trait OperationSessionSetters<F> {
@@ -16357,7 +16357,7 @@ pub trait OperationSessionSetters<F> {
     fn set_recurring_mandate_payment_data(
         &mut self,
         recurring_mandate_payment_data:
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData,
+            orbix_domain_models::router_data::RecurringMandatePaymentData,
     );
     fn set_mandate_id(&mut self, mandate_id: mandates::MandateIds);
     fn set_setup_future_usage_in_payment_intent(
@@ -16410,7 +16410,7 @@ pub trait OperationSessionSetters<F> {
     fn set_external_vault_pmd(
         &mut self,
         external_vault_pmd: Option<
-            hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+            orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
         >,
     );
 }
@@ -16471,7 +16471,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentData<F> {
 
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>
     {
         self.authentication.as_ref()
     }
@@ -16522,7 +16522,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentData<F> {
         self.payment_attempt.connector.as_deref()
     }
 
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address> {
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address> {
         self.address.get_payment_method_billing().cloned()
     }
 
@@ -16591,7 +16591,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentData<F> {
 
     fn get_external_vault_pmd(
         &self,
-    ) -> Option<&hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData>
+    ) -> Option<&orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData>
     {
         self.external_vault_pmd.as_ref()
     }
@@ -16666,7 +16666,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentData<F> {
                 card.card_network = Some(card_network);
             }
             Some(domain::PaymentMethodData::Wallet(wallet_data)) => match wallet_data {
-                hyperswitch_domain_models::payment_method_data::WalletData::ApplePay(wallet) => {
+                orbix_domain_models::payment_method_data::WalletData::ApplePay(wallet) => {
                     logger::debug!("Setting Apple Pay card network: {:?}", card_network);
                     wallet.payment_method.network = card_network.to_string();
                 }
@@ -16736,7 +16736,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentData<F> {
     fn set_recurring_mandate_payment_data(
         &mut self,
         recurring_mandate_payment_data:
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData,
+            orbix_domain_models::router_data::RecurringMandatePaymentData,
     ) {
         self.recurring_mandate_payment_data = Some(recurring_mandate_payment_data);
     }
@@ -16810,7 +16810,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentData<F> {
     fn set_external_vault_pmd(
         &mut self,
         external_vault_pmd: Option<
-            hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+            orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
         >,
     ) {
         self.external_vault_pmd = external_vault_pmd;
@@ -16878,7 +16878,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentIntentData<F> {
 
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>
     {
         todo!()
     }
@@ -16937,7 +16937,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentIntentData<F> {
         todo!()
     }
 
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address> {
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address> {
         todo!()
     }
 
@@ -17078,7 +17078,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentIntentData<F> {
     fn set_recurring_mandate_payment_data(
         &mut self,
         _recurring_mandate_payment_data:
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData,
+            orbix_domain_models::router_data::RecurringMandatePaymentData,
     ) {
         todo!()
     }
@@ -17194,7 +17194,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentConfirmData<F> {
 
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>
     {
         todo!()
     }
@@ -17247,7 +17247,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentConfirmData<F> {
         todo!()
     }
 
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address> {
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address> {
         todo!()
     }
 
@@ -17393,7 +17393,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentConfirmData<F> {
     fn set_recurring_mandate_payment_data(
         &mut self,
         _recurring_mandate_payment_data:
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData,
+            orbix_domain_models::router_data::RecurringMandatePaymentData,
     ) {
         todo!()
     }
@@ -17512,7 +17512,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentStatusData<F> {
 
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>
     {
         todo!()
     }
@@ -17565,7 +17565,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentStatusData<F> {
         todo!()
     }
 
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address> {
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address> {
         todo!()
     }
 
@@ -17707,7 +17707,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentStatusData<F> {
     fn set_recurring_mandate_payment_data(
         &mut self,
         _recurring_mandate_payment_data:
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData,
+            orbix_domain_models::router_data::RecurringMandatePaymentData,
     ) {
         todo!()
     }
@@ -17826,7 +17826,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentCaptureData<F> {
 
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>
     {
         todo!()
     }
@@ -17879,7 +17879,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentCaptureData<F> {
         todo!()
     }
 
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address> {
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address> {
         todo!()
     }
 
@@ -18022,7 +18022,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentCaptureData<F> {
     fn set_recurring_mandate_payment_data(
         &mut self,
         _recurring_mandate_payment_data:
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData,
+            orbix_domain_models::router_data::RecurringMandatePaymentData,
     ) {
         todo!()
     }
@@ -18136,7 +18136,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentAttemptListData<F> {
 
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>
     {
         todo!()
     }
@@ -18189,7 +18189,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentAttemptListData<F> {
         todo!()
     }
 
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address> {
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address> {
         todo!()
     }
 
@@ -18303,7 +18303,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentCancelData<F> {
 
     fn get_authentication(
         &self,
-    ) -> Option<&hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore>
+    ) -> Option<&orbix_domain_models::router_request_types::authentication::AuthenticationStore>
     {
         todo!()
     }
@@ -18356,7 +18356,7 @@ impl<F: Clone> OperationSessionGetters<F> for PaymentCancelData<F> {
         todo!()
     }
 
-    fn get_billing_address(&self) -> Option<hyperswitch_domain_models::address::Address> {
+    fn get_billing_address(&self) -> Option<orbix_domain_models::address::Address> {
         todo!()
     }
 
@@ -18492,7 +18492,7 @@ impl<F: Clone> OperationSessionSetters<F> for PaymentCancelData<F> {
     fn set_recurring_mandate_payment_data(
         &mut self,
         _recurring_mandate_payment_data:
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData,
+            orbix_domain_models::router_data::RecurringMandatePaymentData,
     ) {
         todo!()
     }

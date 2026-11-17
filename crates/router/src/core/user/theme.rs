@@ -6,8 +6,8 @@ use common_utils::{
 };
 use diesel_models::user::theme::{ThemeNew, ThemeUpdate};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::api::ApplicationResponse;
-use hyperswitch_masking::ExposeInterface;
+use orbix_domain_models::api::ApplicationResponse;
+use orbix_masking::ExposeInterface;
 use rdkafka::message::ToBytes;
 
 use crate::{

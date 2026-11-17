@@ -1,7 +1,7 @@
 use api_models::routing::{RoutableChoiceKind, RoutableConnectorChoice};
 use common_utils::{id_type, pii::SecretSerdeValue};
 use euclid::enums::RoutableConnectors;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use serde_json::json;
 
 use super::super::HybridRoutingStage;

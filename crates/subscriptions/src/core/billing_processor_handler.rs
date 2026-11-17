@@ -4,7 +4,7 @@ use api_models::subscription as subscription_types;
 use common_enums::{connector_enums, CallConnectorAction};
 use common_utils::{ext_traits::ValueExt, pii};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     errors::api_error_response as errors,
     router_data_v2::flow_common_types::{
         GetSubscriptionEstimateData, GetSubscriptionItemPricesData, GetSubscriptionItemsData,
@@ -20,17 +20,17 @@ use hyperswitch_domain_models::{
         ConnectorCustomerResponseData, PaymentsResponseData,
     },
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api_client, configs::MerchantConnectorAccountType, connector_integration_interface,
 };
 
 use crate::{errors::SubscriptionResult, state::SubscriptionState as SessionState};
 
 pub struct BillingHandler {
-    pub auth_type: hyperswitch_domain_models::router_data::ConnectorAuthType,
+    pub auth_type: orbix_domain_models::router_data::ConnectorAuthType,
     pub connector_name: connector_enums::Connector,
     pub connector_enum: connector_integration_interface::ConnectorEnum,
-    pub connector_params: hyperswitch_domain_models::connector_endpoints::ConnectorParams,
+    pub connector_params: orbix_domain_models::connector_endpoints::ConnectorParams,
     pub connector_metadata: Option<pii::SecretSerdeValue>,
     pub merchant_connector_id: common_utils::id_type::MerchantConnectorAccountId,
 }
@@ -39,9 +39,9 @@ pub struct BillingHandler {
 impl BillingHandler {
     pub async fn create(
         state: &SessionState,
-        merchant_account: &hyperswitch_domain_models::merchant_account::MerchantAccount,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-        profile: hyperswitch_domain_models::business_profile::Profile,
+        merchant_account: &orbix_domain_models::merchant_account::MerchantAccount,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+        profile: orbix_domain_models::business_profile::Profile,
     ) -> SubscriptionResult<Self> {
         let merchant_connector_id = profile.get_billing_processor_id()?;
 
@@ -59,7 +59,7 @@ impl BillingHandler {
 
         let connector_name = billing_processor_mca.connector_name.clone();
 
-        let auth_type: hyperswitch_domain_models::router_data::ConnectorAuthType =
+        let auth_type: orbix_domain_models::router_data::ConnectorAuthType =
             MerchantConnectorAccountType::DbVal(Box::new(billing_processor_mca.clone()))
                 .get_connector_account_details()
                 .parse_value("ConnectorAuthType")
@@ -81,7 +81,7 @@ impl BillingHandler {
             .attach_printable(format!("unable to parse connector name {connector_name:?}"))?;
 
         let connector_params =
-            hyperswitch_domain_models::connector_endpoints::Connectors::get_connector_params(
+            orbix_domain_models::connector_endpoints::Connectors::get_connector_params(
                 &state.conf.connectors,
                 connector_data,
             )
@@ -103,7 +103,7 @@ impl BillingHandler {
     pub async fn create_customer_on_connector(
         &self,
         state: &SessionState,
-        customer: hyperswitch_domain_models::customer::Customer,
+        customer: orbix_domain_models::customer::Customer,
         customer_id: common_utils::id_type::CustomerId,
         billing_address: Option<api_models::payments::Address>,
         payment_method_data: Option<api_models::payments::PaymentMethodData>,
@@ -172,7 +172,7 @@ impl BillingHandler {
     pub async fn create_subscription_on_connector(
         &self,
         state: &SessionState,
-        subscription: hyperswitch_domain_models::subscription::Subscription,
+        subscription: orbix_domain_models::subscription::Subscription,
         item_price_id: Option<String>,
         billing_address: Option<api_models::payments::Address>,
     ) -> SubscriptionResult<subscription_response_types::SubscriptionCreateResponse> {
@@ -354,7 +354,7 @@ impl BillingHandler {
     pub async fn pause_subscription_on_connector(
         &self,
         state: &SessionState,
-        subscription: &hyperswitch_domain_models::subscription::Subscription,
+        subscription: &orbix_domain_models::subscription::Subscription,
         request: &subscription_types::PauseSubscriptionRequest,
     ) -> SubscriptionResult<subscription_response_types::SubscriptionPauseResponse> {
         let pause_subscription_request = subscription_request_types::SubscriptionPauseRequest {
@@ -385,7 +385,7 @@ impl BillingHandler {
     pub async fn resume_subscription_on_connector(
         &self,
         state: &SessionState,
-        subscription: &hyperswitch_domain_models::subscription::Subscription,
+        subscription: &orbix_domain_models::subscription::Subscription,
         request: &subscription_types::ResumeSubscriptionRequest,
     ) -> SubscriptionResult<subscription_response_types::SubscriptionResumeResponse> {
         let resume_subscription_request = subscription_request_types::SubscriptionResumeRequest {
@@ -418,7 +418,7 @@ impl BillingHandler {
     pub async fn cancel_subscription_on_connector(
         &self,
         state: &SessionState,
-        subscription: &hyperswitch_domain_models::subscription::Subscription,
+        subscription: &orbix_domain_models::subscription::Subscription,
         request: &subscription_types::CancelSubscriptionRequest,
     ) -> SubscriptionResult<subscription_response_types::SubscriptionCancelResponse> {
         let cancel_subscription_request = subscription_request_types::SubscriptionCancelRequest {
@@ -456,7 +456,7 @@ impl BillingHandler {
     async fn call_connector<F, ResourceCommonData, Req, Resp>(
         &self,
         state: &SessionState,
-        router_data: hyperswitch_domain_models::router_data_v2::RouterDataV2<
+        router_data: orbix_domain_models::router_data_v2::RouterDataV2<
             F,
             ResourceCommonData,
             Req,
@@ -469,7 +469,7 @@ impl BillingHandler {
             Req,
             Resp,
         >,
-    ) -> SubscriptionResult<Result<Resp, hyperswitch_domain_models::router_data::ErrorResponse>>
+    ) -> SubscriptionResult<Result<Resp, orbix_domain_models::router_data::ErrorResponse>>
     where
         F: Clone + std::fmt::Debug + 'static,
         Req: Clone + std::fmt::Debug + 'static,
@@ -508,21 +508,21 @@ impl BillingHandler {
         req: Req,
         resource_common_data: ResourceCommonData,
     ) -> SubscriptionResult<
-        hyperswitch_domain_models::router_data_v2::RouterDataV2<F, ResourceCommonData, Req, Resp>,
+        orbix_domain_models::router_data_v2::RouterDataV2<F, ResourceCommonData, Req, Resp>,
     > {
-        Ok(hyperswitch_domain_models::router_data_v2::RouterDataV2 {
+        Ok(orbix_domain_models::router_data_v2::RouterDataV2 {
             flow: std::marker::PhantomData,
             connector_auth_type: self.auth_type.clone(),
             resource_common_data,
             tenant_id: state.tenant.tenant_id.clone(),
             request: req,
-            response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+            response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         })
     }
 
     fn handle_connector_response<T>(
         &self,
-        response: Result<T, hyperswitch_domain_models::router_data::ErrorResponse>,
+        response: Result<T, orbix_domain_models::router_data::ErrorResponse>,
     ) -> SubscriptionResult<T> {
         match response {
             Ok(resp) => Ok(resp),

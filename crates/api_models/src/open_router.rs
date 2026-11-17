@@ -8,7 +8,7 @@ pub use euclid::{
         dir::{DirKeyKind, EuclidDirFilter},
     },
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -323,7 +323,7 @@ pub struct UpdateScoreResponse {
 pub enum TxnStatus {
     Started,
     AuthenticationFailed,
-    JuspayDeclined,
+    OrbixDeclined,
     PendingVbv,
     VBVSuccessful,
     Authorized,
@@ -539,7 +539,7 @@ pub struct MerchantAccount {
 }
 
 /// How much of the account tree a handed-over Decision Engine session may move within. Mirrors
-/// the Hyperswitch role that opened it, so the session is never broader than its origin.
+/// the Orbix Gateway role that opened it, so the session is never broader than its origin.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GrantLevel {
@@ -552,7 +552,7 @@ pub enum GrantLevel {
 /// the user's grant and permissions, both omitted for an API key — which falls back to one profile.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MerchantTokenRequest {
-    /// The profile the session lands on. A Decision Engine routing scope *is* a Hyperswitch
+    /// The profile the session lands on. A Decision Engine routing scope *is* a Orbix Gateway
     /// profile, which is why this field is named for a merchant but carries a profile id.
     pub merchant_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -570,9 +570,9 @@ pub struct MerchantTokenRequest {
     pub email: Option<Secret<String, EmailStrategy>>,
 }
 
-/// Account hierarchy pushed to the Decision Engine. A DE scope is a Hyperswitch profile; the
+/// Account hierarchy pushed to the Decision Engine. A DE scope is a Orbix Gateway profile; the
 /// levels above are ancestry, used to group profiles, resolve merchant-level config, and scope
-/// API keys. Hyperswitch is the only side that knows the tree. Upserted, so safe to resend.
+/// API keys. Orbix Gateway is the only side that knows the tree. Upserted, so safe to resend.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HierarchySyncRequest {
     pub orgs: Vec<HierarchyOrg>,

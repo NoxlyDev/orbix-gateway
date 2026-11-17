@@ -1046,7 +1046,7 @@ export const connectorDetails = {
             country_code: "+91",
           },
         },
-        email: "hyperswitch.example@gmail.com",
+        email: "orbix.example@gmail.com",
       },
       Response: {
         status: 200,
@@ -1081,7 +1081,7 @@ export const connectorDetails = {
       Request: {
         currency: "DKK",
         setup_future_usage: "on_session",
-        email: "hyperswitch_sdk_demo_id1@gmail.com",
+        email: "orbix_sdk_demo_id1@gmail.com",
         billing: {
           address: {
             first_name: "joseph",
@@ -1091,7 +1091,7 @@ export const connectorDetails = {
             number: "9111222333",
             country_code: "+91",
           },
-          email: "hyperswitch.example@gmail.com",
+          email: "orbix.example@gmail.com",
         },
       },
       Response: {

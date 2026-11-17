@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use common_utils::{date_time, errors};
 use error_stack::report;
-use hyperswitch_masking::{PeekInterface, StrongSecret};
+use orbix_masking::{PeekInterface, StrongSecret};
 use serde::{de, Deserialize, Serialize};
 use time::{Date, Duration, PrimitiveDateTime, Time};
 

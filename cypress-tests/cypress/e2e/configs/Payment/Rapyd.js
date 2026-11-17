@@ -118,7 +118,7 @@ export const connectorDetails = {
     "3DSAutoCapture": {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -144,7 +144,7 @@ export const connectorDetails = {
     "3DSManualCapture": {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -350,7 +350,7 @@ export const connectorDetails = {
     MandateSingleUse3DSAutoCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -374,7 +374,7 @@ export const connectorDetails = {
     MandateSingleUse3DSManualCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -398,7 +398,7 @@ export const connectorDetails = {
     MandateMultiUse3DSAutoCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -422,7 +422,7 @@ export const connectorDetails = {
     MandateMultiUse3DSManualCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -625,7 +625,7 @@ export const connectorDetails = {
     PaymentMethodIdMandate3DSAutoCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -651,7 +651,7 @@ export const connectorDetails = {
     PaymentMethodIdMandate3DSManualCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -719,7 +719,7 @@ export const connectorDetails = {
     SaveCardUse3DSAutoCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -743,7 +743,7 @@ export const connectorDetails = {
     SaveCardUse3DSManualCapture: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -767,7 +767,7 @@ export const connectorDetails = {
     SaveCardUse3DSAutoCaptureOffSession: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },
@@ -790,7 +790,7 @@ export const connectorDetails = {
     SaveCardUse3DSManualCaptureOffSession: {
       // Skipping 3DS testing due to limitations of the Cypress browser environment.
       // The 'Continue' action works intermittently in the Cypress browser, succeeding at times and failing at others.
-      // This is not an issue with Hyperswitch or the Rapyd connector.
+      // This is not an issue with Orbix Gateway or the Rapyd connector.
       Configs: {
         TRIGGER_SKIP: true,
       },

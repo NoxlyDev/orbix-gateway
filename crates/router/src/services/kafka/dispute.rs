@@ -4,7 +4,7 @@ use common_utils::{
     types::{AmountConvertor, CreatedBy, MinorUnit, StringMinorUnitForConnector},
 };
 use diesel_models::enums as storage_enums;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use time::OffsetDateTime;
 
 use crate::types::storage::dispute::Dispute;

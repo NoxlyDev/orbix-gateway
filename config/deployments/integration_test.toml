@@ -26,7 +26,7 @@ przelewy24.stripe.banks = "alior_bank,bank_millennium,bank_nowy_bfg_sa,bank_peka
 # Connector configuration, provided attributes will be used to fulfill API requests.
 # Examples provided here are sandbox/test base urls, can be replaced by live or mock
 # base urls based on your need.
-# Note: These are not optional attributes. hyperswitch request can fail due to invalid/empty values.
+# Note: These are not optional attributes. orbix request can fail due to invalid/empty values.
 [connectors]
 absa_sanlam.base_url = "sbx"
 aci.base_url = "https://eu-test.oppwa.com/"
@@ -116,7 +116,7 @@ inespay.base_url = "https://apiflow.inespay.com/san/v21"
 interpayments.base_url = "https://api-test.interpayments.com/v1"
 itaubank.base_url = "https://sandbox.devportal.itau.com.br/"
 jpmorgan.base_url = "https://api-mock.payments.jpmorgan.com/api/v2"
-juspaythreedsserver.base_url = "http://localhost:8000"
+orbixthreedsserver.base_url = "http://localhost:8000"
 katapult.base_url = "https://sandbox.katapult.com/api/v3"
 jpmorgan.secondary_base_url="https://id.payments.jpmorgan.com"
 # JP Morgan Orbital (Chase Paymentech Orbital Gateway JSON API v4). Distinct from the
@@ -224,10 +224,10 @@ netcetera.base_url = "https://api.prev.euc1.acquiring.cloud.netcetera.com/3ds-se
 
 [dummy_connector]
 enabled = true                                                          # Whether dummy connector is enabled or not
-assets_base_url = "https://app.hyperswitch.io/assets/TestProcessor/"    # Base url for dummy connector assets
+assets_base_url = "https://app.orbix.example/assets/TestProcessor/"    # Base url for dummy connector assets
 authorize_ttl = 36000                                                   # Time to live for dummy connector authorize request in redis
-default_return_url = "https://app.hyperswitch.io/"                      # Default return url when no return url is passed while payment
-discord_invite_url = "https://discord.gg/wJZ7DVW8mm"                    # Discord invite url for hyperswitch
+default_return_url = "https://app.orbix.example/"                      # Default return url when no return url is passed while payment
+discord_invite_url = "https://discord.gg/wJZ7DVW8mm"                    # Discord invite url for orbix
 payment_complete_duration = 500                                         # Fake delay duration for dummy connector payment complete
 payment_complete_tolerance = 100                                        # Fake delay tolerance for dummy connector payment complete
 payment_duration = 1000                                                 # Fake delay duration for dummy connector payment
@@ -240,13 +240,13 @@ refund_retrieve_duration = 500                                          # Fake d
 refund_retrieve_tolerance = 100                                         # Fake delay tolerance for dummy connector refund sync
 refund_tolerance = 100                                                  # Fake delay tolerance for dummy connector refund
 refund_ttl = 172800                                                     # Time to live for dummy connector refund in redis
-slack_invite_url = "https://join.slack.com/t/hyperswitch-io/shared_invite/zt-2awm23agh-p_G5xNpziv6yAiedTkkqLg"    # Slack invite url for hyperswitch
+slack_invite_url = "https://join.slack.com/t/orbix-io/shared_invite/zt-2awm23agh-p_G5xNpziv6yAiedTkkqLg"    # Slack invite url for orbix
 
 [user]
 password_validity_in_days = 90
 two_factor_auth_expiry_in_secs = 300
-totp_issuer_name = "Hyperswitch Integ"
-base_url = "https://integ.hyperswitch.io"
+totp_issuer_name = "Orbix Gateway Integ"
+base_url = "https://integ.orbix.example"
 force_two_factor_auth = false
 force_cookies = false
 
@@ -1092,7 +1092,7 @@ billing_connectors_which_requires_dispute_record_back_call = "chargebee"
 click_to_pay = {connector_list = "adyen, cybersource, trustpay"}
 
 [authentication_service_enabled_connectors]
-connector_list = "juspaythreedsserver, ctp_mastercard, ctp_visa"
+connector_list = "orbixthreedsserver, ctp_mastercard, ctp_visa"
 
 [list_dispute_supported_connectors]
 connector_list = "worldpayvantiv"
@@ -1136,8 +1136,8 @@ run_id = ""
 
 [deja.recording.kafka]
 brokers = []
-topic = "hyperswitch-deja-recording-events"
-client_id = "hyperswitch-deja-router"
+topic = "orbix-deja-recording-events"
+client_id = "orbix-deja-router"
 acks = "all"
 idempotence = true
 linger = 5

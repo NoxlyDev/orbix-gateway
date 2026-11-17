@@ -3,7 +3,7 @@ pub use diesel_models::card_issuer::{
     CardIssuer, CardIssuerListItem, NewCardIssuer, UpdateCardIssuer,
 };
 use error_stack::report;
-use hyperswitch_domain_models::card_issuer::CardIssuersInterface;
+use orbix_domain_models::card_issuer::CardIssuersInterface;
 use router_env::instrument;
 
 use crate::{

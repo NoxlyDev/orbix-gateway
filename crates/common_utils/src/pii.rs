@@ -12,7 +12,7 @@ use diesel::{
     sql_types, AsExpression,
 };
 use error_stack::ResultExt;
-use hyperswitch_masking::{ExposeInterface, Secret, Strategy, WithType};
+use orbix_masking::{ExposeInterface, Secret, Strategy, WithType};
 #[cfg(feature = "logs")]
 use router_env::logger;
 use serde::Deserialize;
@@ -389,7 +389,7 @@ where
 mod pii_masking_strategy_tests {
     use std::str::FromStr;
 
-    use hyperswitch_masking::{ExposeInterface, Secret};
+    use orbix_masking::{ExposeInterface, Secret};
 
     use super::{ClientSecret, Email, IpAddress, UpiVpaMaskingStrategy};
     use crate::pii::{EmailStrategy, REDACTED};

@@ -1,4 +1,4 @@
-use hyperswitch_domain_models::mandates;
+use orbix_domain_models::mandates;
 pub mod access_token;
 #[cfg(feature = "v2")]
 mod backward_compat;
@@ -51,10 +51,10 @@ use error_stack::{report, ResultExt};
 #[cfg(feature = "v2")]
 use futures::TryStreamExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::api::{GenericLinks, GenericLinksData};
+use orbix_domain_models::api::{GenericLinks, GenericLinksData};
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payment_methods::PaymentMethodUpdate as DomainPaymentMethodUpdate;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payment_methods::PaymentMethodUpdate as DomainPaymentMethodUpdate;
+use orbix_domain_models::{
     payment_method_data::{BankDebitData, BankRedirectData},
     payments::{payment_attempt::PaymentAttempt, PaymentIntent, VaultData},
     platform::ProviderMerchantId,
@@ -62,10 +62,10 @@ use hyperswitch_domain_models::{
     router_flow_types::ExternalVaultInsertFlow,
     types::VaultRouterData,
 };
-use hyperswitch_interfaces::connector_integration_interface::RouterDataConversion;
+use orbix_interfaces::connector_integration_interface::RouterDataConversion;
 #[cfg(feature = "v2")]
-use hyperswitch_masking::ExposeInterface;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::ExposeInterface;
+use orbix_masking::{PeekInterface, Secret};
 use router_env::instrument;
 #[cfg(feature = "v2")]
 use storage_impl::behaviour::Conversion;
@@ -653,7 +653,7 @@ pub async fn add_payment_method_status_update_task(
     curr_status: enums::PaymentMethodStatus,
     merchant_id: &id_type::MerchantId,
     application_source: common_enums::ApplicationSource,
-    initiator: Option<&hyperswitch_domain_models::platform::Initiator>,
+    initiator: Option<&orbix_domain_models::platform::Initiator>,
 ) -> Result<(), ProcessTrackerError> {
     let created_at = payment_method.created_at;
     let schedule_time =
@@ -1443,7 +1443,7 @@ pub(crate) async fn get_payment_method_create_request(
     payment_method_type: Option<storage_enums::PaymentMethodType>,
     customer_id: &Option<id_type::CustomerId>,
     billing_name: Option<Secret<String>>,
-    payment_method_billing_address: Option<&hyperswitch_domain_models::address::Address>,
+    payment_method_billing_address: Option<&orbix_domain_models::address::Address>,
 ) -> RouterResult<payment_methods::PaymentMethodCreate> {
     match payment_method_data {
         Some(pm_data) => match payment_method {
@@ -2993,7 +2993,7 @@ async fn create_or_fetch_payment_method_core(
     merchant_id: &id_type::MerchantId,
     customer_id: &id_type::GlobalCustomerId,
     payment_method_id: id_type::GlobalPaymentMethodId,
-    billing_address: Option<Encryptable<hyperswitch_domain_models::address::Address>>,
+    billing_address: Option<Encryptable<orbix_domain_models::address::Address>>,
 ) -> RouterResult<(api::PaymentMethodResponse, domain::PaymentMethod)> {
     let bin_enriched_payment_method_data =
         domain::PaymentMethodVaultingData::try_from(req.payment_method_data.clone())?
@@ -3033,7 +3033,7 @@ pub async fn create_payment_method_bank_redirect_core(
     merchant_id: &id_type::MerchantId,
     customer_id: &id_type::GlobalCustomerId,
     payment_method_id: id_type::GlobalPaymentMethodId,
-    billing_address: Option<Encryptable<hyperswitch_domain_models::address::Address>>,
+    billing_address: Option<Encryptable<orbix_domain_models::address::Address>>,
 ) -> RouterResult<(api::PaymentMethodResponse, domain::PaymentMethod)> {
     let db = &*state.store;
 
@@ -3115,7 +3115,7 @@ impl PaymentMethodResolver {
         customer_id: &id_type::GlobalCustomerId,
         payment_method_id: id_type::GlobalPaymentMethodId,
         payment_method_subtype: Option<storage_enums::PaymentMethodType>,
-        billing_address: Option<Encryptable<hyperswitch_domain_models::address::Address>>,
+        billing_address: Option<Encryptable<orbix_domain_models::address::Address>>,
     ) -> RouterResult<(api::PaymentMethodResponse, domain::PaymentMethod)> {
         let db = &*state.store;
         let Self {
@@ -3308,7 +3308,7 @@ async fn execute_payment_method_create(
     payment_method_data: domain::PaymentMethodVaultingData,
     fingerprint_id_from_vault: Option<String>,
     payment_method_billing_address: Option<
-        Encryptable<hyperswitch_domain_models::address::Address>,
+        Encryptable<orbix_domain_models::address::Address>,
     >,
     locker_resolver: LockerTypeResolver,
 ) -> RouterResult<(api::PaymentMethodResponse, domain::PaymentMethod)> {
@@ -3477,7 +3477,7 @@ pub async fn create_generic_volatile_payment_method(
     customer_id: &Option<id_type::GlobalCustomerId>,
     payment_method_id: id_type::GlobalPaymentMethodId,
     payment_method_billing_address: Option<
-        Encryptable<hyperswitch_domain_models::address::Address>,
+        Encryptable<orbix_domain_models::address::Address>,
     >,
     customer_acceptance: Option<common_utils::pii::SecretSerdeValue>,
 ) -> RouterResult<(api::PaymentMethodResponse, domain::PaymentMethod)> {
@@ -3695,7 +3695,7 @@ pub async fn create_payment_method_wallet_core(
     customer_id: &id_type::GlobalCustomerId,
     payment_method_id: id_type::GlobalPaymentMethodId,
     payment_method_billing_address: Option<
-        Encryptable<hyperswitch_domain_models::address::Address>,
+        Encryptable<orbix_domain_models::address::Address>,
     >,
     additional_payment_method_data: payment_methods::PaymentMethodsData,
 ) -> RouterResult<(api::PaymentMethodResponse, domain::PaymentMethod)> {
@@ -3816,7 +3816,7 @@ pub async fn create_payment_method_proxy_card_core(
     customer_id: &id_type::GlobalCustomerId,
     payment_method_id: id_type::GlobalPaymentMethodId,
     payment_method_billing_address: Option<
-        Encryptable<hyperswitch_domain_models::address::Address>,
+        Encryptable<orbix_domain_models::address::Address>,
     >,
 ) -> RouterResult<(api::PaymentMethodResponse, domain::PaymentMethod)> {
     use crate::core::payment_methods::vault::Vault;
@@ -4538,7 +4538,7 @@ trait PerformFilteringOnEnabledPaymentMethods {
 
 #[cfg(feature = "v2")]
 impl PerformFilteringOnEnabledPaymentMethods
-    for hyperswitch_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled
+    for orbix_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled
 {
     fn perform_filtering(self) -> FilteredPaymentMethodsEnabled {
         FilteredPaymentMethodsEnabled(self.payment_methods_enabled)
@@ -4598,7 +4598,7 @@ pub async fn list_payment_methods_for_session(
         .collect();
 
     // Update payment method session with associated payment methods
-    let update_payment_method_session = hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
+    let update_payment_method_session = orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
         associated_payment_methods: Some(associated_payment_methods_vec.clone())
     };
 
@@ -4616,7 +4616,7 @@ pub async fn list_payment_methods_for_session(
         )?;
 
     let response =
-        hyperswitch_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled::from_payment_connectors_list(payment_connector_accounts)
+        orbix_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled::from_payment_connectors_list(payment_connector_accounts)
             .perform_filtering()
             .get_required_fields(RequiredFieldsInput::new(state.conf.required_fields.clone()))
             .generate_response_for_session(
@@ -4624,7 +4624,7 @@ pub async fn list_payment_methods_for_session(
                 &state.conf.customer_acceptance_support,
             );
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -4678,7 +4678,7 @@ pub async fn list_saved_payment_methods_for_customer(
     )
     .await?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         customer_payment_methods,
     ))
 }
@@ -4715,7 +4715,7 @@ pub async fn get_token_data_for_payment_method(
     ))
     .await?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         token_data_response,
     ))
 }
@@ -4792,7 +4792,7 @@ pub async fn get_total_saved_payment_methods_for_merchant(
 ) -> RouterResponse<api::TotalPaymentMethodCountResponse> {
     let total_payment_method_count = get_total_payment_method_count_core(&state, &provider).await?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         total_payment_method_count,
     ))
 }
@@ -4815,14 +4815,14 @@ impl RequiredFieldsInput {
 #[cfg(feature = "v2")]
 /// Container for the filtered payment methods
 struct FilteredPaymentMethodsEnabled(
-    Vec<hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector>,
+    Vec<orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector>,
 );
 
 #[cfg(feature = "v2")]
 trait GetRequiredFields {
     fn get_required_fields(
         &self,
-        payment_method_enabled: &hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
+        payment_method_enabled: &orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
     ) -> Option<&settings::RequiredFieldFinal>;
 }
 
@@ -4830,7 +4830,7 @@ trait GetRequiredFields {
 impl GetRequiredFields for settings::RequiredFields {
     fn get_required_fields(
         &self,
-        payment_method_enabled: &hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
+        payment_method_enabled: &orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
     ) -> Option<&settings::RequiredFieldFinal> {
         self.0
             .get(&payment_method_enabled.payment_method)
@@ -4954,7 +4954,7 @@ pub async fn create_payment_method_for_intent(
     key_store: &domain::MerchantKeyStore,
     storage_scheme: enums::MerchantStorageScheme,
     payment_method_billing_address: Option<
-        Encryptable<hyperswitch_domain_models::address::Address>,
+        Encryptable<orbix_domain_models::address::Address>,
     >,
     initiator: Option<&domain::Initiator>,
     auxiliary_fingerprint_id: Option<String>,
@@ -5024,7 +5024,7 @@ pub async fn construct_payment_method_object(
     payment_method_id: id_type::GlobalPaymentMethodId,
     merchant_id: &id_type::MerchantId,
     payment_method_billing_address: Option<
-        Encryptable<hyperswitch_domain_models::address::Address>,
+        Encryptable<orbix_domain_models::address::Address>,
     >,
     state: &SessionState,
     key_store: &domain::MerchantKeyStore,
@@ -5115,7 +5115,7 @@ pub async fn create_payment_method_for_confirm(
     payment_method_type: storage_enums::PaymentMethod,
     payment_method_subtype: Option<storage_enums::PaymentMethodType>,
     encrypted_payment_method_billing_address: Option<
-        Encryptable<hyperswitch_domain_models::address::Address>,
+        Encryptable<orbix_domain_models::address::Address>,
     >,
     encrypted_payment_method_data: Option<
         Encryptable<domain::payment_method_data::PaymentMethodsData>,
@@ -5665,9 +5665,9 @@ pub async fn vault_payment_method_external(
 }
 
 pub fn get_payment_method_custom_data(
-    payment_method_vaulting_data: hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+    payment_method_vaulting_data: orbix_domain_models::vault::PaymentMethodVaultingData,
     fields_to_tokenize: Option<Vec<diesel_models::business_profile::VaultTokenField>>,
-) -> RouterResult<hyperswitch_domain_models::vault::PaymentMethodCustomVaultingData> {
+) -> RouterResult<orbix_domain_models::vault::PaymentMethodCustomVaultingData> {
     match fields_to_tokenize {
         Some(fields) => {
             let keys_set: Vec<String> = fields
@@ -5680,7 +5680,7 @@ pub fn get_payment_method_custom_data(
                 Ok(payment_method_vaulting_data.try_into()?)
             } else {
                 match payment_method_vaulting_data {
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(card_details) => {
+                    orbix_domain_models::vault::PaymentMethodVaultingData::Card(card_details) => {
                         let mut json_data = serde_json::to_value(card_details)
                             .map_err(|_| {
                                 logger::error!("Error Parsing the CardDetail to Value");
@@ -5693,16 +5693,16 @@ pub fn get_payment_method_custom_data(
 
                         json_data.retain(|key, _value| keys_set.contains(key));
 
-                        let custom_card_detail: hyperswitch_domain_models::vault::CardCustomData = serde_json::from_value(
+                        let custom_card_detail: orbix_domain_models::vault::CardCustomData = serde_json::from_value(
                             serde_json::Value::Object(json_data)
                         )
                             .map_err(|_| {
                                 logger::error!("Error Parsing the Value to CardCustomData");
                                 errors::ApiErrorResponse::InternalServerError
                             })?;
-                        Ok(hyperswitch_domain_models::vault::PaymentMethodCustomVaultingData::CardData(custom_card_detail))
+                        Ok(orbix_domain_models::vault::PaymentMethodCustomVaultingData::CardData(custom_card_detail))
                     }
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::NetworkToken(network_token_details) => {
+                    orbix_domain_models::vault::PaymentMethodVaultingData::NetworkToken(network_token_details) => {
                         let mut json_data = serde_json::to_value(network_token_details)
                             .map_err(|_| {
                                 logger::error!("Error Parsing the NetworkTokenDetails to Value");
@@ -5715,28 +5715,28 @@ pub fn get_payment_method_custom_data(
 
                         json_data.retain(|key, _value| keys_set.contains(key));
 
-                        let custom_network_token_detail: hyperswitch_domain_models::vault::NetworkTokenCustomData = serde_json::from_value(
+                        let custom_network_token_detail: orbix_domain_models::vault::NetworkTokenCustomData = serde_json::from_value(
                             serde_json::Value::Object(json_data)
                         )
                             .map_err(|_| {
                                 logger::error!("Error Parsing the Value to NetworkTokenCustomData");
                                 errors::ApiErrorResponse::InternalServerError
                             })?;
-                        Ok(hyperswitch_domain_models::vault::PaymentMethodCustomVaultingData::NetworkTokenData(custom_network_token_detail))
+                        Ok(orbix_domain_models::vault::PaymentMethodCustomVaultingData::NetworkTokenData(custom_network_token_detail))
                     }
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::CardNumber(_) => {
+                    orbix_domain_models::vault::PaymentMethodVaultingData::CardNumber(_) => {
                         Err(errors::ApiErrorResponse::InternalServerError)
                             .attach_printable("Unexpected Behaviour, Card Number variant is not supported for Custom Tokenization")?
                     }
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankDebit(_) => {
+                    orbix_domain_models::vault::PaymentMethodVaultingData::BankDebit(_) => {
                         Err(errors::ApiErrorResponse::InternalServerError)
                             .attach_printable("Unexpected Behaviour, Bank Debit variant is not supported for Custom Tokenization")?
                     }
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::Wallet(_) => {
+                    orbix_domain_models::vault::PaymentMethodVaultingData::Wallet(_) => {
                         Err(errors::ApiErrorResponse::InternalServerError)
                             .attach_printable("Unexpected Behaviour, Wallet variant is not supported for Custom Tokenization")?
                     }
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankRedirect(_) => {
+                    orbix_domain_models::vault::PaymentMethodVaultingData::BankRedirect(_) => {
                         Err(errors::ApiErrorResponse::InternalServerError)
                             .attach_printable("Unexpected Behaviour, Bank Redirect variant is not supported for Custom Tokenization")?
                     }
@@ -5752,9 +5752,9 @@ pub fn get_payment_method_custom_data(
 #[instrument(skip_all)]
 pub async fn vault_payment_method_external_v1(
     state: &SessionState,
-    pmd: &hyperswitch_domain_models::vault::PaymentMethodCustomVaultingData,
+    pmd: &orbix_domain_models::vault::PaymentMethodCustomVaultingData,
     merchant_account: &domain::MerchantAccount,
-    merchant_connector_account: hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+    merchant_connector_account: orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
     should_generate_multiple_tokens: Option<bool>,
 ) -> RouterResult<pm_types::AddVaultResponse> {
     let router_data = core_utils::construct_vault_router_data(
@@ -6936,7 +6936,7 @@ impl RawPaymentMethodFetchAccess {
                 ) {
                     (
                         pm_types::TokenStatus::Active,
-                        hyperswitch_domain_models::vault::PaymentMethodVaultingData::NetworkToken(
+                        orbix_domain_models::vault::PaymentMethodVaultingData::NetworkToken(
                             network_token_details,
                         ),
                     ) => Ok(payment_methods::CardDetail {
@@ -7464,7 +7464,7 @@ trait EncryptableData {
 #[cfg(feature = "v2")]
 #[async_trait::async_trait]
 impl EncryptableData for payment_methods::PaymentMethodSessionRequest {
-    type Output = hyperswitch_domain_models::payment_methods::DecryptedPaymentMethodSession;
+    type Output = orbix_domain_models::payment_methods::DecryptedPaymentMethodSession;
 
     async fn encrypt_data(
         &self,
@@ -7484,10 +7484,10 @@ impl EncryptableData for payment_methods::PaymentMethodSessionRequest {
 
         let batch_encrypted_data = domain_types::crypto_operation(
             key_manager_state,
-            common_utils::type_name!(hyperswitch_domain_models::payment_methods::PaymentMethodSession),
+            common_utils::type_name!(orbix_domain_models::payment_methods::PaymentMethodSession),
             domain_types::CryptoOperation::BatchEncrypt(
-                hyperswitch_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::to_encryptable(
-                    hyperswitch_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession {
+                orbix_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::to_encryptable(
+                    orbix_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession {
                        billing: encrypted_billing_address,
                     },
                 ),
@@ -7501,7 +7501,7 @@ impl EncryptableData for payment_methods::PaymentMethodSessionRequest {
         .attach_printable("Failed while encrypting payment methods session details".to_string())?;
 
         let encrypted_data =
-        hyperswitch_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::from_encryptable(
+        orbix_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::from_encryptable(
             batch_encrypted_data,
         )
         .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -7514,7 +7514,7 @@ impl EncryptableData for payment_methods::PaymentMethodSessionRequest {
 #[cfg(feature = "v2")]
 #[async_trait::async_trait]
 impl EncryptableData for payment_methods::PaymentMethodsSessionUpdateRequest {
-    type Output = hyperswitch_domain_models::payment_methods::DecryptedPaymentMethodSession;
+    type Output = orbix_domain_models::payment_methods::DecryptedPaymentMethodSession;
 
     async fn encrypt_data(
         &self,
@@ -7534,10 +7534,10 @@ impl EncryptableData for payment_methods::PaymentMethodsSessionUpdateRequest {
 
         let batch_encrypted_data = domain_types::crypto_operation(
             key_manager_state,
-            common_utils::type_name!(hyperswitch_domain_models::payment_methods::PaymentMethodSession),
+            common_utils::type_name!(orbix_domain_models::payment_methods::PaymentMethodSession),
             domain_types::CryptoOperation::BatchEncrypt(
-                hyperswitch_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::to_encryptable(
-                    hyperswitch_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession {
+                orbix_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::to_encryptable(
+                    orbix_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession {
                        billing: encrypted_billing_address,
                     },
                 ),
@@ -7551,7 +7551,7 @@ impl EncryptableData for payment_methods::PaymentMethodsSessionUpdateRequest {
         .attach_printable("Failed while encrypting payment methods session details".to_string())?;
 
         let encrypted_data =
-        hyperswitch_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::from_encryptable(
+        orbix_domain_models::payment_methods::FromRequestEncryptablePaymentMethodSession::from_encryptable(
             batch_encrypted_data,
         )
         .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -7652,7 +7652,7 @@ pub async fn payment_methods_session_create(
     .attach_printable("Unable to create client secret")?;
 
     let payment_method_session_domain_model =
-        hyperswitch_domain_models::payment_methods::PaymentMethodSession {
+        orbix_domain_models::payment_methods::PaymentMethodSession {
             id: payment_methods_session_id,
             customer_id: request.customer_id.clone(),
             billing,
@@ -7694,8 +7694,8 @@ pub async fn payment_methods_session_create(
             None
         });
 
-    let sdk_authorization = Option::<hyperswitch_domain_models::sdk_auth::SdkAuthorization>::from(
-        hyperswitch_domain_models::sdk_auth::SdkAuthorizationContext {
+    let sdk_authorization = Option::<orbix_domain_models::sdk_auth::SdkAuthorization>::from(
+        orbix_domain_models::sdk_auth::SdkAuthorizationContext {
             publishable_key: platform
                 .get_processor()
                 .get_account()
@@ -7764,7 +7764,7 @@ pub async fn payment_methods_session_update(
         .attach_printable("Unable to decode billing address")?;
 
     let payment_method_session_domain_model =
-        hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::GeneralUpdate{
+        orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::GeneralUpdate{
             billing: Box::new(billing),
             psp_tokenization: None,
             network_tokenization: request.network_tokenization,
@@ -7859,8 +7859,8 @@ pub async fn payment_methods_session_retrieve(
     Ok(services::ApplicationResponse::Json(response))
 }
 
-/// Stores `card_cvc` as an encrypted CVC under `pm_token_{token}_hyperswitch_cvc` — the same
-/// `_hyperswitch_cvc` mechanism used by the first-time flow — so CVC retrieval (router-side
+/// Stores `card_cvc` as an encrypted CVC under `pm_token_{token}_orbix_cvc` — the same
+/// `_orbix_cvc` mechanism used by the first-time flow — so CVC retrieval (router-side
 /// `retrieve_cvc_from_payment_token`) resolves it consistently. The card holder name is
 /// not vaulted with the CVC token; it is carried by the saved payment method itself.
 #[cfg(feature = "v2")]
@@ -7906,12 +7906,12 @@ async fn update_associated_payment_methods_in_session(
     db: &dyn StorageInterface,
     key_store: &domain::MerchantKeyStore,
     payment_method_session_id: &id_type::GlobalPaymentMethodSessionId,
-    payment_method_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+    payment_method_session: orbix_domain_models::payment_methods::PaymentMethodSession,
     associated_payment_methods: Option<
         Vec<common_types::payment_methods::AssociatedPaymentMethods>,
     >,
-) -> RouterResult<hyperswitch_domain_models::payment_methods::PaymentMethodSession> {
-    let update = hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
+) -> RouterResult<orbix_domain_models::payment_methods::PaymentMethodSession> {
+    let update = orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
         associated_payment_methods,
     };
     db.update_payment_method_session(
@@ -8164,7 +8164,7 @@ pub async fn payment_methods_session_delete_payment_method(
         }).collect::<Vec<_>>());
 
     // Update payment method session with associated payment methods
-    let update_payment_method_session = hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
+    let update_payment_method_session = orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
         associated_payment_methods: tokens
     };
 
@@ -8199,7 +8199,7 @@ async fn create_zero_auth_payment(
         platform,
         profile,
         request,
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
     ))
     .await?;
 
@@ -8319,7 +8319,7 @@ pub async fn payment_methods_session_confirm(
         payment_method_token: common_types::payment_methods::AssociatedPaymentMethodTokenType::PaymentMethodSessionToken(parent_payment_method_token),
     };
 
-    let update_payment_method_session = hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
+    let update_payment_method_session = orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum::UpdateAssociatedPaymentMethods {
         associated_payment_methods:  Some(vec![associated_payment_methods])
     };
 

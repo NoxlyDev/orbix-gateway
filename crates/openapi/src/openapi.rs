@@ -3,17 +3,17 @@ use crate::routes;
 #[derive(utoipa::OpenApi)]
 #[openapi(
     info(
-        title = "Hyperswitch - API Documentation",
+        title = "Orbix Gateway - API Documentation",
         contact(
-            name = "Hyperswitch Support",
-            url = "https://hyperswitch.io",
-            email = "support.global@juspay.io"
+            name = "Orbix Gateway Support",
+            url = "https://orbix.example",
+            email = "support.global@orbix.example"
         ),
-        // terms_of_service = "https://www.juspay.io/terms",
+        // terms_of_service = "https://www.orbix.example/terms",
         description = r#"
 ## Get started
 
-Hyperswitch provides a collection of APIs that enable you to process and manage payments.
+Orbix provides a collection of APIs that enable you to process and manage payments.
 Our APIs accept and return JSON in the HTTP body, and return standard HTTP response codes.
 
 You can consume the APIs directly using your favorite HTTP/REST library.
@@ -22,7 +22,7 @@ We have a testing environment referred to "sandbox", which you can setup to test
 affecting production data.
 Currently, our sandbox environment is live while our production environment is under development
 and will be available soon.
-You can sign up on our Dashboard to get API keys to access Hyperswitch API.
+You can sign up on our Dashboard to get API keys to access Orbix API.
 
 ### Environment
 
@@ -30,14 +30,14 @@ Use the following base URLs when making requests to the APIs:
 
 | Environment   |  Base URL                          |
 |---------------|------------------------------------|
-| Sandbox       | <https://sandbox.hyperswitch.io>   |
-| Production    | <https://api.hyperswitch.io>       |
+| Sandbox       | <https://sandbox.orbix.example>   |
+| Production    | <https://api.orbix.example>       |
 
 ## Authentication
 
-When you sign up on our [dashboard](https://app.hyperswitch.io) and create a merchant
+When you sign up on our [dashboard](https://app.orbix.example) and create a merchant
 account, you are given a secret key (also referred as api-key) and a publishable key.
-You may authenticate all API requests with Hyperswitch server by providing the appropriate key in
+You may authenticate all API requests with Orbix server by providing the appropriate key in
 the request Authorization header.
 
 | Key             |  Description                                                                                  |
@@ -49,7 +49,7 @@ Never share your secret api keys. Keep them guarded and secure.
 "#,
     ),
     servers(
-        (url = "https://sandbox.hyperswitch.io", description = "Sandbox Environment")
+        (url = "https://sandbox.orbix.example", description = "Sandbox Environment")
     ),
     tags(
         (name = "Merchant Account", description = "Create and manage merchant accounts"),
@@ -525,7 +525,7 @@ Never share your secret api keys. Keep them guarded and secure.
         api_models::enums::PaymentMethodStatus,
         api_models::enums::UIWidgetFormLayout,
         api_models::enums::MerchantProductType,
-        api_models::enums::HyperswitchConnectorCategory,
+        api_models::enums::OrbixConnectorCategory,
         api_models::enums::ConnectorIntegrationStatus,
         api_models::enums::CardDiscovery,
         api_models::enums::FeatureStatus,
@@ -712,7 +712,7 @@ Never share your secret api keys. Keep them guarded and secure.
         api_models::payments::SessionToken,
         api_models::payments::VaultSessionDetails,
         api_models::payments::VgsSessionDetails,
-        api_models::payments::HyperswitchVaultSessionDetails,
+        api_models::payments::OrbixVaultSessionDetails,
         api_models::payments::ApplePaySessionResponse,
         api_models::payments::NullObject,
         api_models::payments::ThirdPartySdkSessionResponse,
@@ -859,7 +859,7 @@ Never share your secret api keys. Keep them guarded and secure.
         api_models::payments::VaultDetails,
         api_models::payments::InternalVaultSessionDetails,
         api_models::payments::VaultDetailsResponse,
-        api_models::payments::HyperswitchVaultData,
+        api_models::payments::OrbixVaultData,
         api_models::payments::VgsVaultData,
         api_models::payments::ProxyCardData,
         api_models::payments::PeachpaymentsCardOnFileTransactionType,
@@ -1292,7 +1292,7 @@ impl utoipa::Modify for SecurityAddon {
                     "api_key",
                     SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::with_description(
                         "api-key",
-                        "Use the API key created under your merchant account from the HyperSwitch dashboard. API key is used to authenticate API requests from your merchant server only. Don't expose this key on a website or embed it in a mobile application."
+                        "Use the API key created under your merchant account from the Orbix Gateway dashboard. API key is used to authenticate API requests from your merchant server only. Don't expose this key on a website or embed it in a mobile application."
                     ))),
                 ),
                 (

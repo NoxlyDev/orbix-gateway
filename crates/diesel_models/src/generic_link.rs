@@ -6,7 +6,7 @@ use common_utils::{
     },
 };
 use diesel::{AsChangeset, Identifiable, Insertable, Queryable, Selectable};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use time::{Duration, PrimitiveDateTime};
 

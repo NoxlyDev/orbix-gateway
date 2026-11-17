@@ -1,4 +1,4 @@
-# Migration Runner Dockerfile for Hyperswitch
+# Migration Runner Dockerfile for Orbix Gateway
 # This image contains migration files and diesel CLI for offline migration execution
 
 FROM debian:trixie-slim
@@ -22,7 +22,7 @@ RUN curl --proto '=https' --tlsv1.2 -LsSf https://github.com/diesel-rs/diesel/re
 ENV PATH="/home/app/.cargo/bin:$PATH"
 
 # Set working directory
-WORKDIR /hyperswitch
+WORKDIR /orbix
 
 # Copy migration files and diesel config from the workspace
 COPY --chown=app:app ./migrations/ ./migrations/

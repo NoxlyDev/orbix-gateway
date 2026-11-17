@@ -6,11 +6,11 @@ use common_enums::{ExecutionMode, ExecutionPath};
 use common_utils::{errors::ReportSwitchExt, ext_traits::Encode};
 use error_stack::ResultExt;
 use external_services::grpc_client::LineageIds;
-use hyperswitch_domain_models::api::WebhookResponse;
-use hyperswitch_interfaces::webhooks::{
+use orbix_domain_models::api::WebhookResponse;
+use orbix_interfaces::webhooks::{
     IncomingWebhookRequestDetails, WebhookContext, WebhookResourceData,
 };
-use hyperswitch_masking::{ErasedMaskSerialize, Secret};
+use orbix_masking::{ErasedMaskSerialize, Secret};
 use router_env::{logger, tracing::Instrument};
 use unified_connector_service_client::payments as payments_grpc;
 
@@ -171,7 +171,7 @@ impl FilterDecision {
 }
 
 // Classifies the webhook via UCS `ParseEvent` before UCS/Direct routing.
-// Returns `None` on any UCS error which causes downstream routing to use the Hyperswitch (Direct) gateway.
+// Returns `None` on any UCS error which causes downstream routing to use the Orbix Gateway (Direct) gateway.
 pub async fn get_webhook_event_details_from_ucs(
     state: &SessionState,
     platform: &domain::Platform,
@@ -734,7 +734,7 @@ async fn report_shadow_diff(
         "Webhook shadow diff",
     );
 
-    use hyperswitch_interfaces::{
+    use orbix_interfaces::{
         api_client::ApiClientWrapper, helpers::GetComparisonServiceConfig,
     };
     if let Some(config) = state.get_comparison_service_config() {
@@ -743,7 +743,7 @@ async fn report_shadow_diff(
             format!("webhook_{}", flow.to_string().to_lowercase())
         });
 
-        hyperswitch_interfaces::helpers::serialize_webhook_outcome_and_send_to_comparison_service(
+        orbix_interfaces::helpers::serialize_webhook_outcome_and_send_to_comparison_service(
             state,
             primary,
             shadow,
@@ -849,7 +849,7 @@ pub(super) async fn verify_webhook_source_via_connector(
             )
             .await
             .or_else(|error| match error.current_context() {
-                hyperswitch_interfaces::errors::ConnectorError::WebhookSourceVerificationFailed => {
+                orbix_interfaces::errors::ConnectorError::WebhookSourceVerificationFailed => {
                     logger::error!(?error, "Source Verification Failed");
                     Ok(false)
                 }
@@ -1059,9 +1059,9 @@ fn ucs_ack_to_webhook_response(
         return WebhookResponse::StatusOk;
     }
 
-    let masked_headers: Vec<(String, hyperswitch_masking::Maskable<String>)> = headers
+    let masked_headers: Vec<(String, orbix_masking::Maskable<String>)> = headers
         .into_iter()
-        .map(|(k, v)| (k, hyperswitch_masking::Maskable::new_normal(v)))
+        .map(|(k, v)| (k, orbix_masking::Maskable::new_normal(v)))
         .collect();
 
     if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&body) {

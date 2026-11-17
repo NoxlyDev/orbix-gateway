@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use common_enums::{CallConnectorAction, ExecutionPath};
 use common_utils::{errors::CustomResult, id_type, request::Request, ucs_types};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{router_data::RouterData, router_flow_types as domain};
-use hyperswitch_interfaces::{
+use orbix_domain_models::{router_data::RouterData, router_flow_types as domain};
+use orbix_interfaces::{
     api::gateway as payout_gateway,
     connector_integration_interface::{BoxedConnectorIntegrationInterface, RouterDataConversion},
     errors::ConnectorError,

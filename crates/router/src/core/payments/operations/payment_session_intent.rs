@@ -4,7 +4,7 @@ use api_models::payments::PaymentsSessionRequest;
 use async_trait::async_trait;
 use common_utils::{errors::CustomResult, ext_traits::Encode};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::customer;
+use orbix_domain_models::customer;
 use router_env::{instrument, logger, tracing};
 
 use super::{BoxedOperation, Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -125,7 +125,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, payments::PaymentIntentData<F>, Payme
         _request: &PaymentsSessionRequest,
         platform: &domain::Platform,
         _profile: &domain::Profile,
-        header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<operations::GetTrackerResponse<payments::PaymentIntentData<F>>> {
         let db = &*state.store;
         let storage_scheme = platform.get_processor().get_storage_scheme();
@@ -170,7 +170,7 @@ impl<F: Clone + Sync> UpdateTracker<F, payments::PaymentIntentData<F>, PaymentsS
         processor: &domain::Processor,
         mut payment_data: payments::PaymentIntentData<F>,
         _frm_suggestion: Option<common_enums::FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(
         PaymentSessionOperation<'b, F>,

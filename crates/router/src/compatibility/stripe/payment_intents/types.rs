@@ -10,7 +10,7 @@ use common_utils::{
     types::MinorUnit,
 };
 use error_stack::ResultExt;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
@@ -967,7 +967,7 @@ pub struct StripePaymentRetrieveBody {
 //To handle payment types that have empty payment method data
 fn get_pmd_based_on_payment_method_type(
     payment_method_type: Option<api_enums::PaymentMethodType>,
-    billing_details: Option<hyperswitch_domain_models::address::Address>,
+    billing_details: Option<orbix_domain_models::address::Address>,
 ) -> Option<payments::PaymentMethodData> {
     match payment_method_type {
         Some(api_enums::PaymentMethodType::UpiIntent) => Some(payments::PaymentMethodData::Upi(

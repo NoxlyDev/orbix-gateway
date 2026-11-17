@@ -4,7 +4,7 @@ import getConnectorDetails, * as utils from "../../configs/Payment/Utils";
 
 let globalState;
 
-describe("UPI Payments - Hyperswitch", () => {
+describe("UPI Payments - Orbix Gateway", () => {
   context("[Payment] [UPI - UPI Collect] Create & Confirm + Refund", () => {
     before("seed global state", () => {
       cy.task("getGlobalState").then((state) => {
@@ -194,7 +194,7 @@ describe("UPI Payments - Hyperswitch", () => {
 });
 
 // TODO: This test is incomplete. Above has to be replicated here with changes to support SCL
-describe.skip("UPI Payments -- Hyperswitch Stripe Compatibility Layer", () => {
+describe.skip("UPI Payments -- Orbix Gateway Stripe Compatibility Layer", () => {
   before("seed global state", () => {
     cy.task("getGlobalState").then((state) => {
       globalState = new State(state);

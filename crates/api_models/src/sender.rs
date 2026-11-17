@@ -12,7 +12,7 @@ use common_utils::{
     pii::Email,
     transformers::ForeignFrom,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use time::Date;
 use utoipa::ToSchema;
 

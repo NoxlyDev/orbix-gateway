@@ -5,8 +5,8 @@ use common_utils::{
     types::keymanager::{EncryptionTransferRequest, Identifier},
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::merchant_key_store::MerchantKeyStore;
-use hyperswitch_masking::{ExposeInterface, StrongSecret};
+use orbix_domain_models::merchant_key_store::MerchantKeyStore;
+use orbix_masking::{ExposeInterface, StrongSecret};
 
 use crate::{consts::BASE64_ENGINE, errors, types::domain::UserKeyStore, SessionState};
 

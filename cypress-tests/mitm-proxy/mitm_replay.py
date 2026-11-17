@@ -1,7 +1,7 @@
 """
 mitmproxy replay addon.
 
-Serves cassettes recorded by mitm_capture.py back to Hyperswitch on its
+Serves cassettes recorded by mitm_capture.py back to Orbix Gateway on its
 outbound connector calls. Match key is x-request-id alone; cassettes sharing a
 rid are served in capture order via a per-rid cursor, reset on /test/start so
 Cypress retries replay from the start.
@@ -206,7 +206,7 @@ def http_connect(flow: http.HTTPFlow) -> None:
 
 
 def request(flow: http.HTTPFlow) -> None:
-    # Gate: only handle Hyperswitch → connector outbounds (tagged x-connector).
+    # Gate: only handle Orbix Gateway → connector outbounds (tagged x-connector).
     if not flow.request.headers.get("x-connector", "").strip():
         return
 

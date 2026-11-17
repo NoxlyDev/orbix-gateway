@@ -19,7 +19,7 @@
 pub use deja_derive::recordable;
 pub use deja_derive::{boundary, http, id, instrument, redis, time};
 
-/// Re-export the per-request recording sampling gate. The host (e.g. Hyperswitch)
+/// Re-export the per-request recording sampling gate. The host (e.g. Orbix Gateway)
 /// resolves *whether* to record from Superposition at ingress and pushes the
 /// decision here; Déjà only consumes it — `Skip` makes the recording hook a
 /// no-op for the request, `Record` records as usual. Recording is opt-in: absent

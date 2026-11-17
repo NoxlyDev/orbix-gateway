@@ -35,7 +35,7 @@ services:
     environment:
       - POSTGRES_USER=db_user
       - POSTGRES_PASSWORD=db_pass
-      - POSTGRES_DB=hyperswitch_db
+      - POSTGRES_DB=orbix_db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 5s
@@ -75,10 +75,10 @@ services:
       - ./:/app
     environment:
       # format -> postgresql://DB_USER:DB_PASSWORD@HOST:PORT/DATABASE_NAME
-      - DATABASE_URL=postgresql://db_user:db_pass@pg:5432/hyperswitch_db
+      - DATABASE_URL=postgresql://db_user:db_pass@pg:5432/orbix_db
 
   superposition:
-    image: ghcr.io/juspay/superposition-demo:0.113.0
+    image: ghcr.io/orbix/superposition-demo:0.113.0
     ports:
       - "8081:8080"
     networks:
@@ -119,8 +119,8 @@ services:
       - "8025:8025"
 
   ### Application services
-  hyperswitch-server:
-    image: docker.juspay.io/juspaydotin/hyperswitch-router:standalone
+  orbix-server:
+    image: docker.orbix.example/orbix/orbix-router:standalone
     pull_policy: always
     command: /local/bin/router -f /local/config/docker_compose.toml
     ports:
@@ -148,8 +148,8 @@ services:
       start_period: 5s
       timeout: 5s
 
-  hyperswitch-producer:
-    image: docker.juspay.io/juspaydotin/hyperswitch-producer:standalone
+  orbix-producer:
+    image: docker.orbix.example/orbix/orbix-producer:standalone
     pull_policy: always
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
@@ -161,13 +161,13 @@ services:
     environment:
       - SCHEDULER_FLOW=producer
     depends_on:
-      hyperswitch-consumer:
+      orbix-consumer:
         condition: service_healthy
     labels:
       logs: "promtail"
 
-  hyperswitch-consumer:
-    image: docker.juspay.io/juspaydotin/hyperswitch-consumer:standalone
+  orbix-consumer:
+    image: docker.orbix.example/orbix/orbix-consumer:standalone
     pull_policy: always
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
@@ -179,7 +179,7 @@ services:
     environment:
       - SCHEDULER_FLOW=consumer
     depends_on:
-      hyperswitch-server:
+      orbix-server:
         condition: service_healthy
     labels:
       logs: "promtail"
@@ -190,8 +190,8 @@ services:
       start_period: 5s
       timeout: 10s
 
-  hyperswitch-drainer:
-    image: docker.juspay.io/juspaydotin/hyperswitch-drainer:standalone
+  orbix-drainer:
+    image: docker.orbix.example/orbix/orbix-drainer:standalone
     pull_policy: always
     command: /local/bin/drainer -f /local/config/docker_compose.toml
     deploy:
@@ -204,21 +204,21 @@ services:
       - ./config:/local/config
     restart: unless-stopped
     depends_on:
-      hyperswitch-server:
+      orbix-server:
         condition: service_healthy
     labels:
       logs: "promtail"
 
   ### Web Client
-  hyperswitch-web:
-    image: docker.juspay.io/juspaydotin/hyperswitch-web:latest
+  orbix-web:
+    image: docker.orbix.example/orbix/orbix-web:latest
     pull_policy: always
     ports:
       - "9050:9050"
     networks:
       - router_net
     depends_on:
-      hyperswitch-server:
+      orbix-server:
         condition: service_healthy
     environment:
       - ENABLE_LOGGING=true
@@ -229,8 +229,8 @@ services:
       logs: "promtail"
 
   ### Control Center
-  hyperswitch-control-center:
-    image: docker.juspay.io/juspaydotin/hyperswitch-control-center:latest
+  orbix-control-center:
+    image: docker.orbix.example/orbix/orbix-control-center:latest
     pull_policy: always
     ports:
       - "9000:9000"
@@ -241,9 +241,9 @@ services:
       - ./config/dashboard.toml:/tmp/dashboard-config.toml
       - ./config/dashboard_theme.json:/tmp/dashboard-theme.json
     depends_on:
-      hyperswitch-server:
+      orbix-server:
         condition: service_healthy
-      hyperswitch-web:
+      orbix-web:
         condition: service_started
     labels:
       logs: "promtail"
@@ -252,13 +252,13 @@ services:
     image: docker.io/curlimages/curl-base:latest
     container_name: create-default-user
     depends_on:
-      hyperswitch-server:
+      orbix-server:
         condition: service_healthy
-      hyperswitch-control-center:
+      orbix-control-center:
         condition: service_started
     environment:
-      - HYPERSWITCH_SERVER_URL=http://hyperswitch-server:8080
-      - HYPERSWITCH_CONTROL_CENTER_URL=http://hyperswitch-control-center:9000
+      - ORBIX_SERVER_URL=http://orbix-server:8080
+      - ORBIX_CONTROL_CENTER_URL=http://orbix-control-center:9000
     entrypoint:
       [
         "/bin/sh",
@@ -274,8 +274,8 @@ services:
     image: docker.io/curlimages/curl-base:latest
     container_name: poststart-hook
     depends_on:
-      hyperswitch-server:
-        condition: service_healthy # Ensures it only starts when `hyperswitch-server` is healthy
+      orbix-server:
+        condition: service_healthy # Ensures it only starts when `orbix-server` is healthy
     environment:
       - ONE_CLICK_SETUP=${ONE_CLICK_SETUP:-false}
     entrypoint:
@@ -520,8 +520,8 @@ services:
       - ./config/vector.yaml:/etc/vector/vector.yaml
       - /var/run/docker.sock:/var/run/docker.sock
 
-  hyperswitch-demo:
-    image: docker.juspay.io/juspaydotin/hyperswitch-react-demo-app:latest
+  orbix-demo:
+    image: docker.orbix.example/orbix/orbix-react-demo-app:latest
     pull_policy: always
     ports:
       - "9060:9060"
@@ -531,15 +531,15 @@ services:
     profiles:
       - full_setup
     depends_on:
-      hyperswitch-server:
+      orbix-server:
         condition: service_healthy
-      hyperswitch-web:
+      orbix-web:
         condition: service_started
     environment:
-      - HYPERSWITCH_PUBLISHABLE_KEY=placeholder_publishable_key
-      - HYPERSWITCH_SECRET_KEY=placeholder_api_key
+      - ORBIX_PUBLISHABLE_KEY=placeholder_publishable_key
+      - ORBIX_SECRET_KEY=placeholder_api_key
       - PROFILE_ID=placeholder_profile_id
-      - HYPERSWITCH_CLIENT_URL=http://localhost:9050
-      - HYPERSWITCH_SERVER_URL=http://localhost:8080
+      - ORBIX_CLIENT_URL=http://localhost:9050
+      - ORBIX_SERVER_URL=http://localhost:8080
     labels:
       logs: "promtail"

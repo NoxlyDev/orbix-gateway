@@ -1,6 +1,6 @@
 #[cfg(feature = "payouts")]
 use common_enums::PayoutStatus;
-use hyperswitch_domain_models::router_response_types::SurchargeCalculationResponseData;
+use orbix_domain_models::router_response_types::SurchargeCalculationResponseData;
 
 use super::{payments_grpc, ErrorResponse, PayoutsResponseData};
 use crate::types::transformers::ForeignTryFrom;

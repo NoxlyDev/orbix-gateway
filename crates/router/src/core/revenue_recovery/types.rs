@@ -16,7 +16,7 @@ use diesel_models::{
     enums, payment_intent, process_tracker::business_status, types as diesel_types,
 };
 use error_stack::{self, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     api::ApplicationResponse,
     business_profile, merchant_connector_account,
     payments::{
@@ -126,12 +126,12 @@ impl RevenueRecoveryPaymentIntentStatus {
         let db = &*state.store;
 
         let recovery_payment_intent =
-            hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent::from(
+            orbix_domain_models::revenue_recovery::RecoveryPaymentIntent::from(
                 payment_intent,
             );
 
         let recovery_payment_attempt =
-            hyperswitch_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
+            orbix_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
                 &payment_attempt,
             );
 
@@ -548,7 +548,7 @@ impl Action {
         .await;
 
         let recovery_payment_intent =
-            hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent::from(
+            orbix_domain_models::revenue_recovery::RecoveryPaymentIntent::from(
                 payment_intent,
             );
         let intent_status = recovery_payment_intent.status;
@@ -597,7 +597,7 @@ impl Action {
                 match intent_status {
                     RevenueRecoveryPaymentIntentStatus::Succeeded => {
                         let recovery_payment_attempt =
-                        hyperswitch_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
+                        orbix_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
                             &payment_data.payment_attempt,
                         );
 
@@ -663,7 +663,7 @@ impl Action {
                     }
                     RevenueRecoveryPaymentIntentStatus::PartialCharged => {
                         let recovery_payment_attempt =
-                        hyperswitch_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
+                        orbix_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
                             &payment_data.payment_attempt,
                         );
 
@@ -704,7 +704,7 @@ impl Action {
                     }
                     RevenueRecoveryPaymentIntentStatus::Failed => {
                         let recovery_payment_attempt =
-                        hyperswitch_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
+                        orbix_domain_models::revenue_recovery::RecoveryPaymentAttempt::from(
                             &payment_data.payment_attempt,
                         );
 
@@ -1677,7 +1677,7 @@ async fn persist_billing_connector_transaction_id(
     let processor_key_store =
         domain::ProcessorKeyStore::from_untagged(revenue_recovery_payment_data.key_store.clone());
     let storage_scheme = processor_account.get_storage_scheme();
-    let update = hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptUpdate::RecordBackUpdate {
+    let update = orbix_domain_models::payments::payment_attempt::PaymentAttemptUpdate::RecordBackUpdate {
         feature_metadata: Some(feature_metadata),
         updated_by: storage_scheme.inner().to_string(),
     };
@@ -1704,7 +1704,7 @@ pub fn construct_invoice_record_back_router_data(
     billing_mca: &merchant_connector_account::MerchantConnectorAccount,
     payment_attempt: &PaymentAttempt,
     payment_intent: &PaymentIntent,
-) -> RecoveryResult<hyperswitch_domain_models::types::InvoiceRecordBackRouterData> {
+) -> RecoveryResult<orbix_domain_models::types::InvoiceRecordBackRouterData> {
     logger::info!("Entering construct_invoice_record_back_router_data");
 
     let auth_type: types::ConnectorAuthType =
@@ -1726,7 +1726,7 @@ pub fn construct_invoice_record_back_router_data(
         .attach_printable("Cannot find connector from the connector_name")?;
 
     let connector_params =
-        hyperswitch_domain_models::connector_endpoints::Connectors::get_connector_params(
+        orbix_domain_models::connector_endpoints::Connectors::get_connector_params(
             &state.conf.connectors,
             connector,
         )

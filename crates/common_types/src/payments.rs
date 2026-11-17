@@ -20,7 +20,7 @@ use euclid::frontend::{
     ast::Program,
     dir::{DirKeyKind, EuclidDirFilter},
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use rust_decimal::{
     prelude::{FromPrimitive, ToPrimitive},
     Decimal, MathematicalOps,
@@ -46,7 +46,7 @@ use crate::{
     serde::Serialize,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PhoneDetails {
     /// The contact number
     #[schema(value_type = Option<String>, example = "9123456789")]
@@ -62,7 +62,7 @@ pub struct PhoneDetails {
 #[derive(
     Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(deny_unknown_fields)]
 pub struct MultiCurrencyProcessingAmountData {
     /// Merchant settlement amount in minor units.
@@ -88,7 +88,7 @@ pub struct MultiCurrencyProcessingAmountData {
 )]
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(deny_unknown_fields)]
 /// Feature metadata for a capture operation.
 pub struct CaptureFeatureMetadata {
@@ -105,7 +105,7 @@ impl_to_sql_from_sql_json!(CaptureFeatureMetadata);
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Fee information for Split Payments to be charged on the payment being collected
 pub enum SplitPaymentsRequest {
     /// StripeSplitPayment
@@ -127,7 +127,7 @@ impl_to_sql_from_sql_json!(SplitPaymentsRequest);
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SmithyModel)]
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Fee information for Split Payments to be charged on the payment being collected for Stripe
 pub struct StripeSplitPaymentRequest {
     /// Stripe's charge type
@@ -155,7 +155,7 @@ impl_to_sql_from_sql_json!(StripeSplitPaymentRequest);
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SmithyModel)]
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// A single ledger entry distributing payment to one receiver for Payload split payments
 pub struct PayloadLedgerItem {
     /// Amount in minor units to be routed to this receiver out of the payment
@@ -172,7 +172,7 @@ impl_to_sql_from_sql_json!(PayloadLedgerItem);
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SmithyModel)]
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Split payment configuration for Payload — distributes a payment across multiple receivers via ledger entries
 pub struct PayloadSplitPaymentRequest {
     /// Ledger entries specifying how the payment is distributed across receivers
@@ -313,7 +313,7 @@ impl_to_sql_from_sql_json!(ConditionalConfigs);
 #[cfg_attr(feature = "diesel", derive(AsExpression))]
 #[serde(deny_unknown_fields)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CustomerAcceptance {
     /// Type of acceptance provided by the
     #[schema(example = "online")]
@@ -351,7 +351,7 @@ impl CustomerAcceptance {
     }
 }
 
-impl hyperswitch_masking::SerializableSecret for CustomerAcceptance {}
+impl orbix_masking::SerializableSecret for CustomerAcceptance {}
 
 #[derive(
     Default,
@@ -366,7 +366,7 @@ impl hyperswitch_masking::SerializableSecret for CustomerAcceptance {}
     SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// This is used to indicate if the mandate was accepted online or offline
 pub enum AcceptanceType {
     /// Online
@@ -391,7 +391,7 @@ pub enum AcceptanceType {
 #[serde(deny_unknown_fields)]
 /// Details of online mandate
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct OnlineMandate {
     /// Ip address of the customer machine from which the mandate was created
     #[schema(value_type = String, example = "123.32.25.123")]
@@ -433,7 +433,7 @@ pub type DecisionManagerResponse = DecisionManagerRecord;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SmithyModel)]
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct StripeChargeResponseData {
     /// Identifier for charge created for the payment
     #[smithy(value_type = "Option<String>")]
@@ -467,7 +467,7 @@ impl_to_sql_from_sql_json!(StripeChargeResponseData);
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ConnectorChargeResponseData {
     /// StripeChargeResponseData
     #[smithy(value_type = "StripeChargeResponseData")]
@@ -491,7 +491,7 @@ impl_to_sql_from_sql_json!(ConnectorChargeResponseData);
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct XenditSplitRoute {
     /// Amount of payments to be split
     #[smithy(value_type = "Option<i64>")]
@@ -518,7 +518,7 @@ impl_to_sql_from_sql_json!(XenditSplitRoute);
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct XenditMultipleSplitRequest {
     /// Name to identify split rule. Not required to be unique. Typically based on transaction and/or sub-merchant types.
     #[smithy(value_type = "String")]
@@ -542,7 +542,7 @@ impl_to_sql_from_sql_json!(XenditMultipleSplitRequest);
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum XenditSplitRequest {
     /// Split Between Multiple Accounts
     #[smithy(value_type = "XenditMultipleSplitRequest")]
@@ -561,7 +561,7 @@ impl_to_sql_from_sql_json!(XenditSplitRequest);
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum XenditChargeResponseData {
     /// Split Between Multiple Accounts
     #[smithy(value_type = "XenditMultipleSplitResponse")]
@@ -579,7 +579,7 @@ impl_to_sql_from_sql_json!(XenditChargeResponseData);
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct XenditMultipleSplitResponse {
     /// Identifier for split rule created for the payment
     #[smithy(value_type = "String")]
@@ -605,7 +605,7 @@ impl_to_sql_from_sql_json!(XenditMultipleSplitResponse);
 )]
 #[serde(rename_all = "snake_case")]
 #[serde(untagged)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// This enum is used to represent the Gpay payment data, which can either be encrypted or decrypted.
 pub enum GpayTokenizationData {
     /// This variant contains the decrypted Gpay payment data as a structured object.
@@ -619,7 +619,7 @@ pub enum GpayTokenizationData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// This struct represents the encrypted Gpay payment data
 pub struct GpayEcryptedTokenizationData {
     /// The type of the token
@@ -640,7 +640,7 @@ pub struct GpayEcryptedTokenizationData {
     Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// This struct represents the decrypted Google Pay payment data
 pub struct GPayPredecryptData {
     /// Indicates whether Google Pay supplied a funding PAN or a tokenized device PAN.
@@ -817,7 +817,7 @@ impl GPayPredecryptData {
 )]
 #[serde(rename_all = "snake_case")]
 #[serde(untagged)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// This enum is used to represent the Apple Pay payment data, which can either be encrypted or decrypted.
 pub enum ApplePayPaymentData {
     /// This variant contains the decrypted Apple Pay payment data as a structured object.
@@ -832,7 +832,7 @@ pub enum ApplePayPaymentData {
     Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// This struct represents the decrypted Apple Pay payment data
 pub struct ApplePayPredecryptData {
     /// The primary account number
@@ -878,7 +878,7 @@ impl ApplePayPredecryptData {
     Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// This struct represents the cryptogram data for Apple Pay transactions
 pub struct ApplePayCryptogramData {
     /// The online payment cryptogram
@@ -1081,7 +1081,7 @@ pub struct RecoveryConnectorAccounts {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RecoveryConnectorDetails {
-    /// Recorded against connector accounts, so Hyperswitch can sync the transaction with the
+    /// Recorded against connector accounts, so Orbix Gateway can sync the transaction with the
     /// connector and retry through it.
     ConnectorAccounts(RecoveryConnectorAccounts),
     /// Reported by the merchant without any connector account, so what was reported is final.
@@ -1516,7 +1516,7 @@ pub struct InteracCustomerInfoDetails {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTransactionIdAndDecryptedWalletTokenDetails {
     /// The Decrypted Token
     #[schema(value_type = String, example = "4604000460040787")]
@@ -1865,7 +1865,7 @@ pub enum TokenSource {
     ToSchema,
     smithy::SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SurchargeErrorDetails {
     /// Connector error code when the external calculation failed.
     #[schema(example = "INVALID_NICN")]
@@ -1966,7 +1966,7 @@ pub struct AppliedOfferDetailsV1 {
     pub offer_quote_id: String,
     /// Offer Engine merchant id the offer was applied under
     pub offer_engine_merchant_id: String,
-    /// Offer Engine transaction id (the Hyperswitch payment attempt id used at `/apply`)
+    /// Offer Engine transaction id (the Orbix Gateway payment attempt id used at `/apply`)
     pub offer_engine_txn_id: String,
     /// Offer Engine offer id that was applied
     pub offer_id: String,

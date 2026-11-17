@@ -32,7 +32,7 @@ time = { version = "0.3.41", features = ["serde", "serde-well-known", "std"] }
 common_enums = { version = "0.1.0", path = "../common_enums", features = ["diesel"] }
 common_utils = { version = "0.1.0", path = "../common_utils", features = ["diesel"] }
 common_types = { version = "0.1.0", path = "../common_types", features = ["diesel"] }
-hyperswitch_masking = "0.0.1"
+orbix_masking = { path = "../../vendor/orbix_framework/crates/orbix_masking" }
 router_derive = { version = "0.1.0", path = "../router_derive" }
 router_env = { version = "0.1.0", path = "../router_env", features = ["log_extra_implicit_fields", "log_custom_entries_to_extra"] }
 deja = { path = "../../vendor/orbix_deja/crates/deja", optional = true, default-features = false, features = ["error-stack"] }

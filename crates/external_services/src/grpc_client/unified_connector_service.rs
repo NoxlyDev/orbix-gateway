@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use common_enums::{connector_enums::Connector, ConnectorType};
 use common_utils::{consts as common_utils_consts, errors::CustomResult, types::Url};
 use error_stack::ResultExt;
-pub use hyperswitch_interfaces::unified_connector_service::transformers::UnifiedConnectorServiceError;
-use hyperswitch_masking::{PeekInterface, Secret};
+pub use orbix_interfaces::unified_connector_service::transformers::UnifiedConnectorServiceError;
+use orbix_masking::{PeekInterface, Secret};
 use router_env::logger;
 use tokio::time::Duration;
 use tonic::{
@@ -242,7 +242,7 @@ pub struct ConnectorAuthMetadata {
 pub enum VaultConnectorType {
     /// Proxy vault - forwards requests through a proxy (e.g., VGS forward proxy)
     Proxy,
-    /// Transformation vault - transforms/tokenizes data (e.g., HyperswitchVault)
+    /// Transformation vault - transforms/tokenizes data (e.g., OrbixVault)
     Transformation,
 }
 
@@ -261,8 +261,8 @@ pub struct VaultConnectorAuth {
 pub enum ExternalVaultProxyMetadata {
     /// VGS proxy data variant
     VgsMetadata(VgsMetadata),
-    /// HyperswitchVault data variant
-    HyperswitchVaultMetadata(HyperswitchVaultMetadata),
+    /// OrbixVault data variant
+    OrbixVaultMetadata(OrbixVaultMetadata),
 }
 
 /// Complete external vault proxy configuration to be serialized and sent to UCS
@@ -270,15 +270,15 @@ pub enum ExternalVaultProxyMetadata {
 pub struct ExternalVaultProxyConfig {
     /// Type of the vault connector (e.g., Proxy or Transformation)
     pub vault_connector_type: VaultConnectorType,
-    /// Name/ID of the vault connector (e.g., "vgs", "hyperswitch_vault")
+    /// Name/ID of the vault connector (e.g., "vgs", "orbix_vault")
     pub vault_connector_id: Option<String>,
     /// Metadata specific to the vault connector type
     pub metadata: ExternalVaultProxyMetadata,
 }
 
-/// HyperswitchVault proxy data
+/// OrbixVault proxy data
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct HyperswitchVaultMetadata {
+pub struct OrbixVaultMetadata {
     /// External vault url
     pub vault_endpoint: Url,
     /// Authentication data for the vault connector

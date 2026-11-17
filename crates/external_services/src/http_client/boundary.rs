@@ -2,8 +2,8 @@ use common_utils::{
     errors::CustomResult,
     request::{Request, RequestContent},
 };
-use hyperswitch_interfaces::errors::HttpClientError;
-use hyperswitch_masking::{ExposeInterface, Maskable, PeekInterface, Secret};
+use orbix_interfaces::errors::HttpClientError;
+use orbix_masking::{ExposeInterface, Maskable, PeekInterface, Secret};
 use reqwest::ResponseBuilderExt;
 use serde_json::json;
 

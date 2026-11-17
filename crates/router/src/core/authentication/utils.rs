@@ -1,10 +1,10 @@
 use common_utils::{ext_traits::AsyncExt, types::keymanager::ToEncryptable};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     authentication, router_data_v2::ExternalAuthenticationFlowData, router_request_types,
     type_encryption::AsyncLift,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_masking::{ExposeInterface, PeekInterface};
 
 use crate::{
     consts,
@@ -61,7 +61,7 @@ pub async fn update_trackers<F: Clone, Req>(
     router_data: RouterData<F, Req, AuthenticationResponseData>,
     authentication: authentication::Authentication,
     acquirer_details: Option<super::types::AcquirerDetails>,
-    merchant_key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+    merchant_key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
     authentication_info: router_request_types::authentication::AuthenticationInfo,
     storage_scheme: diesel_models::enums::MerchantStorageScheme,
 ) -> RouterResult<authentication::Authentication> {
@@ -84,7 +84,7 @@ pub async fn update_trackers<F: Clone, Req>(
                     .clone()
                     .map(|billing| {
                         common_utils::ext_traits::Encode::encode_to_value(&billing)
-                            .map(hyperswitch_masking::Secret::<serde_json::Value>::new)
+                            .map(orbix_masking::Secret::<serde_json::Value>::new)
                     })
                     .transpose()
                     .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -95,7 +95,7 @@ pub async fn update_trackers<F: Clone, Req>(
                     .clone()
                     .map(|shipping| {
                         common_utils::ext_traits::Encode::encode_to_value(&shipping)
-                            .map(hyperswitch_masking::Secret::<serde_json::Value>::new)
+                            .map(orbix_masking::Secret::<serde_json::Value>::new)
                     })
                     .transpose()
                     .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -389,11 +389,11 @@ pub async fn create_new_authentication(
     psd2_sca_exemption_type: Option<common_enums::ScaExemptionType>,
     processor: &domain::Processor,
     initiator: Option<&domain::Initiator>,
-    card: &hyperswitch_domain_models::payment_method_data::Card,
+    card: &orbix_domain_models::payment_method_data::Card,
     browser_info: Option<&router_request_types::BrowserInformation>,
     acquirer_details: Option<&super::types::AcquirerDetails>,
-    billing_address: Option<&hyperswitch_domain_models::address::Address>,
-    shipping_address: Option<&hyperswitch_domain_models::address::Address>,
+    billing_address: Option<&orbix_domain_models::address::Address>,
+    shipping_address: Option<&orbix_domain_models::address::Address>,
     amount: Option<common_utils::types::MinorUnit>,
     currency: Option<common_enums::Currency>,
 ) -> RouterResult<authentication::Authentication> {

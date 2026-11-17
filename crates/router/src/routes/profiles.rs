@@ -101,7 +101,7 @@ pub async fn profile_create(
          },
          req,
          _| {
-            let platform = hyperswitch_domain_models::platform::Platform::new(
+            let platform = orbix_domain_models::platform::Platform::new(
                 merchant_account.clone(),
                 key_store.clone(),
                 merchant_account,

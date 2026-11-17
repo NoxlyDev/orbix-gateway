@@ -2,13 +2,13 @@ use async_trait::async_trait;
 use common_enums;
 use common_types::payments as common_payments_types;
 use common_utils::fp_utils;
-use hyperswitch_connectors::constants as connector_consts;
-use hyperswitch_domain_models::{
+use orbix_connectors::constants as connector_consts;
+use orbix_domain_models::{
     mandates, payments as domain_payments, router_data,
     router_data_v2::{flow_common_types, PaymentFlowData},
     router_flow_types, router_request_types, router_response_types,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::{self as api_interface, ConnectorSpecifications},
     consts as interface_consts,
 };
@@ -84,7 +84,7 @@ impl
         api::SetupMandate,
         types::SetupMandateRequestData,
         types::PaymentsResponseData,
-    > for hyperswitch_domain_models::payments::PaymentConfirmData<api::SetupMandate>
+    > for orbix_domain_models::payments::PaymentConfirmData<api::SetupMandate>
 {
     async fn construct_router_data<'a>(
         &self,
@@ -145,8 +145,8 @@ impl Feature<api::SetupMandate, types::SetupMandateRequestData> for types::Setup
         > = connector.connector.get_connector_integration();
         // Change the authentication_type to ThreeDs, for google_pay wallet if card_holder_authenticated or account_verified in assurance_details is false,
         // unless the merchant requested `no_three_ds` — the merchant's requested authentication type is always respected
-        if let hyperswitch_domain_models::payment_method_data::PaymentMethodData::Wallet(
-            hyperswitch_domain_models::payment_method_data::WalletData::GooglePay(google_pay_data),
+        if let orbix_domain_models::payment_method_data::PaymentMethodData::Wallet(
+            orbix_domain_models::payment_method_data::WalletData::GooglePay(google_pay_data),
         ) = &self.request.payment_method_data
         {
             if let Some(assurance_details) = google_pay_data.info.assurance_details.as_ref() {

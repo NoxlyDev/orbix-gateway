@@ -35,7 +35,7 @@ pub struct SdkPaymentContext {
 async fn get_payment_context(
     state: &SessionState,
     platform: &domain::Platform,
-    payment_intent: Option<&hyperswitch_domain_models::payments::PaymentIntent>,
+    payment_intent: Option<&orbix_domain_models::payments::PaymentIntent>,
 ) -> error_stack::Result<SdkPaymentContext, errors::ApiErrorResponse> {
     let db = &*state.store;
 
@@ -338,7 +338,7 @@ pub async fn get_profile_superposition_sdk_config(
 
     let account_config = build_account_config(&state, &platform, &business_profile).await;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         SuperPositionConfigResponse {
             raw_configs,
             resolved_configs: None,
@@ -448,7 +448,7 @@ pub async fn get_superposition_sdk_config(
 
     let account_config = build_account_config(&state, &platform, &business_profile).await;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         SuperPositionConfigResponse {
             raw_configs,
             resolved_configs: None,

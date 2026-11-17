@@ -28,7 +28,7 @@ tokio = "1.48.0"
 toml = "0.8.22"
 
 # First party crates
-hyperswitch_masking = "0.0.1"
+orbix_masking = { path = "../../vendor/orbix_framework/crates/orbix_masking" }
 common_enums = { version = "0.1.0", path = "../common_enums" }
 common_utils = { version = "0.1.0", path = "../common_utils" }
 

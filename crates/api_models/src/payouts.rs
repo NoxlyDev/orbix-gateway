@@ -13,7 +13,7 @@ use common_utils::{
     transformers::ForeignFrom,
     types::{UnifiedCode, UnifiedMessage},
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 #[cfg(feature = "v1")]
 use payments::BrowserInformation;
 use payments::FrmMessage;
@@ -134,7 +134,7 @@ pub struct PayoutCreateRequest {
     pub client_secret: Option<String>,
 
     /// The URL to redirect after the completion of the operation
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<String>,
 
     /// Business country of the merchant for this payout. _Deprecated: Use profile_id instead._
@@ -953,7 +953,7 @@ pub struct PayoutCreateResponse {
     pub client_secret: Option<String>,
 
     /// The URL to redirect after the completion of the operation
-    #[schema(value_type = String, example = "https://hyperswitch.io")]
+    #[schema(value_type = String, example = "https://orbix.example")]
     pub return_url: Option<String>,
 
     /// Business country of the merchant for this payout. _Deprecated: Use profile_id instead._

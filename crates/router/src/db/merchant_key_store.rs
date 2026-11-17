@@ -1,4 +1,4 @@
-pub use hyperswitch_domain_models::merchant_key_store::{self, MerchantKeyStoreInterface};
+pub use orbix_domain_models::merchant_key_store::{self, MerchantKeyStoreInterface};
 
 #[cfg(test)]
 mod tests {
@@ -8,7 +8,7 @@ mod tests {
         type_name,
         types::keymanager::{Identifier, KeyManagerState},
     };
-    use hyperswitch_domain_models::master_key::MasterKeyInterface;
+    use orbix_domain_models::master_key::MasterKeyInterface;
     use time::macros::datetime;
     use tokio::sync::oneshot;
 

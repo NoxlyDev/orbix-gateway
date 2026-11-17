@@ -40,9 +40,9 @@ function parseRoute(url) {
     }
 
     const route = new URL(url).hostname;
-    return route === "api.hyperswitch.io"
-      ? "https://api.hyperswitch.io/logs/redirection"
-      : "https://app.hyperswitch.io/api/logs/redirection";
+    return route === "api.orbix.example"
+      ? "https://api.orbix.example/logs/redirection"
+      : "https://app.orbix.example/api/logs/redirection";
   }
 
   /*

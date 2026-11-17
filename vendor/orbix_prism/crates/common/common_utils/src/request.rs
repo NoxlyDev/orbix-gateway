@@ -1,5 +1,5 @@
 use crate::events::MaskedSerdeValue;
-use hyperswitch_masking::{Maskable, Secret};
+use orbix_masking::{Maskable, Secret};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -46,7 +46,7 @@ pub enum ContentType {
 fn default_request_headers() -> [(String, Maskable<String>); 1] {
     use http::header;
 
-    [(header::VIA.to_string(), "HyperSwitch".to_string().into())]
+    [(header::VIA.to_string(), "Orbix".to_string().into())]
 }
 
 #[derive(Debug)]
@@ -93,10 +93,10 @@ impl std::fmt::Debug for RequestContent {
 }
 #[derive(Serialize)]
 pub enum RequestContent {
-    Json(Box<dyn hyperswitch_masking::ErasedMaskSerialize + Send>),
-    FormUrlEncoded(Box<dyn hyperswitch_masking::ErasedMaskSerialize + Send>),
+    Json(Box<dyn orbix_masking::ErasedMaskSerialize + Send>),
+    FormUrlEncoded(Box<dyn orbix_masking::ErasedMaskSerialize + Send>),
     FormData(MultipartData),
-    Xml(Box<dyn hyperswitch_masking::ErasedMaskSerialize + Send>),
+    Xml(Box<dyn orbix_masking::ErasedMaskSerialize + Send>),
     RawBytes(Vec<u8>),
 }
 
@@ -300,7 +300,7 @@ impl RequestContent {
     }
 
     pub fn get_body_bytes(&self) -> Result<(Option<Vec<u8>>, Option<String>), RequestError> {
-        use hyperswitch_masking::ExposeInterface;
+        use orbix_masking::ExposeInterface;
         match self {
             Self::RawBytes(bytes) => Ok((Some(bytes.clone()), None)),
             Self::Json(_) | Self::FormUrlEncoded(_) | Self::Xml(_) => {
@@ -331,7 +331,7 @@ impl Request {
     /// Converts the request headers into a simple HashMap with lowercase keys.
     /// This ensures global parity across all language SDKs.
     pub fn get_headers_map(&self) -> std::collections::HashMap<String, String> {
-        use hyperswitch_masking::ExposeInterface;
+        use orbix_masking::ExposeInterface;
         self.headers
             .iter()
             .map(|(k, v)| {

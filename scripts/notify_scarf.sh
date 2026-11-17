@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Define the URL and parameters
-SCARF_URL="https://hyperswitch.gateway.scarf.sh/docker"
+SCARF_URL="https://orbix.gateway.scarf.sh/docker"
 VERSION=$1
 INSTALLATION_STATUS=$2
 

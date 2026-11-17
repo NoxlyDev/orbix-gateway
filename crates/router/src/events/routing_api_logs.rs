@@ -1,4 +1,4 @@
-pub use hyperswitch_interfaces::events::routing_api_logs::RoutingEvent;
+pub use orbix_interfaces::events::routing_api_logs::RoutingEvent;
 
 use super::EventType;
 use crate::services::kafka::KafkaMessage;

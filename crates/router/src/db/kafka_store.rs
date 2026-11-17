@@ -17,14 +17,14 @@ use diesel_models::{
 };
 use error_stack::ResultExt;
 #[cfg(feature = "payouts")]
-use hyperswitch_domain_models::payouts::{
+use orbix_domain_models::payouts::{
     payout_attempt::PayoutAttemptInterface, payouts::PayoutsInterface,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::platform::Initiator;
+use orbix_domain_models::platform::Initiator;
 #[cfg(all(feature = "olap", feature = "v1"))]
-use hyperswitch_domain_models::platform::ProviderMerchantId;
-use hyperswitch_domain_models::{
+use orbix_domain_models::platform::ProviderMerchantId;
+use orbix_domain_models::{
     authentication::AuthenticationInterface,
     cards_info::CardsInfoInterface,
     disputes,
@@ -39,8 +39,8 @@ use hyperswitch_domain_models::{
     },
 };
 #[cfg(not(feature = "payouts"))]
-use hyperswitch_domain_models::{PayoutAttemptInterface, PayoutsInterface};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::{PayoutAttemptInterface, PayoutsInterface};
+use orbix_masking::Secret;
 use redis_interface::{errors::RedisError, RedisEntryId};
 use router_env::{instrument, logger};
 use scheduler::{
@@ -1983,11 +1983,11 @@ impl PaymentAttemptInterface for KafkaStore {
     #[cfg(feature = "v1")]
     async fn get_filters_for_payments(
         &self,
-        pi: &[hyperswitch_domain_models::payments::PaymentIntent],
+        pi: &[orbix_domain_models::payments::PaymentIntent],
         processor_merchant_id: &ProcessorMerchantId,
         storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<
-        hyperswitch_domain_models::payments::payment_attempt::PaymentListFilters,
+        orbix_domain_models::payments::payment_attempt::PaymentListFilters,
         errors::StorageError,
     > {
         self.diesel_store
@@ -2197,7 +2197,7 @@ impl PaymentIntentInterface for KafkaStore {
     async fn filter_payment_intent_by_constraints(
         &self,
         processor_merchant_id: &ProcessorMerchantId,
-        filters: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        filters: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         key_store: &ProcessorKeyStore,
         storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<Vec<storage::PaymentIntent>, errors::StorageError> {
@@ -2215,7 +2215,7 @@ impl PaymentIntentInterface for KafkaStore {
     async fn get_filtered_payment_intents_attempt_for_platform(
         &self,
         provider_merchant_id: &ProviderMerchantId,
-        filters: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        filters: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
     ) -> CustomResult<
         Vec<(
             diesel_models::PaymentIntent,
@@ -2232,7 +2232,7 @@ impl PaymentIntentInterface for KafkaStore {
     async fn get_payment_intents_attempt_count_for_platform(
         &self,
         provider_merchant_id: &ProviderMerchantId,
-        filters: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        filters: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
     ) -> CustomResult<i64, errors::StorageError> {
         self.diesel_store
             .get_payment_intents_attempt_count_for_platform(provider_merchant_id, filters)
@@ -2272,13 +2272,13 @@ impl PaymentIntentInterface for KafkaStore {
     async fn get_filtered_payment_intents_attempt(
         &self,
         processor_merchant_id: &ProcessorMerchantId,
-        constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         key_store: &ProcessorKeyStore,
         storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<
         Vec<(
-            hyperswitch_domain_models::payments::PaymentIntent,
-            hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+            orbix_domain_models::payments::PaymentIntent,
+            orbix_domain_models::payments::payment_attempt::PaymentAttempt,
         )>,
         errors::StorageError,
     > {
@@ -2296,13 +2296,13 @@ impl PaymentIntentInterface for KafkaStore {
     async fn get_filtered_payment_intents_attempt(
         &self,
         merchant_id: &ProcessorMerchantId,
-        constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         key_store: &ProcessorKeyStore,
         storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<
         Vec<(
-            hyperswitch_domain_models::payments::PaymentIntent,
-            Option<hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt>,
+            orbix_domain_models::payments::PaymentIntent,
+            Option<orbix_domain_models::payments::payment_attempt::PaymentAttempt>,
         )>,
         errors::StorageError,
     > {
@@ -2320,7 +2320,7 @@ impl PaymentIntentInterface for KafkaStore {
     async fn get_filtered_active_attempt_ids_for_total_count(
         &self,
         processor_merchant_id: &ProcessorMerchantId,
-        constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<Vec<String>, errors::StorageError> {
         self.diesel_store
@@ -2339,7 +2339,7 @@ impl PaymentIntentInterface for KafkaStore {
         profile_id: &id_type::ProfileId,
         merchant_key_store: &ProcessorKeyStore,
         storage_scheme: &ProcessorStorageScheme,
-    ) -> error_stack::Result<hyperswitch_domain_models::payments::PaymentIntent, errors::StorageError>
+    ) -> error_stack::Result<orbix_domain_models::payments::PaymentIntent, errors::StorageError>
     {
         self.diesel_store
             .find_payment_intent_by_merchant_reference_id_profile_id(
@@ -2354,7 +2354,7 @@ impl PaymentIntentInterface for KafkaStore {
     async fn get_filtered_active_attempt_ids_for_total_count(
         &self,
         merchant_id: &ProcessorMerchantId,
-        constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<Vec<Option<String>>, errors::StorageError> {
         self.diesel_store
@@ -2782,11 +2782,11 @@ impl PayoutAttemptInterface for KafkaStore {
 
     async fn get_filters_for_payouts(
         &self,
-        payouts: &[hyperswitch_domain_models::payouts::payouts::Payouts],
+        payouts: &[orbix_domain_models::payouts::payouts::Payouts],
         merchant_id: &id_type::MerchantId,
         storage_scheme: MerchantStorageScheme,
     ) -> CustomResult<
-        hyperswitch_domain_models::payouts::payout_attempt::PayoutListFilters,
+        orbix_domain_models::payouts::payout_attempt::PayoutListFilters,
         errors::StorageError,
     > {
         self.diesel_store
@@ -2894,7 +2894,7 @@ impl PayoutsInterface for KafkaStore {
     async fn filter_payouts_by_constraints(
         &self,
         merchant_id: &id_type::MerchantId,
-        filters: &hyperswitch_domain_models::payouts::PayoutFetchConstraints,
+        filters: &orbix_domain_models::payouts::PayoutFetchConstraints,
         merchant_key_store: &domain::MerchantKeyStore,
         storage_scheme: MerchantStorageScheme,
     ) -> CustomResult<Vec<storage::Payouts>, errors::StorageError> {
@@ -2907,7 +2907,7 @@ impl PayoutsInterface for KafkaStore {
     async fn filter_payouts_and_attempts(
         &self,
         merchant_id: &id_type::MerchantId,
-        filters: &hyperswitch_domain_models::payouts::PayoutFetchConstraints,
+        filters: &orbix_domain_models::payouts::PayoutFetchConstraints,
         merchant_key_store: &domain::MerchantKeyStore,
         storage_scheme: MerchantStorageScheme,
     ) -> CustomResult<
@@ -2970,7 +2970,7 @@ impl PayoutsInterface for KafkaStore {
     async fn filter_active_payout_ids_by_constraints(
         &self,
         merchant_id: &id_type::MerchantId,
-        constraints: &hyperswitch_domain_models::payouts::PayoutFetchConstraints,
+        constraints: &orbix_domain_models::payouts::PayoutFetchConstraints,
     ) -> CustomResult<Vec<id_type::PayoutId>, errors::StorageError> {
         self.diesel_store
             .filter_active_payout_ids_by_constraints(merchant_id, constraints)
@@ -3713,8 +3713,8 @@ impl RoutingAlgorithmInterface for KafkaStore {
 impl GsmInterface for KafkaStore {
     async fn add_gsm_rule(
         &self,
-        rule: hyperswitch_domain_models::gsm::GatewayStatusMap,
-    ) -> CustomResult<hyperswitch_domain_models::gsm::GatewayStatusMap, errors::StorageError> {
+        rule: orbix_domain_models::gsm::GatewayStatusMap,
+    ) -> CustomResult<orbix_domain_models::gsm::GatewayStatusMap, errors::StorageError> {
         self.diesel_store.add_gsm_rule(rule).await
     }
 
@@ -3738,7 +3738,7 @@ impl GsmInterface for KafkaStore {
         sub_flow: String,
         code: String,
         message: String,
-    ) -> CustomResult<hyperswitch_domain_models::gsm::GatewayStatusMap, errors::StorageError> {
+    ) -> CustomResult<orbix_domain_models::gsm::GatewayStatusMap, errors::StorageError> {
         self.diesel_store
             .find_gsm_rule(connector, flow, sub_flow, code, message)
             .await
@@ -3751,8 +3751,8 @@ impl GsmInterface for KafkaStore {
         sub_flow: String,
         code: String,
         message: String,
-        data: hyperswitch_domain_models::gsm::GatewayStatusMappingUpdate,
-    ) -> CustomResult<hyperswitch_domain_models::gsm::GatewayStatusMap, errors::StorageError> {
+        data: orbix_domain_models::gsm::GatewayStatusMappingUpdate,
+    ) -> CustomResult<orbix_domain_models::gsm::GatewayStatusMap, errors::StorageError> {
         self.diesel_store
             .update_gsm_rule(connector, flow, sub_flow, code, message, data)
             .await
@@ -4219,10 +4219,10 @@ impl BatchSampleDataInterface for KafkaStore {
     async fn insert_payment_intents_batch_for_sample_data(
         &self,
         state: &KeyManagerState,
-        batch: Vec<hyperswitch_domain_models::payments::PaymentIntent>,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        batch: Vec<orbix_domain_models::payments::PaymentIntent>,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
     ) -> CustomResult<
-        Vec<hyperswitch_domain_models::payments::PaymentIntent>,
+        Vec<orbix_domain_models::payments::PaymentIntent>,
         storage_impl::errors::StorageError,
     > {
         let payment_intents_list = self
@@ -4249,9 +4249,9 @@ impl BatchSampleDataInterface for KafkaStore {
         &self,
         batch: Vec<diesel_models::user::sample_data::PaymentAttemptBatchNew>,
         state: &KeyManagerState,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
     ) -> CustomResult<
-        Vec<hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt>,
+        Vec<orbix_domain_models::payments::payment_attempt::PaymentAttempt>,
         storage_impl::errors::StorageError,
     > {
         let payment_attempts_list = self
@@ -4311,9 +4311,9 @@ impl BatchSampleDataInterface for KafkaStore {
         &self,
         state: &KeyManagerState,
         merchant_id: &id_type::MerchantId,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
     ) -> CustomResult<
-        Vec<hyperswitch_domain_models::payments::PaymentIntent>,
+        Vec<orbix_domain_models::payments::PaymentIntent>,
         storage_impl::errors::StorageError,
     > {
         let payment_intents_list = self
@@ -4339,9 +4339,9 @@ impl BatchSampleDataInterface for KafkaStore {
         &self,
         merchant_id: &id_type::MerchantId,
         state: &KeyManagerState,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
     ) -> CustomResult<
-        Vec<hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt>,
+        Vec<orbix_domain_models::payments::payment_attempt::PaymentAttempt>,
         storage_impl::errors::StorageError,
     > {
         let payment_attempts_list = self
@@ -4446,10 +4446,10 @@ impl AuthenticationInterface for KafkaStore {
         &self,
         state: &KeyManagerState,
         key_store: &domain::MerchantKeyStore,
-        authentication: hyperswitch_domain_models::authentication::Authentication,
+        authentication: orbix_domain_models::authentication::Authentication,
         storage_scheme: MerchantStorageScheme,
     ) -> error_stack::Result<
-        hyperswitch_domain_models::authentication::Authentication,
+        orbix_domain_models::authentication::Authentication,
         errors::StorageError,
     > {
         let auth = self
@@ -4476,7 +4476,7 @@ impl AuthenticationInterface for KafkaStore {
         state: &KeyManagerState,
         storage_scheme: MerchantStorageScheme,
     ) -> error_stack::Result<
-        hyperswitch_domain_models::authentication::Authentication,
+        orbix_domain_models::authentication::Authentication,
         errors::StorageError,
     > {
         self.diesel_store
@@ -4498,7 +4498,7 @@ impl AuthenticationInterface for KafkaStore {
         state: &KeyManagerState,
         storage_scheme: MerchantStorageScheme,
     ) -> error_stack::Result<
-        hyperswitch_domain_models::authentication::Authentication,
+        orbix_domain_models::authentication::Authentication,
         errors::StorageError,
     > {
         self.diesel_store
@@ -4514,13 +4514,13 @@ impl AuthenticationInterface for KafkaStore {
 
     async fn update_authentication_by_processor_merchant_id_authentication_id(
         &self,
-        previous_state: hyperswitch_domain_models::authentication::Authentication,
-        authentication_update: hyperswitch_domain_models::authentication::AuthenticationUpdate,
+        previous_state: orbix_domain_models::authentication::Authentication,
+        authentication_update: orbix_domain_models::authentication::AuthenticationUpdate,
         key_store: &domain::MerchantKeyStore,
         state: &KeyManagerState,
         storage_scheme: MerchantStorageScheme,
     ) -> error_stack::Result<
-        hyperswitch_domain_models::authentication::Authentication,
+        orbix_domain_models::authentication::Authentication,
         errors::StorageError,
     > {
         let auth = self
@@ -4857,8 +4857,8 @@ impl ThemeInterface for KafkaStore {
 impl db::payment_method_session::PaymentMethodsSessionInterface for KafkaStore {
     async fn insert_payment_methods_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-        payment_methods_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+        payment_methods_session: orbix_domain_models::payment_methods::PaymentMethodSession,
         validity: i64,
     ) -> CustomResult<(), errors::StorageError> {
         self.diesel_store
@@ -4868,10 +4868,10 @@ impl db::payment_method_session::PaymentMethodsSessionInterface for KafkaStore {
 
     async fn get_payment_methods_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         id: &id_type::GlobalPaymentMethodSessionId,
     ) -> CustomResult<
-        hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        orbix_domain_models::payment_methods::PaymentMethodSession,
         errors::StorageError,
     > {
         self.diesel_store
@@ -4881,12 +4881,12 @@ impl db::payment_method_session::PaymentMethodsSessionInterface for KafkaStore {
 
     async fn update_payment_method_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         id: &id_type::GlobalPaymentMethodSessionId,
-        payment_methods_session: hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
-        current_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        payment_methods_session: orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
+        current_session: orbix_domain_models::payment_methods::PaymentMethodSession,
     ) -> CustomResult<
-        hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        orbix_domain_models::payment_methods::PaymentMethodSession,
         errors::StorageError,
     > {
         self.diesel_store
@@ -4925,9 +4925,9 @@ impl CallbackMapperInterface for KafkaStore {
 impl TokenizationInterface for KafkaStore {
     async fn insert_tokenization(
         &self,
-        tokenization: hyperswitch_domain_models::tokenization::Tokenization,
-        merchant_key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+        tokenization: orbix_domain_models::tokenization::Tokenization,
+        merchant_key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         self.diesel_store
             .insert_tokenization(tokenization, merchant_key_store)
@@ -4937,8 +4937,8 @@ impl TokenizationInterface for KafkaStore {
     async fn get_entity_id_vault_id_by_token_id(
         &self,
         token: &id_type::GlobalTokenId,
-        merchant_key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+        merchant_key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         self.diesel_store
             .get_entity_id_vault_id_by_token_id(token, merchant_key_store)
@@ -4947,10 +4947,10 @@ impl TokenizationInterface for KafkaStore {
 
     async fn update_tokenization_record(
         &self,
-        tokenization: hyperswitch_domain_models::tokenization::Tokenization,
-        tokenization_update: hyperswitch_domain_models::tokenization::TokenizationUpdate,
-        merchant_key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+        tokenization: orbix_domain_models::tokenization::Tokenization,
+        tokenization_update: orbix_domain_models::tokenization::TokenizationUpdate,
+        merchant_key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         self.diesel_store
             .update_tokenization_record(tokenization, tokenization_update, merchant_key_store)
@@ -4968,7 +4968,7 @@ impl InvoiceInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn insert_invoice_entry(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         invoice_new: DomainInvoice,
     ) -> CustomResult<DomainInvoice, errors::StorageError> {
         self.diesel_store
@@ -4979,7 +4979,7 @@ impl InvoiceInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn find_invoice_by_invoice_id(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         invoice_id: String,
     ) -> CustomResult<DomainInvoice, errors::StorageError> {
         self.diesel_store
@@ -4990,7 +4990,7 @@ impl InvoiceInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn update_invoice_entry(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         invoice_id: String,
         data: DomainInvoiceUpdate,
     ) -> CustomResult<DomainInvoice, errors::StorageError> {
@@ -5002,7 +5002,7 @@ impl InvoiceInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn get_latest_invoice_for_subscription(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         subscription_id: String,
     ) -> CustomResult<DomainInvoice, errors::StorageError> {
         self.diesel_store
@@ -5013,7 +5013,7 @@ impl InvoiceInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn find_invoice_by_subscription_id_connector_invoice_id(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         subscription_id: String,
         connector_invoice_id: id_type::InvoiceId,
     ) -> CustomResult<Option<DomainInvoice>, errors::StorageError> {
@@ -5034,7 +5034,7 @@ impl SubscriptionInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn insert_subscription_entry(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         subscription_new: DomainSubscription,
     ) -> CustomResult<DomainSubscription, errors::StorageError> {
         self.diesel_store
@@ -5045,7 +5045,7 @@ impl SubscriptionInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn find_by_merchant_id_subscription_id(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         merchant_id: &id_type::MerchantId,
         subscription_id: String,
     ) -> CustomResult<DomainSubscription, errors::StorageError> {
@@ -5057,7 +5057,7 @@ impl SubscriptionInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn update_subscription_entry(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         merchant_id: &id_type::MerchantId,
         subscription_id: String,
         data: DomainSubscriptionUpdate,
@@ -5070,7 +5070,7 @@ impl SubscriptionInterface for KafkaStore {
     #[instrument(skip_all)]
     async fn list_by_merchant_id_profile_id(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         merchant_id: &id_type::MerchantId,
         profile_id: &id_type::ProfileId,
         limit: Option<i64>,

@@ -4,7 +4,7 @@ use common_utils::{errors::CustomResult, types::keymanager::KeyManagerState};
 use diesel_models as store;
 use error_stack::ResultExt;
 use futures::lock::{Mutex, MutexGuard};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     behaviour::{Conversion, ReverseConversion},
     merchant_key_store::MerchantKeyStore,
     payments::{payment_attempt::PaymentAttempt, PaymentIntent},
@@ -24,7 +24,7 @@ pub mod payout_attempt;
 pub mod payouts;
 pub mod redis_conn;
 #[cfg(not(feature = "payouts"))]
-use hyperswitch_domain_models::{PayoutAttemptInterface, PayoutsInterface};
+use orbix_domain_models::{PayoutAttemptInterface, PayoutsInterface};
 
 #[derive(Clone)]
 pub struct MockDb {
@@ -65,7 +65,7 @@ pub struct MockDb {
     pub payout_attempt: Arc<Mutex<Vec<store::payout_attempt::PayoutAttempt>>>,
     #[cfg(feature = "payouts")]
     pub payouts: Arc<Mutex<Vec<store::payouts::Payouts>>>,
-    pub authentications: Arc<Mutex<Vec<hyperswitch_domain_models::authentication::Authentication>>>,
+    pub authentications: Arc<Mutex<Vec<orbix_domain_models::authentication::Authentication>>>,
     pub roles: Arc<Mutex<Vec<store::role::Role>>>,
     pub user_key_store: Arc<Mutex<Vec<store::user_key_store::UserKeyStore>>>,
     pub user_authentication_methods:

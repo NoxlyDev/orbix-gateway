@@ -24,7 +24,7 @@ jobs:
     runs-on: hypersage-runners
 
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/hyperswitch_db
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/orbix_db
       PGUSER: postgres
       PGPASSWORD: postgres
       PGHOST: localhost
@@ -64,7 +64,7 @@ jobs:
 
       - name: Create database
         shell: bash
-        run: just resurrect hyperswitch_db
+        run: just resurrect orbix_db
 
       - name: Verify `diesel migration run for v1`
         shell: bash
@@ -76,7 +76,7 @@ jobs:
 
       - name: Drop `DB for v2 column ordering mismatch`
         shell: bash
-        run: just resurrect hyperswitch_db
+        run: just resurrect orbix_db
 
       - name: Verify `diesel migration run for v2`
         shell: bash

@@ -3,7 +3,7 @@ pub mod models {
 
     use async_trait::async_trait;
     use common_utils::{pii::SecretSerdeValue, request::ConnectorContentType};
-    use hyperswitch_masking::{ExposeInterface, Secret};
+    use orbix_masking::{ExposeInterface, Secret};
     use router_env::logger;
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
@@ -73,7 +73,7 @@ pub mod models {
     pub enum VaultConnectors {
         /// VGS (Very Good Security) vault connector
         VGS,
-        HyperswitchVault,
+        OrbixVault,
     }
 
     impl VaultConnectors {
@@ -81,7 +81,7 @@ pub mod models {
         pub fn as_metric_str(self) -> &'static str {
             match self {
                 Self::VGS => "VGS",
-                Self::HyperswitchVault => "HyperswitchVault",
+                Self::OrbixVault => "OrbixVault",
             }
         }
     }
@@ -148,7 +148,7 @@ pub mod models {
     pub enum VaultConnectorType {
         /// Proxy vault - forwards requests through a proxy (e.g., VGS forward proxy)
         Proxy,
-        /// Transformation vault - transforms/tokenizes data (e.g., HyperswitchVault)
+        /// Transformation vault - transforms/tokenizes data (e.g., OrbixVault)
         Transformation,
     }
 
@@ -160,13 +160,13 @@ pub mod models {
         pub profile_id: Secret<String>,
     }
 
-    /// Request body for HyperswitchVault proxy endpoint.
+    /// Request body for OrbixVault proxy endpoint.
     ///
     /// The HS Vault proxy receives the original template (with {{$field_name}} placeholders),
     /// the destination connector URL, headers, and a token reference. The vault resolves
     /// placeholders with actual card data and forwards the request to the destination.
     #[derive(Clone, Debug, Serialize, Deserialize)]
-    pub struct HyperswitchVaultProxyRequest {
+    pub struct OrbixVaultProxyRequest {
         /// The connector request body template with {{$field_name}} placeholders.
         /// HS Vault will resolve these with actual card data before forwarding.
         pub request_body: Value,
@@ -175,7 +175,7 @@ pub mod models {
         /// The connector's headers (Content-Type, Authorization, etc.)
         pub headers: HashMap<String, Secret<String>>,
         /// The single token reference extracted from specific_token_data.card_number.
-        /// For HyperswitchVault, all fields share the same token value.
+        /// For OrbixVault, all fields share the same token value.
         pub token: String,
 
         pub token_type: String,
@@ -183,11 +183,11 @@ pub mod models {
         pub method: String,
     }
 
-    impl HyperswitchVaultProxyRequest {
-        /// Constructs a HyperswitchVaultProxyRequest from the injector request components.
+    impl OrbixVaultProxyRequest {
+        /// Constructs a OrbixVaultProxyRequest from the injector request components.
         ///
         /// Extracts the single shared token from `specific_token_data.card_number`
-        /// (HyperswitchVault uses a single token for all fields).
+        /// (OrbixVault uses a single token for all fields).
         pub fn try_from_injector_request(
             processed_payload: &str,
             connection_config: &ConnectionConfig,
@@ -202,7 +202,7 @@ pub mod models {
                 .map(|s| s.to_string())
                 .ok_or_else(|| {
                     InjectorError::InvalidTemplate(
-                        "card_number field is required in specific_token_data for HyperswitchVault"
+                        "card_number field is required in specific_token_data for OrbixVault"
                             .to_string(),
                     )
                 })?;
@@ -254,7 +254,7 @@ pub mod models {
         pub response: Value,
     }
 
-    /// The Hyperswitch vault proxy reply (`api_models::proxy::ProxyResponse`), which wraps
+    /// The Orbix Gateway vault proxy reply (`api_models::proxy::ProxyResponse`), which wraps
     /// the connector response.
     #[derive(Deserialize)]
     struct VaultProxyEnvelope {
@@ -286,7 +286,7 @@ pub mod models {
             }
         }
 
-        /// The actual connector response. Only the HyperswitchVault envelope is unwrapped:
+        /// The actual connector response. Only the OrbixVault envelope is unwrapped:
         /// direct connector replies may legitimately contain fields called `response` and
         /// `status_code`.
         pub fn into_connector_response(
@@ -461,14 +461,14 @@ pub mod models {
             self.endpoint.host_str().unwrap_or("unknown").to_string()
         }
 
-        /// HyperswitchVault transformation sends the template to the Hyperswitch vault proxy,
+        /// OrbixVault transformation sends the template to the Orbix Gateway vault proxy,
         /// whose reply wraps the connector response in a JSON envelope.
-        pub fn uses_hyperswitch_vault_proxy(&self) -> bool {
+        pub fn uses_orbix_vault_proxy(&self) -> bool {
             matches!(
                 (&self.vault_connector_type, &self.vault_connector_id),
                 (
                     Some(VaultConnectorType::Transformation),
-                    Some(VaultConnectors::HyperswitchVault)
+                    Some(VaultConnectors::OrbixVault)
                 )
             )
         }

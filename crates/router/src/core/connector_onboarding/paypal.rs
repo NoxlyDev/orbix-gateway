@@ -2,7 +2,7 @@ use api_models::{admin::MerchantConnectorUpdate, connector_onboarding as api};
 use common_utils::ext_traits::Encode;
 use error_stack::ResultExt;
 pub use external_services::http_client;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 
 use crate::{
     core::{

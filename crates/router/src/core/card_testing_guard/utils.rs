@@ -1,8 +1,8 @@
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     card_testing_guard_data::CardTestingGuardData, router_request_types::BrowserInformation,
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use router_env::logger;
 
 use super::errors;

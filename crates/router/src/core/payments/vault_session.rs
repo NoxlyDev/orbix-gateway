@@ -6,8 +6,8 @@ use common_utils::id_type;
 use error_stack::report;
 use error_stack::ResultExt;
 #[cfg(feature = "v2")]
-pub use hyperswitch_domain_models::payments::PaymentIntentData;
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::payments::PaymentIntentData;
+pub use orbix_domain_models::{
     mandates::MandateData,
     payment_address::PaymentAddress,
     payments::HeaderPayload,
@@ -18,14 +18,14 @@ pub use hyperswitch_domain_models::{
     types::{VaultRouterData, VaultRouterDataV2},
 };
 #[cfg(feature = "v2")]
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::Connector as ConnectorTrait,
     connector_integration_interface::RouterDataConversion,
     connector_integration_v2::{ConnectorIntegrationV2, ConnectorV2},
 };
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 #[cfg(feature = "v1")]
-use hyperswitch_masking::Mask;
+use orbix_masking::Mask;
 
 #[cfg(feature = "v2")]
 use crate::core::{
@@ -351,7 +351,7 @@ where
 {
     // Always route vault session creation through the modular PM service when the org is eligible
     // for it (not just when an external vault is configured). When no external vault is set up, the
-    // PM service returns the internal Hyperswitch vault SDK authorization, which is the SaaS default.
+    // PM service returns the internal Orbix Gateway vault SDK authorization, which is the SaaS default.
     if is_modular_service_enabled {
         let external_vault_profile =
             helpers::resolve_provider_profile(state, platform, profile).await?;
@@ -546,14 +546,14 @@ pub async fn generate_vault_session_details(
                 },
             )))
         }
-        // create session for hyperswitch vault
+        // create session for orbix vault
         (
-            VaultConnectors::HyperswitchVault,
+            VaultConnectors::OrbixVault,
             router_types::ConnectorAuthType::SignatureKey {
                 key1, api_secret, ..
             },
         ) => {
-            generate_hyperswitch_vault_session_details(
+            generate_orbix_vault_session_details(
                 state,
                 platform,
                 merchant_connector_account_type,
@@ -579,14 +579,14 @@ pub async fn generate_vault_session_details(
 
 #[cfg(feature = "v2")]
 #[allow(clippy::too_many_arguments)]
-async fn generate_hyperswitch_vault_session_details(
+async fn generate_orbix_vault_session_details(
     state: &SessionState,
     platform: &domain::Platform,
     merchant_connector_account_type: &domain::MerchantConnectorAccountTypeDetails,
     connector_customer_id: Option<String>,
     connector_name: String,
-    vault_publishable_key: hyperswitch_masking::Secret<String>,
-    vault_profile_id: hyperswitch_masking::Secret<String>,
+    vault_publishable_key: orbix_masking::Secret<String>,
+    vault_profile_id: orbix_masking::Secret<String>,
     storage_type: common_enums::StorageType,
 ) -> RouterResult<Option<api::VaultSessionDetails>> {
     let connector_response = call_external_vault_create(
@@ -604,12 +604,12 @@ async fn generate_hyperswitch_vault_session_details(
             session_id,
             client_secret,
         }) => {
-            // Build the base64-encoded SDK authorization for the Hyperswitch Vault session,
+            // Build the base64-encoded SDK authorization for the Orbix Gateway Vault session,
             // mirroring the payment-method-session-create response, instead of exposing the
             // individual vault keys.
             let sdk_authorization =
-                Option::<hyperswitch_domain_models::sdk_auth::SdkAuthorization>::from(
-                    hyperswitch_domain_models::sdk_auth::SdkAuthorizationContext {
+                Option::<orbix_domain_models::sdk_auth::SdkAuthorization>::from(
+                    orbix_domain_models::sdk_auth::SdkAuthorizationContext {
                         platform: platform.to_owned(),
                         publishable_key: vault_publishable_key.expose(),
                         profile_id: id_type::ProfileId::try_from(std::borrow::Cow::from(
@@ -617,7 +617,7 @@ async fn generate_hyperswitch_vault_session_details(
                         ))
                         .change_context(errors::ApiErrorResponse::InternalServerError)
                         .attach_printable(
-                            "Invalid profile_id in Hyperswitch Vault connector auth",
+                            "Invalid profile_id in Orbix Gateway Vault connector auth",
                         )?,
                         client_secret: client_secret.expose(),
                         customer_id: connector_customer_id
@@ -632,17 +632,17 @@ async fn generate_hyperswitch_vault_session_details(
                 .map(|auth| auth.encode())
                 .transpose()
                 .change_context(errors::ApiErrorResponse::InternalServerError)
-                .attach_printable("Failed to encode Hyperswitch Vault SDK authorization")?;
+                .attach_printable("Failed to encode Orbix Gateway Vault SDK authorization")?;
 
             match sdk_authorization {
-                Some(sdk_authorization) => Ok(Some(api::VaultSessionDetails::HyperswitchVault(
-                    api::HyperswitchVaultSessionDetails {
+                Some(sdk_authorization) => Ok(Some(api::VaultSessionDetails::OrbixVault(
+                    api::OrbixVaultSessionDetails {
                         sdk_authorization: sdk_authorization.into(),
                     },
                 ))),
                 None => {
                     router_env::logger::warn!(
-                        "No SDK authorization generated for Hyperswitch Vault session (non-API initiator)"
+                        "No SDK authorization generated for Orbix Gateway Vault session (non-API initiator)"
                     );
                     Ok(None)
                 }
@@ -801,7 +801,7 @@ async fn get_or_create_vault_connector_customer(
     merchant_connector_account_type: &domain::MerchantConnectorAccountTypeDetails,
     profile_id: &id_type::ProfileId,
 ) -> RouterResult<Option<String>> {
-    use hyperswitch_domain_models::router_request_types::ConnectorCustomerData;
+    use orbix_domain_models::router_request_types::ConnectorCustomerData;
 
     let db_mca = merchant_connector_account_type
         .get_inner_db_merchant_connector_account()

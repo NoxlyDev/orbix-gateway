@@ -1,5 +1,5 @@
 """
-Redirect proxy — sits in front of Hyperswitch on port 9001.
+Redirect proxy — sits in front of Orbix Gateway on port 9001.
 Injects X-Request-ID on redirect/complete and redirect/response calls so the
 MITM proxy can attribute the outbound connector call to the right cassette.
 Saves the redirect body for replay.

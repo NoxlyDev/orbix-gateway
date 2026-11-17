@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use common_utils::ext_traits::{AsyncExt, ValueExt};
 use error_stack::{report, ResultExt};
 use futures::FutureExt;
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use router_derive::PaymentOperation;
 use router_env::{instrument, tracing};
 use tracing_futures::Instrument;
@@ -50,7 +50,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         payment_method_fetch_data: operations::PaymentMethodFetchData,
         dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -332,7 +332,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
                 .and_then(|decrypted_data| {
                     let exposed = decrypted_data.into_inner().expose();
                     match exposed.parse_value::<
-                        hyperswitch_domain_models::address::Address,
+                        orbix_domain_models::address::Address,
                     >("payment method billing address") {
                         Ok(address) => Some(address),
                         Err(err) => {
@@ -531,7 +531,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(
         BoxedOperation<'b, F, api::PaymentsRequest, PaymentData<F>>,
@@ -581,7 +581,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         };
 
         let status_handler_for_authentication_results =
-            |authentication: &hyperswitch_domain_models::authentication::Authentication| {
+            |authentication: &orbix_domain_models::authentication::Authentication| {
                 if authentication.authentication_status.is_failed() {
                     (
                         storage_enums::IntentStatus::Failed,

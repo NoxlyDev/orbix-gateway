@@ -6,7 +6,7 @@ use diesel::{
     serialize::ToSql,
     sql_types,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use crate::{crypto::Encryptable, pii::EncryptionStrategy};
 

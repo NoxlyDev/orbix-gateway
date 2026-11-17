@@ -36,7 +36,7 @@ const CONSTANTS = {
  * 4. Contract & Account: select "Contract 1" from contract dropdown,
  *    select account ES***679 from account dropdown, click "confirm"
  * 5. OTP: enter 1111, click "continue"
- * 6. Wait for redirect back to Hyperswitch
+ * 6. Wait for redirect back to Orbix Gateway
  *
  * @param {string} nextActionUrl – the redirect URL from the payment
  */
@@ -218,8 +218,8 @@ export function handleSimulatorRedirectFlow(nextActionUrl) {
 
   cy.wait(3000);
 
-  // ── Final Validation: wait for redirect back to Hyperswitch ────────
-  cy.log("Waiting for redirect back to Hyperswitch after OTP submission...");
+  // ── Final Validation: wait for redirect back to Orbix Gateway ────────
+  cy.log("Waiting for redirect back to Orbix Gateway after OTP submission...");
   cy.url({ timeout: 90000 }).should((url) => {
     const isBack =
       /localhost/i.test(url) ||
@@ -421,7 +421,7 @@ function cryptoRedirection(
       cy.get('input[type="email"], input[name="email"]', { timeout: 10000 })
         .should("be.visible")
         .clear()
-        .type("venkatakarthik.m@juspay.in", { delay: 50 });
+        .type("venkatakarthik.m@orbix.example", { delay: 50 });
 
       cy.get("body").then(($body) => {
         const continueBtn = $body
@@ -1186,8 +1186,8 @@ function affirmPayLaterRedirection(
                   cy.wrap(emailInputs.first())
                     .click()
                     .clear()
-                    .type("venkatakarthik.m@juspay.in", { delay: 50 });
-                  cy.log("Entered email venkatakarthik.m@juspay.in");
+                    .type("venkatakarthik.m@orbix.example", { delay: 50 });
+                  cy.log("Entered email venkatakarthik.m@orbix.example");
                 }
               });
               break;
@@ -1862,7 +1862,7 @@ function bankRedirectRedirection(
     cy.url({ timeout: 120000 }).should("include", "truelayer-sandbox.com");
     cy.wait(15000);
     clickActionIfPresent(
-      /return to testhyperswitch|return/i,
+      /return to testorbix|return/i,
       "Returning from TrueLayer mock flow"
     );
 
@@ -2301,7 +2301,7 @@ function bankRedirectRedirection(
 
         // Give the form submission a moment to start. The response redirects
         // to sandbox-app.payjustnow.com/3dsecure-transaction-status/ which
-        // then polls the connector and finally redirects back to Hyperswitch.
+        // then polls the connector and finally redirects back to Orbix Gateway.
         cy.wait(2000);
       }
     );
@@ -2311,7 +2311,7 @@ function bankRedirectRedirection(
     // After submission we land on sandbox-app.payjustnow.com which shows an
     // intermediate "Confirming your 3DSecure transaction" page while it
     // polls the connector. Give that page time to finish instead of waiting
-    // for the final redirect back to Hyperswitch (which can take long or fail
+    // for the final redirect back to Orbix Gateway (which can take long or fail
     // to fire in headless mode).
     // ------------------------------------------------------------------
     cy.location("origin", { timeout: CONSTANTS.TIMEOUT }).should(
@@ -2331,7 +2331,7 @@ function bankRedirectRedirection(
       }
     });
 
-    // Buffer for the final redirect back to Hyperswitch (if any).
+    // Buffer for the final redirect back to Orbix Gateway (if any).
     cy.wait(5000);
 
     verifyUrl = false;
@@ -3412,7 +3412,7 @@ function threeDsRedirection(
     //    and POSTs back to the finish URL on the start page's domain.
     // 4. The start page receives a 3DS_CONTINUE message and submits its
     //    success form, redirecting the top-level page back to the
-    //    expected (Hyperswitch) URL.
+    //    expected (Orbix Gateway) URL.
     //
     // The challenge iframe is cross-origin, but chromeWebSecurity is
     // disabled in cypress.config.js, so its document is directly
@@ -3516,7 +3516,7 @@ function threeDsRedirection(
     return;
   }
 
-  // PayPal card 3DS: Hyperswitch redirect page auto-submits a form to
+  // PayPal card 3DS: Orbix Gateway redirect page auto-submits a form to
   // sandbox.paypal.com/webapps/helios which processes the 3DS challenge.
   // In sandbox mode, the test card auto-approves and PayPal redirects back
   // to the return URL without requiring browser-side user interaction.
@@ -3529,7 +3529,7 @@ function threeDsRedirection(
   }
 
   // Paybox's echoed 3DS HTML has a known bug (relative asset paths resolve
-  // against Hyperswitch's own domain instead of Paybox's, breaking jQuery
+  // against Orbix Gateway's own domain instead of Paybox's, breaking jQuery
   // load and the auto-submit script), so it never navigates away. Until
   // that's fixed on the router side, just visit the redirection URL and
   // confirm it loads, without waiting for the auto-submit/host change.
@@ -3578,7 +3578,7 @@ function threeDsRedirection(
   }
 
   // Elavon PG uses its hosted page to collect the card details again before
-  // completing 3DS and redirecting through Hyperswitch's CompleteAuthorize
+  // completing 3DS and redirecting through Orbix Gateway's CompleteAuthorize
   // endpoint. Keep this interaction in the test layer; the router only needs
   // to preserve the connector-issued payment token across that redirect.
   if (connectorId === "elavon_pg") {
@@ -4177,7 +4177,7 @@ function cardRedirectRedirection(
     });
 
     cy.visit(redirectionUrl.href, { failOnStatusCode: false });
-    // The Hyperswitch redirect page auto-submits to the connector's hosted
+    // The Orbix Gateway redirect page auto-submits to the connector's hosted
     // card page (e.g. ccm-thirdparty.cps.golf for prophetpay). Wait for the
     // host to change before interacting with the hosted form.
     waitForRedirect(redirectionUrl.href);

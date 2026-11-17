@@ -5,7 +5,7 @@ pub mod jose;
 use std::ops::Deref;
 
 use error_stack::ResultExt;
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_masking::{ExposeInterface, Secret};
 use md5;
 use ring::{
     aead::{self, BoundKey, OpeningKey, SealingKey, UnboundKey},
@@ -591,7 +591,7 @@ pub struct Encryptable<T: Clone> {
     encrypted: Secret<Vec<u8>, EncryptionStrategy>,
 }
 
-impl<T: Clone, S: hyperswitch_masking::Strategy<T>> Encryptable<Secret<T, S>> {
+impl<T: Clone, S: orbix_masking::Strategy<T>> Encryptable<Secret<T, S>> {
     /// constructor function to be used by the encryptor and decryptor to generate the data type
     pub fn new(
         masked_data: Secret<T, S>,
@@ -656,9 +656,9 @@ impl<T: Clone> Deref for Encryptable<Secret<T>> {
     }
 }
 
-impl<T: Clone> hyperswitch_masking::Serialize for Encryptable<T>
+impl<T: Clone> orbix_masking::Serialize for Encryptable<T>
 where
-    T: hyperswitch_masking::Serialize,
+    T: orbix_masking::Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

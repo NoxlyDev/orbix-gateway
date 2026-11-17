@@ -1,6 +1,6 @@
 use std::{fmt::Debug, sync::Weak};
 
-use hyperswitch_constraint_graph as cgraph;
+use orbix_constraint_graph as cgraph;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub mod euclid_graph_prelude {
-    pub use hyperswitch_constraint_graph as cgraph;
+    pub use orbix_constraint_graph as cgraph;
     pub use rustc_hash::{FxHashMap, FxHashSet};
     pub use strum::EnumIter;
 
@@ -517,7 +517,7 @@ mod test {
     use std::ops::Deref;
 
     use euclid_macros::knowledge;
-    use hyperswitch_constraint_graph::CycleCheck;
+    use orbix_constraint_graph::CycleCheck;
 
     use super::*;
     use crate::{dirval, frontend::dir::enums};

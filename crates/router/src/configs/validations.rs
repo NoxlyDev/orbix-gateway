@@ -1,5 +1,5 @@
 use common_utils::ext_traits::ConfigExt;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use storage_impl::errors::ApplicationError;
 
 use crate::consts::MIN_IDLE_SESSION_TIMEOUT_IN_SECS;
@@ -302,7 +302,7 @@ impl super::settings::GooglePayDecryptConfig {
             },
         )?;
 
-        // The private key, gateway id and common merchant id together describe Hyperswitch's
+        // The private key, gateway id and common merchant id together describe Orbix Gateway's
         // registered Google Pay gateway: the key decrypts the token, the id derives the
         // `gateway:<id>` recipient it was signed against, and the common merchant id is sent to
         // the SDK for INTERNAL_GATEWAY merchants that do not supply one of their own. Either all
@@ -431,18 +431,18 @@ impl super::settings::SageSettings {
 impl super::settings::AccountUpdaterConfig {
     pub fn validate(&self) -> Result<(), ApplicationError> {
         match self {
-            Self::Juspay(juspay) => juspay.validate(),
+            Self::Orbix(orbix) => orbix.validate(),
         }
     }
 }
 
-impl super::settings::JuspayAccountUpdaterConfig {
+impl super::settings::OrbixAccountUpdaterConfig {
     pub fn validate(&self) -> Result<(), ApplicationError> {
         use common_utils::fp_utils::when;
 
         when(!self.base_url.path().ends_with('/'), || {
             Err(ApplicationError::InvalidConfigurationValueError(
-                "account_updater.juspay.base_url must end with a trailing slash".into(),
+                "account_updater.orbix.base_url must end with a trailing slash".into(),
             ))
         })?;
 
@@ -463,21 +463,21 @@ impl super::settings::JuspayAccountUpdaterConfig {
         for (field, value) in required {
             when(value.trim().is_empty(), || {
                 Err(ApplicationError::InvalidConfigurationValueError(format!(
-                    "account_updater.juspay.{field} must not be empty"
+                    "account_updater.orbix.{field} must not be empty"
                 )))
             })?;
         }
 
         when(self.supported_card_networks.is_empty(), || {
             Err(ApplicationError::InvalidConfigurationValueError(
-                "account_updater.juspay.supported_card_networks must list at least one card network"
+                "account_updater.orbix.supported_card_networks must list at least one card network"
                     .into(),
             ))
         })?;
 
         when(self.refresh_timeout_in_secs == 0, || {
             Err(ApplicationError::InvalidConfigurationValueError(
-                "account_updater.juspay.refresh_timeout_in_secs must be greater than zero".into(),
+                "account_updater.orbix.refresh_timeout_in_secs must be greater than zero".into(),
             ))
         })?;
 

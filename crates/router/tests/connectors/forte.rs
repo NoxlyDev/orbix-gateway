@@ -2,8 +2,8 @@ use std::{str::FromStr, time::Duration};
 
 use cards::CardNumber;
 use common_utils::types::MinorUnit;
-use hyperswitch_domain_models::address::{Address, AddressDetails, PhoneDetails};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::address::{Address, AddressDetails, PhoneDetails};
+use orbix_masking::Secret;
 use router::types::{self, api, domain, storage::enums};
 
 use crate::{

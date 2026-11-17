@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use cards::CardNumber;
-use hyperswitch_domain_models::address::{Address, AddressDetails};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::address::{Address, AddressDetails};
+use orbix_masking::Secret;
 use router::{
     core::errors,
     types::{self, storage::enums, PaymentsAuthorizeData},

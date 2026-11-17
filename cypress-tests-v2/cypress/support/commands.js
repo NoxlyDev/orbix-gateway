@@ -106,7 +106,7 @@ Cypress.Commands.add("organizationRetrieveCall", (globalState) => {
         .and.to.include("org_")
         .and.to.be.a("string").and.not.be.empty;
       expect(response.body.organization_name)
-        .to.have.include("Hyperswitch")
+        .to.have.include("Orbix")
         .and.to.be.a("string").and.not.be.empty;
 
       if (organization_id === undefined || organization_id === null) {

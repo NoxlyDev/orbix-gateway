@@ -28,7 +28,7 @@ pub use crate::PaymentMethodType;
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum Connector {
     AbsaSanlam,
     Authipay,
@@ -134,7 +134,7 @@ pub enum Connector {
     Hipay,
     Helcim,
     Hyperpg,
-    HyperswitchVault,
+    OrbixVault,
     // Hyperwallet, added as template code for future usage
     Interpayments,
     Inespay,
@@ -144,8 +144,8 @@ pub enum Connector {
     Itaubank,
     Jpmorgan,
     JpmorganOrbital,
-    Juspay,
-    Juspaythreedsserver,
+    Orbix,
+    Orbixthreedsserver,
     Klarna,
     Loonio,
     Merchante,
@@ -427,13 +427,13 @@ impl Connector {
             | Self::Hipay
             | Self::Helcim
             | Self::Hyperpg
-            | Self::HyperswitchVault
+            | Self::OrbixVault
             | Self::Iatapay
 			| Self::Inespay
             | Self::Itaubank
             | Self::Jpmorgan
-            | Self::Juspay
-            | Self::Juspaythreedsserver
+            | Self::Orbix
+            | Self::Orbixthreedsserver
             | Self::Klarna
             | Self::Loonio
             | Self::Merchante

@@ -1,6 +1,6 @@
-pub use hyperswitch_domain_models::customer::update_connector_customer_in_customers;
-use hyperswitch_interfaces::api::ConnectorSpecifications;
-use hyperswitch_masking::PeekInterface;
+pub use orbix_domain_models::customer::update_connector_customer_in_customers;
+use orbix_interfaces::api::ConnectorSpecifications;
+use orbix_masking::PeekInterface;
 use router_env::instrument;
 
 #[cfg(feature = "v2")]
@@ -91,7 +91,7 @@ pub enum ConnectorCustomerAction<'a> {
 pub fn should_call_connector_create_customer<'a>(
     connector: &api::ConnectorData,
     connector_customer_map: Option<&'a common_utils::pii::SecretSerdeValue>,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
     connector_label: &str,
 ) -> ConnectorCustomerAction<'a> {
     // Check if create customer is required for the connector
@@ -110,7 +110,7 @@ pub fn should_call_connector_create_customer<'a>(
         .and_then(|connector_customer| connector_customer.as_str());
 
     match connector_needs_customer {
-        hyperswitch_interfaces::api::ConnectorCustomerAction::CallConnectorCustomer => {
+        orbix_interfaces::api::ConnectorCustomerAction::CallConnectorCustomer => {
             match connector_customer_details {
                 Some(existing_customer_id) => {
                     ConnectorCustomerAction::UseExistingCustomer(Some(existing_customer_id))
@@ -118,10 +118,10 @@ pub fn should_call_connector_create_customer<'a>(
                 None => ConnectorCustomerAction::CreateCustomer,
             }
         }
-        hyperswitch_interfaces::api::ConnectorCustomerAction::NoAction => {
+        orbix_interfaces::api::ConnectorCustomerAction::NoAction => {
             ConnectorCustomerAction::UseExistingCustomer(connector_customer_details)
         }
-        hyperswitch_interfaces::api::ConnectorCustomerAction::GeneratedCustomerId(customer_id) => {
+        orbix_interfaces::api::ConnectorCustomerAction::GeneratedCustomerId(customer_id) => {
             match connector_customer_details {
                 Some(existing_customer_id) => {
                     ConnectorCustomerAction::UseExistingCustomer(Some(existing_customer_id))
@@ -144,7 +144,7 @@ pub fn should_call_connector_create_customer<'a>(
             let connector_needs_customer = connector.connector.should_call_connector_customer();
 
             match connector_needs_customer {
-                hyperswitch_interfaces::api::ConnectorCustomerAction::CallConnectorCustomer => {
+                orbix_interfaces::api::ConnectorCustomerAction::CallConnectorCustomer => {
                     let connector_customer_details = customer.as_ref().and_then(|cust| {
                         cust.get_connector_customer_id(merchant_connector_account)
                     });

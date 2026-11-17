@@ -16,14 +16,14 @@ use common_utils::{
 };
 use diesel_models::payment_attempt::ConnectorMandateReferenceId as DieselConnectorMandateReferenceId;
 use error_stack::{self, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates,
     mandates::{MandateDetails, MandateTransactionType},
     payment_method_data::RecurringDetails as domain_recurring_details,
     payment_methods::PaymentMethodWithRawData,
     payments::{payment_attempt::PaymentAttempt, FromRequestEncryptablePaymentIntent},
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_derive::PaymentOperation;
 use router_env::{instrument, logger};
 use time::PrimitiveDateTime;
@@ -79,7 +79,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         flow_kind: operations::PaymentFlowKind,
-        header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: &orbix_domain_models::payments::HeaderPayload,
         payment_method_fetch_data: operations::PaymentMethodFetchData,
         dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -183,7 +183,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
             request
                 .billing
                 .clone()
-                .map(hyperswitch_domain_models::address::Address::from)
+                .map(orbix_domain_models::address::Address::from)
                 .is_some_and(|billing| billing.has_location_details()),
         )
         .await;
@@ -661,7 +661,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
                     .map(|decrypted_data| decrypted_data.into_inner().expose())
                     .and_then(|decrypted_value| {
                         decrypted_value
-                            .parse_value::<hyperswitch_domain_models::address::Address>(
+                            .parse_value::<orbix_domain_models::address::Address>(
                                 "payment method billing address",
                             )
                             .ok()
@@ -1135,7 +1135,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(PaymentCreateOperation<'b, F>, PaymentData<F>)>
     where
@@ -1652,7 +1652,7 @@ impl PaymentCreate {
             payment_method,
         ));
 
-        // TODO: remove once https://github.com/juspay/hyperswitch/issues/7421 is fixed
+        // TODO: remove once https://github.com/orbix/orbix/issues/7421 is fixed
         let payment_method_billing_address_id = match optional_payment_method_billing_address_id {
             None => payment_method_info
                 .as_ref()
@@ -1727,7 +1727,7 @@ impl PaymentCreate {
                 external_threeds_authentication_type: None,
                 mandate_data,
                 payment_method_billing_address_id,
-                net_amount: hyperswitch_domain_models::payments::payment_attempt::NetAmount::from_payments_request(
+                net_amount: orbix_domain_models::payments::payment_attempt::NetAmount::from_payments_request(
                     request,
                     MinorUnit::from(amount),
                 ),
@@ -1997,7 +1997,7 @@ impl PaymentCreate {
             metadata: request.metadata.clone(),
             business_country: request.business_country,
             business_label: request.business_label.clone(),
-            active_attempt: hyperswitch_domain_models::RemoteStorageObject::ForeignID(
+            active_attempt: orbix_domain_models::RemoteStorageObject::ForeignID(
                 active_attempt_id,
             ),
             order_details,

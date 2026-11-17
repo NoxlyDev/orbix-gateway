@@ -1,8 +1,8 @@
 use common_enums::Currency;
 use common_utils::id_type::PaymentId;
-use hyperswitch_domain_models::router_response_types::{RedirectCallback, RedirectForm};
-use hyperswitch_interfaces::api::{ConnectorCommon, ConnectorRedirectResponse};
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::router_response_types::{RedirectCallback, RedirectForm};
+use orbix_interfaces::api::{ConnectorCommon, ConnectorRedirectResponse};
+use orbix_masking::PeekInterface;
 use router::{
     core::{
         configs::payment_callback::PaymentCallbackMode,

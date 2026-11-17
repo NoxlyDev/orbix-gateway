@@ -17,7 +17,7 @@ gethostname = "0.4.3"
 # Optional (deja-only): types the captured request/response payloads as `Secret`
 # so bodies/headers are redacted in Debug/logs. Feature-off it is absent, so the
 # default build is byte-identical.
-hyperswitch_masking = { version = "0.0.1", optional = true }
+orbix_masking = { path = "../../vendor/orbix_framework/crates/orbix_masking", optional = true }
 opentelemetry = { version = "0.27.1", default-features = false, features = ["internal-logs", "metrics", "trace"] }
 opentelemetry-aws = { version = "0.15.0", default-features = false, features = ["internal-logs", "trace"] }
 opentelemetry-otlp = { version = "0.27.0", default-features = false, features = ["grpc-tonic", "metrics", "trace"] }
@@ -53,7 +53,7 @@ actix_web = ["dep:actix-web", "tracing-actix-web", "dep:uuid"]
 log_custom_entries_to_extra = []
 log_extra_implicit_fields = []
 log_active_span_json = []
-deja = ["dep:bytes", "dep:deja", "dep:deja-core", "dep:hyperswitch_masking"]
+deja = ["dep:bytes", "dep:deja", "dep:deja-core", "dep:orbix_masking"]
 payouts = []
 
 [lints]

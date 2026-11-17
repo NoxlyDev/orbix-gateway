@@ -1,5 +1,5 @@
 use common_utils::errors::CustomResult;
-use hyperswitch_interfaces::errors::not_supported_message;
+use orbix_interfaces::errors::not_supported_message;
 
 use crate::{core::errors, logger};
 
@@ -193,7 +193,7 @@ impl<T> ConnectorErrorExt<T> for error_stack::Result<T, errors::ConnectorError> 
                 errors::ConnectorError::CurrencyNotSupported { message, connector } => {
                     errors::ApiErrorResponse::CurrencyNotSupported {
                         message: format!(
-                            "Credentials for the currency {message} are not configured with the connector {connector}/hyperswitch"
+                            "Credentials for the currency {message} are not configured with the connector {connector}/orbix"
                         ),
                     }
                 }
@@ -321,7 +321,7 @@ impl<T> ConnectorErrorExt<T> for error_stack::Result<T, errors::ConnectorError> 
                     }
                 }
                 errors::ConnectorError::InvalidWalletToken {wallet_name} => errors::ApiErrorResponse::InvalidWalletToken {wallet_name: wallet_name.to_string()},
-                errors::ConnectorError::CurrencyNotSupported { message, connector} => errors::ApiErrorResponse::CurrencyNotSupported { message: format!("Credentials for the currency {message} are not configured with the connector {connector}/hyperswitch") },
+                errors::ConnectorError::CurrencyNotSupported { message, connector} => errors::ApiErrorResponse::CurrencyNotSupported { message: format!("Credentials for the currency {message} are not configured with the connector {connector}/orbix") },
                 errors::ConnectorError::FailedToObtainAuthType =>  errors::ApiErrorResponse::InvalidConnectorConfiguration {config: "connector_account_details".to_string()},
                 errors::ConnectorError::InvalidConnectorConfig { config }  => errors::ApiErrorResponse::InvalidConnectorConfiguration { config: config.to_string() },
                 errors::ConnectorError::FailedToObtainIntegrationUrl |

@@ -4,8 +4,8 @@ use common_utils::{
     id_type,
     request::{Method, RequestContent},
 };
-use hyperswitch_interfaces::micro_service::MicroserviceClientError;
-use hyperswitch_masking::Secret;
+use orbix_interfaces::micro_service::MicroserviceClientError;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 
 /// Flow type for creating a payment method session via the internal PM service.
@@ -38,9 +38,9 @@ pub struct VgsSessionDetailsResponse {
     pub sdk_env: String,
 }
 
-/// Local deserializable mirror of `api_models::payments::HyperswitchVaultSessionDetails`.
+/// Local deserializable mirror of `api_models::payments::OrbixVaultSessionDetails`.
 #[derive(Debug, Clone, Deserialize)]
-pub struct HyperswitchVaultSessionDetailsResponse {
+pub struct OrbixVaultSessionDetailsResponse {
     pub sdk_authorization: Secret<String>,
 }
 
@@ -49,7 +49,7 @@ pub struct HyperswitchVaultSessionDetailsResponse {
 #[serde(rename_all = "snake_case")]
 pub enum VaultSessionDetailsResponse {
     Vgs(VgsSessionDetailsResponse),
-    HyperswitchVault(HyperswitchVaultSessionDetailsResponse),
+    OrbixVault(OrbixVaultSessionDetailsResponse),
 }
 
 impl From<VaultSessionDetailsResponse> for api_models::payments::VaultSessionDetails {
@@ -61,8 +61,8 @@ impl From<VaultSessionDetailsResponse> for api_models::payments::VaultSessionDet
                     sdk_env: vgs.sdk_env,
                 })
             }
-            VaultSessionDetailsResponse::HyperswitchVault(hsv) => {
-                Self::HyperswitchVault(api_models::payments::HyperswitchVaultSessionDetails {
+            VaultSessionDetailsResponse::OrbixVault(hsv) => {
+                Self::OrbixVault(api_models::payments::OrbixVaultSessionDetails {
                     sdk_authorization: hsv.sdk_authorization,
                 })
             }
@@ -143,7 +143,7 @@ impl CreatePaymentMethodSession {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     CreatePaymentMethodSession,
     method = Method::Post,
     path = "/{prefix}/payment-method-sessions",

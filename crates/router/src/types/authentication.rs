@@ -1,4 +1,4 @@
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     router_request_types::authentication::{
         AcquirerDetails, AuthNFlowType, ChallengeParams, ConnectorAuthenticationRequestData,
         ConnectorPostAuthenticationRequestData, PreAuthNRequestData, PreAuthenticationData,

@@ -178,7 +178,7 @@ pub(crate) async fn presign_export_download(
     state: &SessionState,
     job: &storage::BatchBlocklistJob,
 ) -> Option<(
-    hyperswitch_masking::Secret<url::Url>,
+    orbix_masking::Secret<url::Url>,
     time::PrimitiveDateTime,
 )> {
     match job
@@ -204,7 +204,7 @@ pub(crate) async fn presign_export_download(
             .ok()
             .map(|url| {
                 (
-                    hyperswitch_masking::Secret::new(url),
+                    orbix_masking::Secret::new(url),
                     date_time::now().saturating_add(PRESIGNED_URL_TTL),
                 )
             }),

@@ -137,7 +137,7 @@ function redirectToStatus(paymentDetails) {
   var arr = window.location.pathname.split("/");
 
   // NOTE - This code preserves '/api' in url for integ and sbx
-  // e.g. url for integ/sbx - https://integ.hyperswitch.io/api/payment_link/merchant_1234/pay_1234?locale=en
+  // e.g. url for integ/sbx - https://integ.orbix.example/api/payment_link/merchant_1234/pay_1234?locale=en
   // e.g. url for others - https://abc.dev.com/payment_link/merchant_1234/pay_1234?locale=en
   var hasApiInPath = arr.includes("api");
   if (hasApiInPath) {

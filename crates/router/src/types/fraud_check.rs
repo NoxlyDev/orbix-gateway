@@ -1,4 +1,4 @@
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     router_request_types::fraud_check::{
         FraudCheckCheckoutData, FraudCheckFulfillmentData, FraudCheckPayoutData,
         FraudCheckRecordReturnData, FraudCheckSaleData, FraudCheckTransactionData, RefundMethod,

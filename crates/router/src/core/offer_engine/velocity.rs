@@ -1,6 +1,6 @@
 use cards::CardNumber;
 use error_stack::ResultExt;
-use hyperswitch_masking::StrongSecret;
+use orbix_masking::StrongSecret;
 
 use crate::{
     core::{

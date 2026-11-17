@@ -7,28 +7,28 @@ use crate::db::MockDb;
 pub trait PaymentMethodsSessionInterface {
     async fn insert_payment_methods_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-        payment_methods_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+        payment_methods_session: orbix_domain_models::payment_methods::PaymentMethodSession,
         validity: i64,
     ) -> CustomResult<(), errors::StorageError>;
 
     async fn update_payment_method_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         id: &common_utils::id_type::GlobalPaymentMethodSessionId,
-        payment_methods_session: hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
-        current_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        payment_methods_session: orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
+        current_session: orbix_domain_models::payment_methods::PaymentMethodSession,
     ) -> CustomResult<
-        hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        orbix_domain_models::payment_methods::PaymentMethodSession,
         errors::StorageError,
     >;
 
     async fn get_payment_methods_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         id: &common_utils::id_type::GlobalPaymentMethodSessionId,
     ) -> CustomResult<
-        hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        orbix_domain_models::payment_methods::PaymentMethodSession,
         errors::StorageError,
     >;
 }
@@ -59,8 +59,8 @@ mod storage {
         #[instrument(skip_all)]
         async fn insert_payment_methods_session(
             &self,
-            _key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-            payment_methods_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+            _key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+            payment_methods_session: orbix_domain_models::payment_methods::PaymentMethodSession,
             validity_in_seconds: i64,
         ) -> CustomResult<(), errors::StorageError> {
             let redis_key = payment_methods_session.id.get_redis_key();
@@ -84,10 +84,10 @@ mod storage {
         #[instrument(skip_all)]
         async fn get_payment_methods_session(
             &self,
-            key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+            key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
             id: &common_utils::id_type::GlobalPaymentMethodSessionId,
         ) -> CustomResult<
-            hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+            orbix_domain_models::payment_methods::PaymentMethodSession,
             errors::StorageError,
         > {
             let redis_key = id.get_redis_key();
@@ -120,17 +120,17 @@ mod storage {
         #[instrument(skip_all)]
         async fn update_payment_method_session(
             &self,
-            key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+            key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
             session_id: &common_utils::id_type::GlobalPaymentMethodSessionId,
-            update_request: hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
-            current_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+            update_request: orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
+            current_session: orbix_domain_models::payment_methods::PaymentMethodSession,
         ) -> CustomResult<
-            hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+            orbix_domain_models::payment_methods::PaymentMethodSession,
             errors::StorageError,
         > {
             let redis_key = session_id.get_redis_key();
 
-            let internal_obj = hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateInternal::from(update_request);
+            let internal_obj = orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateInternal::from(update_request);
 
             let update_state = internal_obj.apply_changeset(current_session);
 
@@ -171,8 +171,8 @@ mod storage {
 impl PaymentMethodsSessionInterface for MockDb {
     async fn insert_payment_methods_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-        payment_methods_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+        payment_methods_session: orbix_domain_models::payment_methods::PaymentMethodSession,
         validity_in_seconds: i64,
     ) -> CustomResult<(), errors::StorageError> {
         Err(errors::StorageError::MockDbError)?
@@ -180,12 +180,12 @@ impl PaymentMethodsSessionInterface for MockDb {
 
     async fn update_payment_method_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         id: &common_utils::id_type::GlobalPaymentMethodSessionId,
-        payment_methods_session: hyperswitch_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
-        current_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        payment_methods_session: orbix_domain_models::payment_methods::PaymentMethodsSessionUpdateEnum,
+        current_session: orbix_domain_models::payment_methods::PaymentMethodSession,
     ) -> CustomResult<
-        hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        orbix_domain_models::payment_methods::PaymentMethodSession,
         errors::StorageError,
     > {
         Err(errors::StorageError::MockDbError)?
@@ -194,10 +194,10 @@ impl PaymentMethodsSessionInterface for MockDb {
     #[cfg(feature = "v2")]
     async fn get_payment_methods_session(
         &self,
-        key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
         id: &common_utils::id_type::GlobalPaymentMethodSessionId,
     ) -> CustomResult<
-        hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        orbix_domain_models::payment_methods::PaymentMethodSession,
         errors::StorageError,
     > {
         Err(errors::StorageError::MockDbError)?

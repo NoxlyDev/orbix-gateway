@@ -9,7 +9,7 @@ use diesel_models::{
     events::{EventMetadata, EventUpdateInternal},
 };
 use error_stack::ResultExt;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use rustc_hash::FxHashMap;
 
 use crate::{

@@ -33,12 +33,12 @@ use error_stack::ResultExt;
 #[cfg(all(feature = "v1", feature = "olap"))]
 use futures::future::try_join_all;
 #[cfg(feature = "olap")]
-use hyperswitch_domain_models::payments::{
+use orbix_domain_models::payments::{
     payment_attempt::PaymentAttempt, payment_intent::PaymentIntentFetchConstraints,
 };
 #[cfg(all(feature = "v1", feature = "olap"))]
-use hyperswitch_domain_models::platform::ProviderMerchantId;
-use hyperswitch_domain_models::{
+use orbix_domain_models::platform::ProviderMerchantId;
+use orbix_domain_models::{
     behaviour::Conversion,
     payments::{
         payment_intent::{PaymentIntentInterface, PaymentIntentUpdate},

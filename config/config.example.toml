@@ -4,7 +4,7 @@
 
 # This is used to identify the running application instance
 # Check common_enums::ApplicationSource for available options
-# For more details - https://github.com/juspay/hyperswitch/issues/10489
+# For more details - https://github.com/orbix/orbix/issues/10489
 application_source = "main"
 
 # Server configuration
@@ -41,7 +41,7 @@ bypass_proxy_hosts = "localhost, cluster.local" # A comma-separated list of doma
 [key_manager]
 url = "http://localhost:5000" # URL of the encryption service
 # Enable / disable legacy key store decryption behavior.
-# Set to true if upgrading from previous versions of Hyperswitch.
+# Set to true if upgrading from previous versions of Orbix Gateway.
 # Set to false for new deployments to use newer / correct decryption behavior.
 use_legacy_key_store_decryption = false
 
@@ -51,7 +51,7 @@ username = "db_user"      # DB Username
 password = "db_pass"      # DB Password. Use base-64 encoded kms encrypted value here when kms is enabled
 host = "localhost"        # DB Host
 port = 5432               # DB Port
-dbname = "hyperswitch_db" # Name of Database
+dbname = "orbix_db" # Name of Database
 max_pool_size = 5         # Maximum number of connections in the pool
 min_idle_pool_size = 2    # Minimum number of idle connections to maintain in the pool
 connection_timeout = 10   # Timeout for database connection in seconds
@@ -69,7 +69,7 @@ username = "replica_user" # DB Username
 password = "db_pass"      # DB Password. Use base-64 encoded kms encrypted value here when kms is enabled
 host = "localhost"        # DB Host
 port = 5432               # DB Port
-dbname = "hyperswitch_db" # Name of Database
+dbname = "orbix_db" # Name of Database
 max_pool_size = 5         # Maximum number of connections in the pool
 min_idle_pool_size = 2    # Minimum number of idle connections to maintain in the pool
 connection_timeout = 10   # Timeout for database connection in seconds
@@ -87,7 +87,7 @@ username = "db_user"      # DB Username
 password = "db_pass"      # DB Password. Use base-64 encoded kms encrypted value here when kms is enabled
 host = "localhost"        # DB Host
 port = 5432               # DB Port
-dbname = "hyperswitch_db" # Name of Database
+dbname = "orbix_db" # Name of Database
 max_pool_size = 5         # Maximum number of connections in the pool
 min_idle_pool_size = 2    # Minimum number of idle connections to maintain in the pool
 connection_timeout = 10   # Timeout for database connection in seconds
@@ -105,7 +105,7 @@ username = "db_user"      # DB Username
 password = "db_pass"      # DB Password. Use base-64 encoded kms encrypted value here when kms is enabled
 host = "localhost"        # DB Host
 port = 5432               # DB Port
-dbname = "hyperswitch_db" # Name of Database
+dbname = "orbix_db" # Name of Database
 max_pool_size = 5         # Maximum number of connections in the pool
 min_idle_pool_size = 2    # Minimum number of idle connections to maintain in the pool
 connection_timeout = 10   # Timeout for database connection in seconds
@@ -148,7 +148,7 @@ max_feed_count = 200              # The maximum number of frames that will be fe
 # with when this section is absent — so uncomment only what you want to change.
 #
 # [cache]
-# invalidation_channel = "hyperswitch_invalidate" # Redis pub/sub channel used to invalidate in-memory cache entries across instances; must be identical on every instance of a deployment
+# invalidation_channel = "orbix_invalidate" # Redis pub/sub channel used to invalidate in-memory cache entries across instances; must be identical on every instance of a deployment
 #
 # Each of the caches below accepts the same keys:
 #   ttl_in_secs        # Seconds an entry is retained after it was inserted (default: 1800)
@@ -243,8 +243,8 @@ run_id = ""       # stable run identifier; empty lets the runtime choose a safe 
 
 [deja.recording.kafka]
 brokers = []
-topic = "hyperswitch-deja-recording-events"
-client_id = "hyperswitch-deja-router"
+topic = "orbix-deja-recording-events"
+client_id = "orbix-deja-router"
 acks = "all"
 idempotence = true
 linger = 5
@@ -333,7 +333,7 @@ hash_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 # Connector configuration, provided attributes will be used to fulfill API requests.
 # Examples provided here are sandbox/test base urls, can be replaced by live or mock
 # base urls based on your need.
-# Note: These are not optional attributes. hyperswitch request can fail due to invalid/empty values.
+# Note: These are not optional attributes. orbix request can fail due to invalid/empty values.
 [connectors]
 absa_sanlam.base_url = "dev"
 gotyme_sanlam.base_url = "dev"
@@ -412,7 +412,7 @@ gpayments.base_url = "https://{{merchant_endpoint_prefix}}-test.api.as1.gpayment
 helcim.base_url = "https://api.helcim.com/"
 hipay.base_url = "https://stage-secure-gateway.hipay-tpp.com/rest/"
 hyperpg.base_url = "https://sandbox.hyperpg.in"
-hyperswitch_vault.base_url = "http://localhost:8080"
+orbix_vault.base_url = "http://localhost:8080"
 hyperwallet.base_url = "https://uat-api.paylution.com"
 hipay.secondary_base_url = "https://stage-secure2-vault.hipay-tpp.com/rest/"
 hipay.third_base_url = "https://stage-api-gateway.hipay.com/"
@@ -423,7 +423,7 @@ inespay.base_url = "https://apiflow.inespay.com/san/v21"
 interpayments.base_url = "https://api-test.interpayments.com/v1"
 itaubank.base_url = "https://sandbox.devportal.itau.com.br/"
 jpmorgan.base_url = "https://api-mock.payments.jpmorgan.com/api/v2"
-juspaythreedsserver.base_url = "http://localhost:8000"
+orbixthreedsserver.base_url = "http://localhost:8000"
 katapult.base_url = "https://sandbox.katapult.com/api/v3"
 jpmorgan.secondary_base_url= "https://id.payments.jpmorgan.com"
 # JP Morgan Orbital (Chase Paymentech Orbital Gateway JSON API v4). Distinct from the
@@ -592,7 +592,7 @@ cards = [
   "gpayments",
   "helcim",
   "hipay",
-  "hyperswitch_vault",
+  "orbix_vault",
   "mollie",
     "moneris",
   "paypal",
@@ -678,7 +678,7 @@ sts_role_session_name = "" # An identifier for the assumed role session, used to
 [user]
 password_validity_in_days = 90       # Number of days after which password should be updated
 two_factor_auth_expiry_in_secs = 300 # Number of seconds after which 2FA should be done again if doing update/change from inside
-totp_issuer_name = "Hyperswitch"     # Name of the issuer for TOTP
+totp_issuer_name = "Orbix"     # Name of the issuer for TOTP
 base_url = ""                        # Base url used for user specific redirects and emails
 force_two_factor_auth = false        # Whether to force two factor authentication for all users
 force_cookies = false                # Whether to use only cookies for JWT extraction and authentication
@@ -758,8 +758,8 @@ refund_retrieve_tolerance = 100                 # Fake delay tolerance for dummy
 authorize_ttl = 36000                           # Time to live for dummy connector authorize request in redis
 assets_base_url = "https://www.example.com/"    # Base url for dummy connector assets
 default_return_url = "https://www.example.com/" # Default return url when no return url is passed while payment
-slack_invite_url = "https://www.example.com/"   # Slack invite url for hyperswitch
-discord_invite_url = "https://www.example.com/" # Discord invite url for hyperswitch
+slack_invite_url = "https://www.example.com/"   # Slack invite url for orbix
+discord_invite_url = "https://www.example.com/" # Discord invite url for orbix
 
 [zero_mandates.supported_payment_methods]
 card.credit.connector_list = "checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,archipel,mollie,imerchantsolutions,peachpayments,shift4,jpmorgan,rapyd"
@@ -1290,7 +1290,7 @@ adyen.banks = "bangkok_bank,krungsri_bank,krung_thai_bank,the_siam_commercial_ba
 apple_pay_ppc = "APPLE_PAY_PAYMENT_PROCESSING_CERTIFICATE"         # Payment Processing Certificate provided by Apple Pay (https://developer.apple.com/) Certificates, Identifiers & Profiles > Apple Pay Payment Processing Certificate
 apple_pay_ppc_key = "APPLE_PAY_PAYMENT_PROCESSING_CERTIFICATE_KEY" # Private key generated by Elliptic-curve prime256v1 curve. You can use `openssl ecparam -out private.key -name prime256v1 -genkey` to generate the private key
 apple_pay_merchant_cert = "APPLE_PAY_MERCHANT_CERTIFICATE"         # Merchant Certificate provided by Apple Pay (https://developer.apple.com/) Certificates, Identifiers & Profiles > Apple Pay Merchant Identity Certificate
-apple_pay_merchant_cert_key = "APPLE_PAY_MERCHANT_CERTIFICATE_KEY" # Private key generated by RSA:2048 algorithm. Refer Hyperswitch Docs (https://docs.hyperswitch.io/hyperswitch-cloud/payment-methods-setup/wallets/apple-pay/ios-application/) to generate the private key
+apple_pay_merchant_cert_key = "APPLE_PAY_MERCHANT_CERTIFICATE_KEY" # Private key generated by RSA:2048 algorithm. Refer Orbix Gateway Docs (https://docs.orbix.example/orbix-cloud/payment-methods-setup/wallets/apple-pay/ios-application/) to generate the private key
 
 [paze_decrypt_keys]
 paze_private_key = "PAZE_PRIVATE_KEY"                       # Base 64 Encoded Private Key File cakey.pem generated for Paze  -> Command to create private key: openssl req -newkey rsa:2048 -x509 -keyout cakey.pem -out cacert.pem -days 365
@@ -1298,7 +1298,7 @@ paze_private_key_passphrase = "PAZE_PRIVATE_KEY_PASSPHRASE" # PEM Passphrase use
 
 [google_pay_decrypt_keys]
 google_pay_root_signing_keys = "GOOGLE_PAY_ROOT_SIGNING_KEYS" # Base 64 Encoded Root Signing Keys provided by Google Pay (https://developers.google.com/pay/api/web/guides/resources/payment-data-cryptography)
-google_pay_private_key = "GOOGLE_PAY_PRIVATE_KEY"             # Base 64 Encoded PKCS#8 private key of the Hyperswitch registered Google Pay gateway, used by the INTERNAL_GATEWAY tokenization flow
+google_pay_private_key = "GOOGLE_PAY_PRIVATE_KEY"             # Base 64 Encoded PKCS#8 private key of the Orbix Gateway registered Google Pay gateway, used by the INTERNAL_GATEWAY tokenization flow
 google_pay_common_merchant_id = "GOOGLE_PAY_COMMON_MERCHANT_ID" # Google Pay Business Console merchant id used when an INTERNAL_GATEWAY merchant does not supply one of its own. Not a secret, it is sent to the SDK
 google_pay_gateway_id = "GOOGLE_PAY_GATEWAY_ID"               # Gateway identifier registered with Google, also used to derive the `gateway:<id>` recipient. google_pay_private_key, google_pay_gateway_id and google_pay_common_merchant_id must either all be set or all be unset
 
@@ -1316,7 +1316,7 @@ google_pay_gateway_id = "GOOGLE_PAY_GATEWAY_ID"               # Gateway identifi
 # echo "Merchant ID: $MERCHANT_ID"
 common_merchant_identifier = "APPLE_PAY_COMMON_MERCHANT_IDENTIFIER"                        # This can be obtained by decrypting the apple_pay_ppc_key as shown above in comments
 merchant_cert = "APPLE_PAY_MERCHANT_CERTIFICATE"                                           # Merchant Certificate provided by Apple Pay (https://developer.apple.com/) Certificates, Identifiers & Profiles > Apple Pay Merchant Identity Certificate
-merchant_cert_key = "APPLE_PAY_MERCHANT_CERTIFICATE_KEY"                                   # Private key generate by RSA:2048 algorithm. Refer Hyperswitch Docs (https://docs.hyperswitch.io/hyperswitch-cloud/payment-methods-setup/wallets/apple-pay/ios-application/) to generate the private key
+merchant_cert_key = "APPLE_PAY_MERCHANT_CERTIFICATE_KEY"                                   # Private key generate by RSA:2048 algorithm. Refer Orbix Gateway Docs (https://docs.orbix.example/orbix-cloud/payment-methods-setup/wallets/apple-pay/ios-application/) to generate the private key
 applepay_endpoint = "https://apple-pay-gateway.apple.com/paymentservices/registerMerchant" # Apple pay gateway merchant endpoint
 
 [generic_link]
@@ -1325,8 +1325,8 @@ sdk_url = "http://localhost:9090/0.16.7/v0/HyperLoader.js"
 expiry = 900
 [generic_link.payment_method_collect.ui_config]
 theme = "#1A1A1A"
-logo = "https://app.hyperswitch.io/HyperswitchFavicon.png"
-merchant_name = "HyperSwitch"
+logo = "https://app.orbix.example/OrbixFavicon.png"
+merchant_name = "Orbix"
 [generic_link.payment_method_collect.enabled_payment_methods]
 card = "credit,debit"
 bank_transfer = "ach,bacs,sepa"
@@ -1337,8 +1337,8 @@ sdk_url = "http://localhost:9090/0.16.7/v0/HyperLoader.js"
 expiry = 900
 [generic_link.payout_link.ui_config]
 theme = "#1A1A1A"
-logo = "https://app.hyperswitch.io/HyperswitchFavicon.png"
-merchant_name = "HyperSwitch"
+logo = "https://app.orbix.example/OrbixFavicon.png"
+merchant_name = "Orbix"
 [generic_link.payout_link.enabled_payment_methods]
 card = "credit,debit"
 
@@ -1388,7 +1388,7 @@ username = "db_user"      # Analytics DB Username
 password = "db_pass"      # Analytics DB Password
 host = "localhost"        # Analytics DB Host
 port = 5432               # Analytics DB Port
-dbname = "hyperswitch_db" # Name of Database
+dbname = "orbix_db" # Name of Database
 max_pool_size = 5         # Maximum number of connections in the pool
 min_idle_pool_size = 2    # Minimum number of idle connections to maintain in the pool
 connection_timeout = 10   # Timeout for database connection in seconds
@@ -1518,11 +1518,11 @@ primary_password = "admin"
 region = "eu-central-1"
 
 [opensearch.indexes]
-payment_attempts = "hyperswitch-payment-attempt-events"
-payment_intents = "hyperswitch-payment-intent-events"
-refunds = "hyperswitch-refund-events"
-disputes = "hyperswitch-dispute-events"
-payouts = "hyperswitch-payout-events"
+payment_attempts = "orbix-payment-attempt-events"
+payment_intents = "orbix-payment-intent-events"
+refunds = "orbix-refund-events"
+disputes = "orbix-dispute-events"
+payouts = "orbix-payout-events"
 sessionizer_payment_attempts = "sessionizer-payment-attempt-events"
 sessionizer_payment_intents = "sessionizer-payment-intent-events"
 sessionizer_refunds = "sessionizer-refund-events"
@@ -1596,8 +1596,8 @@ service = "dynamo" # Service name
 file_storage_backend = "file_system" # Theme storage backend to be used
 
 [theme.email_config]
-entity_name = "Hyperswitch"                                                      # Display name in emails
-entity_logo_url = "https://app.hyperswitch.io/email-assets/HyperswitchLogo.png"  # Logo URL for emails
+entity_name = "Orbix"                                                      # Display name in emails
+entity_logo_url = "https://app.orbix.example/email-assets/OrbixLogo.png"  # Logo URL for emails
 foreground_color = "#111326"                                                     # Text color
 primary_color = "#006DF9"                                                        # Primary color
 background_color = "#FFFFFF"                                                     # Email background color
@@ -1719,7 +1719,7 @@ api_key = ""                                  # API key for the `application` cr
 merchant_id = ""                              # Offer Engine merchant id for the `application` credential source; omit when credentials are at the merchant level
 
 # Credentials and call settings for the Account Updater flow; omit the section entirely to keep it off
-[account_updater.juspay]
+[account_updater.orbix]
 base_url = "https://account-updater.example.com/" # Account Updater base URL
 api_key = ""                     # API key for the Account Updater provider
 merchant_id = ""                 # Merchant id sent in Account Updater request bodies

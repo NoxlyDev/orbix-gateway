@@ -312,7 +312,7 @@ pub fn capture_current() -> ContextSnapshot {
 static SAMPLER_ENGAGED: AtomicBool = AtomicBool::new(false);
 
 /// `correlation_id -> record?`, populated at ingress by the host's sampler
-/// (e.g. Hyperswitch resolving `deja_record_enabled` from Superposition). The
+/// (e.g. Orbix Gateway resolving `deja_record_enabled` from Superposition). The
 /// registry is a bounded ingress/teardown fallback; context snapshots freeze a
 /// resolved decision so spawned work can keep an explicit `false` after teardown.
 // A read-mostly `RwLock`, not a `Mutex`: the hot path is the per-boundary READ

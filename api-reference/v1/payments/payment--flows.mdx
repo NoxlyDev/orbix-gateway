@@ -4,7 +4,7 @@ sidebarTitle: "Payment Flows"
 icon: "arrows-retweet"
 iconType: "solid"
 ---
-Hyperswitch provides flexible payment processing with multiple flow patterns to accommodate different business needs. The system supports one-time payments, saved payment methods, and recurring billing through a comprehensive API design.
+Orbix Gateway provides flexible payment processing with multiple flow patterns to accommodate different business needs. The system supports one-time payments, saved payment methods, and recurring billing through a comprehensive API design.
 
 ```mermaid
 graph TD
@@ -36,13 +36,13 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Hyperswitch
+    participant Orbix Gateway
     participant Processor
     
-    Client->>Hyperswitch: POST /payments<br/>{confirm: true, capture_method: "automatic"}
-    Hyperswitch->>Processor: Authorize + Capture
-    Processor-->>Hyperswitch: Payment Complete
-    Hyperswitch-->>Client: Status: succeeded
+    Client->>Orbix Gateway: POST /payments<br/>{confirm: true, capture_method: "automatic"}
+    Orbix Gateway->>Processor: Authorize + Capture
+    Processor-->>Orbix Gateway: Payment Complete
+    Orbix Gateway-->>Client: Status: succeeded
 ```
 
 **Required Fields:**
@@ -58,20 +58,20 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Hyperswitch
+    participant Orbix Gateway
     participant Processor
     
-    Client->>Hyperswitch: POST /payments<br/>{confirm: true, capture_method: "manual"}
-    Hyperswitch->>Processor: Authorize Only
-    Processor-->>Hyperswitch: Authorization Hold
-    Hyperswitch-->>Client: Status: requires_capture
+    Client->>Orbix Gateway: POST /payments<br/>{confirm: true, capture_method: "manual"}
+    Orbix Gateway->>Processor: Authorize Only
+    Processor-->>Orbix Gateway: Authorization Hold
+    Orbix Gateway-->>Client: Status: requires_capture
     
     Note over Client: Ship goods, then capture
     
-    Client->>Hyperswitch: POST /payments/{id}/capture
-    Hyperswitch->>Processor: Capture Funds
-    Processor-->>Hyperswitch: Capture Complete
-    Hyperswitch-->>Client: Status: succeeded
+    Client->>Orbix Gateway: POST /payments/{id}/capture
+    Orbix Gateway->>Processor: Capture Funds
+    Processor-->>Orbix Gateway: Capture Complete
+    Orbix Gateway-->>Client: Status: succeeded
 ```
 
 **Flow:**
@@ -86,20 +86,20 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Hyperswitch
+    participant Orbix Gateway
     
-    Client->>Hyperswitch: POST /payments<br/>(Create Intent)
-    Hyperswitch-->>Client: payment_id + client_secret
+    Client->>Orbix Gateway: POST /payments<br/>(Create Intent)
+    Orbix Gateway-->>Client: payment_id + client_secret
     
-    Client->>Hyperswitch: POST /payments/{id}<br/>(Update: customer, amount, etc.)
-    Hyperswitch-->>Client: Updated Intent
+    Client->>Orbix Gateway: POST /payments/{id}<br/>(Update: customer, amount, etc.)
+    Orbix Gateway-->>Client: Updated Intent
     
-    Client->>Hyperswitch: POST /payments/{id}/confirm<br/>(Final Confirmation)
-    Hyperswitch-->>Client: Status: succeeded/requires_capture
+    Client->>Orbix Gateway: POST /payments/{id}/confirm<br/>(Final Confirmation)
+    Orbix Gateway-->>Client: Status: succeeded/requires_capture
     
     opt Manual Capture
-        Client->>Hyperswitch: POST /payments/{id}/capture
-        Hyperswitch-->>Client: Status: succeeded
+        Client->>Orbix Gateway: POST /payments/{id}/capture
+        Orbix Gateway-->>Client: Status: succeeded
     end
 ```
 
@@ -119,18 +119,18 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Hyperswitch
+    participant Orbix Gateway
     participant Customer
     participant Bank
     
-    Client->>Hyperswitch: POST /payments<br/>{authentication_type: "three_ds"}
-    Hyperswitch-->>Client: Status: requires_customer_action<br/>+ redirect_url
+    Client->>Orbix Gateway: POST /payments<br/>{authentication_type: "three_ds"}
+    Orbix Gateway-->>Client: Status: requires_customer_action<br/>+ redirect_url
     
     Client->>Customer: Redirect to 3DS page
     Customer->>Bank: Complete 3DS Challenge
-    Bank-->>Hyperswitch: Authentication Result
-    Hyperswitch->>Hyperswitch: Resume Payment Processing
-    Hyperswitch-->>Client: Status: succeeded
+    Bank-->>Orbix Gateway: Authentication Result
+    Orbix Gateway->>Orbix Gateway: Resume Payment Processing
+    Orbix Gateway-->>Client: Status: succeeded
 ```
 
 **Additional Fields:**
@@ -166,16 +166,16 @@ graph LR
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Hyperswitch
+    participant Orbix Gateway
     
-    Client->>Hyperswitch: POST /payments/create<br/>{customer_id}
-    Hyperswitch-->>Client: client_secret
+    Client->>Orbix Gateway: POST /payments/create<br/>{customer_id}
+    Orbix Gateway-->>Client: client_secret
     
-    Client->>Hyperswitch: GET /customers/payment_methods<br/>{client_secret, publishable_key}
-    Hyperswitch-->>Client: List of payment_tokens
+    Client->>Orbix Gateway: GET /customers/payment_methods<br/>{client_secret, publishable_key}
+    Orbix Gateway-->>Client: List of payment_tokens
     
-    Client->>Hyperswitch: POST /payments/{id}/confirm<br/>{payment_token}
-    Hyperswitch-->>Client: Payment Result
+    Client->>Orbix Gateway: POST /payments/{id}/confirm<br/>{payment_token}
+    Orbix Gateway-->>Client: Payment Result
 ```
 
 **Steps:**
@@ -184,7 +184,7 @@ sequenceDiagram
 3. **Confirm:** Use selected `payment_token` in confirm call
 
 ### PCI Compliance and `payment_method_id`
-Storing `payment_method_id` (which is a token representing the actual payment instrument, which could be a payment token, network token, or payment processor token) significantly reduces your PCI DSS scope. Hyperswitch securely stores the sensitive card details and provides you with this token. While you still need to ensure your systems handle `payment_method_id` and related customer data securely, you avoid the complexities of storing raw card numbers. Always consult with a PCI QSA to understand your specific compliance obligations.
+Storing `payment_method_id` (which is a token representing the actual payment instrument, which could be a payment token, network token, or payment processor token) significantly reduces your PCI DSS scope. Orbix Gateway securely stores the sensitive card details and provides you with this token. While you still need to ensure your systems handle `payment_method_id` and related customer data securely, you avoid the complexities of storing raw card numbers. Always consult with a PCI QSA to understand your specific compliance obligations.
 
 ## Recurring Payment Flows
 
@@ -213,15 +213,15 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant Merchant
-    participant Hyperswitch
+    participant Orbix Gateway
     participant Processor
     
     Note over Merchant: Subscription billing trigger
     
-    Merchant->>Hyperswitch: POST /payments<br/>{off_session: true, recurring_details}
-    Hyperswitch->>Processor: Process with saved payment_method_id
-    Processor-->>Hyperswitch: Payment Result
-    Hyperswitch-->>Merchant: Status: succeeded
+    Merchant->>Orbix Gateway: POST /payments<br/>{off_session: true, recurring_details}
+    Orbix Gateway->>Processor: Process with saved payment_method_id
+    Processor-->>Orbix Gateway: Payment Result
+    Orbix Gateway-->>Merchant: Status: succeeded
 ```
 
 **Required Fields:**

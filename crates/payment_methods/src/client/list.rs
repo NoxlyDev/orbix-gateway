@@ -1,6 +1,6 @@
 use api_models::payment_methods::PaymentMethodListRequest;
 use common_utils::{id_type, request::Method};
-use hyperswitch_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
+use orbix_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
 
 use crate::types::{
     ModularListCustomerPaymentMethodsRequest, ModularListCustomerPaymentMethodsResponse,
@@ -130,7 +130,7 @@ impl TryFrom<ModularListCustomerPaymentMethodsResponse> for ListCustomerPaymentM
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     ListCustomerPaymentMethods,
     method = Method::Get,
     path = "/{prefix}/customers/{customer_id}/saved-payment-methods",

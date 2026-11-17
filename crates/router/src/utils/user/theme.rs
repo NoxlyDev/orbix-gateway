@@ -4,7 +4,7 @@ use common_enums::EntityType;
 use common_utils::{ext_traits::AsyncExt, id_type, types::user::ThemeLineage};
 use diesel_models::user::theme::Theme;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::merchant_key_store::MerchantKeyStore;
+use orbix_domain_models::merchant_key_store::MerchantKeyStore;
 
 use crate::{
     core::errors::{StorageErrorExt, UserErrors, UserResult},

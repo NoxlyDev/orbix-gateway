@@ -1,6 +1,6 @@
 use common_utils::errors::CustomResult;
 use error_stack::ResultExt;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 
 use super::types::{OfferEngineCredentialSource, OfferEngineError, ResolvedOfferEngineConfig};
 use crate::{

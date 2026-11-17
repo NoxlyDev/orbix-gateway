@@ -8,7 +8,7 @@ use common_utils::{
     types::{authentication, keymanager::ToEncryptable},
 };
 use error_stack::ResultExt;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use router_env::{instrument, tracing};
 
 use super::{BoxedOperation, Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -97,7 +97,7 @@ impl<F: Send + Clone + Sync>
         request: &PaymentsCreateIntentRequest,
         platform: &domain::Platform,
         profile: &domain::Profile,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<operations::GetTrackerResponse<payments::PaymentIntentData<F>>> {
         let db = &*state.store;
         if let Some(routing_algorithm_id) = request.routing_algorithm_id.as_ref() {
@@ -116,20 +116,20 @@ impl<F: Send + Clone + Sync>
 
         let batch_encrypted_data = domain_types::crypto_operation(
             key_manager_state,
-            common_utils::type_name!(hyperswitch_domain_models::payments::PaymentIntent),
+            common_utils::type_name!(orbix_domain_models::payments::PaymentIntent),
             domain_types::CryptoOperation::BatchEncrypt(
-                hyperswitch_domain_models::payments::FromRequestEncryptablePaymentIntent::to_encryptable(
-                    hyperswitch_domain_models::payments::FromRequestEncryptablePaymentIntent {
-                        shipping_address: request.shipping.clone().map(|address| address.encode_to_value()).transpose().change_context(errors::ApiErrorResponse::InternalServerError).attach_printable("Failed to encode shipping address")?.map(hyperswitch_masking::Secret::new),
-                        billing_address: request.billing.clone().map(|address| address.encode_to_value()).transpose().change_context(errors::ApiErrorResponse::InternalServerError).attach_printable("Failed to encode billing address")?.map(hyperswitch_masking::Secret::new),
+                orbix_domain_models::payments::FromRequestEncryptablePaymentIntent::to_encryptable(
+                    orbix_domain_models::payments::FromRequestEncryptablePaymentIntent {
+                        shipping_address: request.shipping.clone().map(|address| address.encode_to_value()).transpose().change_context(errors::ApiErrorResponse::InternalServerError).attach_printable("Failed to encode shipping address")?.map(orbix_masking::Secret::new),
+                        billing_address: request.billing.clone().map(|address| address.encode_to_value()).transpose().change_context(errors::ApiErrorResponse::InternalServerError).attach_printable("Failed to encode billing address")?.map(orbix_masking::Secret::new),
                         customer_details: request.customer_details.clone()
-                            .map(hyperswitch_domain_models::payments::payment_intent::CustomerData::from)
+                            .map(orbix_domain_models::payments::payment_intent::CustomerData::from)
                             .map(|customer| customer.encode_to_value())
                             .transpose()
                             .change_context(errors::ApiErrorResponse::InternalServerError)
                             .attach_printable("Failed to encode customer details")?
-                            .map(hyperswitch_masking::Secret::new),
-                        recipient_details: request.recipient_details.clone().map(|recipient| recipient.encode_to_value()).transpose().change_context(errors::ApiErrorResponse::InternalServerError).attach_printable("Failed to encode recipient details")?.map(hyperswitch_masking::Secret::new),
+                            .map(orbix_masking::Secret::new),
+                        recipient_details: request.recipient_details.clone().map(|recipient| recipient.encode_to_value()).transpose().change_context(errors::ApiErrorResponse::InternalServerError).attach_printable("Failed to encode recipient details")?.map(orbix_masking::Secret::new),
                     },
                 ),
             ),
@@ -142,12 +142,12 @@ impl<F: Send + Clone + Sync>
         .attach_printable("Failed while encrypting payment intent details".to_string())?;
 
         let encrypted_data =
-             hyperswitch_domain_models::payments::FromRequestEncryptablePaymentIntent::from_encryptable(batch_encrypted_data)
+             orbix_domain_models::payments::FromRequestEncryptablePaymentIntent::from_encryptable(batch_encrypted_data)
                 .change_context(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Failed while encrypting payment intent details")?;
 
         let payment_intent_domain =
-            hyperswitch_domain_models::payments::PaymentIntent::create_domain_model_from_request(
+            orbix_domain_models::payments::PaymentIntent::create_domain_model_from_request(
                 payment_id,
                 platform,
                 profile,
@@ -208,7 +208,7 @@ impl<F: Clone + Sync> UpdateTracker<F, payments::PaymentIntentData<F>, PaymentsC
         _processor: &domain::Processor,
         payment_data: payments::PaymentIntentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(
         PaymentsCreateIntentOperation<'b, F>,

@@ -1,7 +1,7 @@
 use async_bb8_diesel::AsyncRunQueryDsl;
 use diesel::{associations::HasTable, ExpressionMethods, QueryDsl};
 use error_stack::ResultExt;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use super::generics::{self, db_metrics::DatabaseOperation};
 use crate::{

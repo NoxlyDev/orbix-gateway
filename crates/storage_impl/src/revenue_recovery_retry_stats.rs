@@ -7,11 +7,11 @@ pub use diesel_models::revenue_recovery_retry_stats::{
     RevenueRecoveryRetryStats, RevenueRecoveryRetryStatsNew,
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::revenue_recovery::{
+use orbix_domain_models::revenue_recovery::{
     retry_stats::RevenueRecoveryRetryStats as DomainRevenueRecoveryRetryStats,
     retry_stats_cluster_key::RetryStatsClusterKey, retry_stats_document::StatsDocument,
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use router_env::{instrument, tracing};
 
 use crate::{

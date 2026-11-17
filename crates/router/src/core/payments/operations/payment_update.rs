@@ -11,11 +11,11 @@ use common_utils::{
     types::MinorUnit,
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates::{self, MandateTransactionType},
     payments::payment_intent::{CustomerData, PaymentIntentUpdateFields},
 };
-use hyperswitch_interfaces::api::ConnectorSpecifications;
+use orbix_interfaces::api::ConnectorSpecifications;
 use router_derive::PaymentOperation;
 use router_env::instrument;
 
@@ -62,7 +62,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
         platform: &domain::Platform,
         auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         _payment_method_fetch_data: operations::PaymentMethodFetchData,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -880,7 +880,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         mut _payment_data: PaymentData<F>,
         _customer: Option<domain::Customer>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(PaymentUpdateOperation<'b, F>, PaymentData<F>)>
     where
@@ -898,7 +898,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(PaymentUpdateOperation<'b, F>, PaymentData<F>)>
     where
@@ -1209,7 +1209,7 @@ impl PaymentUpdate {
             updated_by: storage_scheme.inner().to_string(),
             network_transaction_id,
             network_transaction_link_id,
-            net_amount: hyperswitch_domain_models::payments::payment_attempt::NetAmount::new(
+            net_amount: orbix_domain_models::payments::payment_attempt::NetAmount::new(
                 payment_data.amount.into(),
                 payment_data.payment_intent.shipping_cost,
                 payment_data
@@ -1406,7 +1406,7 @@ impl PaymentUpdate {
                     .is_iframe_redirection_enabled,
                 is_confirm_operation: false, // this is not a confirm operation
                 payment_channel: payment_data.payment_intent.payment_channel.clone(),
-                feature_metadata: feature_metadata_value.map(hyperswitch_masking::Secret::new),
+                feature_metadata: feature_metadata_value.map(orbix_masking::Secret::new),
                 tax_status: payment_data.payment_intent.tax_status,
                 discount_amount: payment_data.payment_intent.discount_amount,
                 order_date: payment_data.payment_intent.order_date,

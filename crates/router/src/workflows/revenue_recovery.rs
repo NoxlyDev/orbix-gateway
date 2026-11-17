@@ -25,18 +25,18 @@ use external_services::{
     date_time, grpc_client::revenue_recovery::recovery_decider_client as external_grpc_client,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::revenue_recovery::retry_stats_document::{
+use orbix_domain_models::revenue_recovery::retry_stats_document::{
     SlotCounter, StatsDocument,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payment_method_data::PaymentMethodData,
     payments::{payment_attempt, PaymentConfirmData, PaymentIntent, PaymentIntentData},
     router_flow_types,
     router_flow_types::Authorize,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::{logger, tracing::instrument};
 use scheduler::{
     consumer::{self, workflows::ProcessTrackerWorkflow},
@@ -140,7 +140,7 @@ impl ProcessTrackerWorkflow<SessionState> for ExecutePcrWorkflow {
             payments::operations::PaymentGetIntent,
             request,
             tracking_data.global_payment_id.clone(),
-            hyperswitch_domain_models::payments::HeaderPayload::default(),
+            orbix_domain_models::payments::HeaderPayload::default(),
         )
         .await?;
 
@@ -810,7 +810,7 @@ pub(crate) struct RetryTimingParams<'a> {
     pub remaining_grace_days: u32,
     pub remaining_budget: u32,
     // Needed only to resolve the A/B gate
-    pub provider_merchant_id: hyperswitch_domain_models::platform::ProviderMerchantId,
+    pub provider_merchant_id: orbix_domain_models::platform::ProviderMerchantId,
     // Needed only to assign an implementation to an invoice that arrives without one
     pub merchant_context: pcr_storage_types::RecoveryMerchantContext<'a>,
 }
@@ -1080,7 +1080,7 @@ pub async fn get_token_with_schedule_time_based_on_retry_algorithm_type(
     tracking_data: &pcr_storage_types::RevenueRecoveryWorkflowTrackingData,
     static_ladder_progress: &pcr::schedule::StaticLadderProgress,
     // Needed only to resolve the A/B gate
-    provider_merchant_id: hyperswitch_domain_models::platform::ProviderMerchantId,
+    provider_merchant_id: orbix_domain_models::platform::ProviderMerchantId,
     remaining_grace_days: u32,
     remaining_budget: u32,
     // Needed only to assign an implementation to an invoice that arrives without one

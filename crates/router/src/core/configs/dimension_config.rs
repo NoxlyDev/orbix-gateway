@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use api_models::webhooks::IncomingWebhookEvent;
 use common_enums::{self, connector_enums};
 use external_services::superposition;
-use hyperswitch_domain_models::webhooks::IncomingWebhookIpRange;
+use orbix_domain_models::webhooks::IncomingWebhookIpRange;
 use scheduler::consumer::types::process_data::RetryMapping;
 
 use super::{dimension_state, fetch_db_config_for_dimensions, ConfigContext, DatabaseBackedConfig};
@@ -1048,7 +1048,7 @@ impl DatabaseBackedConfig for PtMappingDisputeSync {
 config! {
     superposition_key = ROUTING_RESULT_SOURCE,
     output = api_models::routing::RoutingResultSource,
-    default = api_models::routing::RoutingResultSource::HyperswitchRouting,
+    default = api_models::routing::RoutingResultSource::OrbixRouting,
     string_enum = true,
     requires = dimension_state::DimensionsWithProcessorAndProviderMerchantIdAndProfileId,
     targeting_key = id_type::ProfileId

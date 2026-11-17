@@ -81,7 +81,7 @@ const VOLATILE_RESOURCE_FIELDS = ["modified_at", "updated"];
 // convention: fetch -> attempt the negative request -> re-fetch -> compare.
 //
 // Checks the full denial response, not just the status code:
-// - Always: the body is a well-formed Hyperswitch error envelope
+// - Always: the body is a well-formed Orbix Gateway error envelope
 //   ({ error: { type, code, message } }, all non-empty strings) - catches a
 //   "denial" that's actually an empty/malformed body rather than a real
 //   error response, which `status >= 400` alone would miss.

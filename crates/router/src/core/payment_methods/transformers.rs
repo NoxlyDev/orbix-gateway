@@ -21,18 +21,18 @@ use common_utils::{
 use error_stack::ResultExt;
 #[cfg(feature = "v1")]
 use external_services::http_client;
-use hyperswitch_domain_models::mandates;
+use orbix_domain_models::mandates;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::payment_methods::{
+use orbix_domain_models::payment_methods::{
     PaymentMethodWithRawData, VaultCardData, VaultPaymentMethodData,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::{payment_method_data, sdk_auth::SdkAuthorization};
+use orbix_domain_models::{payment_method_data, sdk_auth::SdkAuthorization};
 #[cfg(feature = "v1")]
-use hyperswitch_interfaces::consts::USER_AGENT;
+use orbix_interfaces::consts::USER_AGENT;
 #[cfg(feature = "v1")]
-use hyperswitch_masking::Mask;
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_masking::Mask;
+use orbix_masking::{ExposeInterface, PeekInterface};
 use josekit::jwe;
 #[cfg(feature = "v1")]
 use payment_methods::client::{
@@ -1238,9 +1238,9 @@ impl
 #[cfg(feature = "v2")]
 #[allow(clippy::too_many_arguments)]
 pub fn generate_payment_method_session_response(
-    payment_method_session: hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+    payment_method_session: orbix_domain_models::payment_methods::PaymentMethodSession,
     client_secret: Secret<String>,
-    sdk_authorization: Option<hyperswitch_domain_models::sdk_auth::SdkAuthorization>,
+    sdk_authorization: Option<orbix_domain_models::sdk_auth::SdkAuthorization>,
     associated_payment: Option<api_models::payments::PaymentsResponse>,
     tokenization_service_response: Option<api_models::tokenization::GenericTokenizationResponse>,
     storage_type: common_enums::StorageType,
@@ -1744,7 +1744,7 @@ impl
                     .or(card_detail.card_holder_name.clone());
 
                 Ok(Self(domain::PaymentMethodData::CardWithOptionalCVC(
-                    hyperswitch_domain_models::payment_method_data::CardWithOptionalCVC {
+                    orbix_domain_models::payment_method_data::CardWithOptionalCVC {
                         card_number: card_detail.card_number,
                         card_exp_month: card_detail.card_exp_month,
                         card_exp_year: card_detail.card_exp_year,
@@ -1776,7 +1776,7 @@ impl
                 Ok(Self(domain::PaymentMethodData::CardWithNetworkTokenDetails(
                     Box::new(domain::CardWithNetworkTokenDetails {
                         card_details:
-                            hyperswitch_domain_models::payment_method_data::CardWithOptionalCVC {
+                            orbix_domain_models::payment_method_data::CardWithOptionalCVC {
                                 card_number: card_with_nt.card_details.card_number,
                                 card_exp_month: card_with_nt.card_details.card_exp_month,
                                 card_exp_year: card_with_nt.card_details.card_exp_year,
@@ -1831,7 +1831,7 @@ impl
                         bank_holder_type,
                         bank_name,
                     } => Ok(Self(domain::PaymentMethodData::BankDebit(
-                        hyperswitch_domain_models::payment_method_data::BankDebitData::AchBankDebit {
+                        orbix_domain_models::payment_method_data::BankDebitData::AchBankDebit {
                             account_number,
                             routing_number,
                             bank_account_holder_name,
@@ -1985,13 +1985,13 @@ impl TryFrom<CreatePaymentMethodResponse> for DomainPaymentMethodWrapper {
 #[cfg(feature = "v1")]
 impl<'a>
     transformers::ForeignTryFrom<
-        &'a hyperswitch_domain_models::payment_method_data::CardWithOptionalCVC,
+        &'a orbix_domain_models::payment_method_data::CardWithOptionalCVC,
     > for domain::CardDetailsForNetworkTransactionId
 {
     type Error = error_stack::Report<errors::ApiErrorResponse>;
 
     fn foreign_try_from(
-        card_data: &'a hyperswitch_domain_models::payment_method_data::CardWithOptionalCVC,
+        card_data: &'a orbix_domain_models::payment_method_data::CardWithOptionalCVC,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             card_number: card_data.card_number.clone(),
@@ -2015,13 +2015,13 @@ impl<'a>
 #[cfg(feature = "v1")]
 impl<'a>
     transformers::ForeignTryFrom<
-        &'a hyperswitch_domain_models::payment_method_data::CardWithOptionalCVC,
+        &'a orbix_domain_models::payment_method_data::CardWithOptionalCVC,
     > for domain::PaymentMethodData
 {
     type Error = error_stack::Report<errors::ApiErrorResponse>;
 
     fn foreign_try_from(
-        card_data: &'a hyperswitch_domain_models::payment_method_data::CardWithOptionalCVC,
+        card_data: &'a orbix_domain_models::payment_method_data::CardWithOptionalCVC,
     ) -> Result<Self, Self::Error> {
         match &card_data.card_cvc {
             Some(card_cvc) => Ok(Self::Card(domain::Card {
@@ -2224,7 +2224,7 @@ pub async fn create_payment_method_in_modular_service(
     payment_method: common_enums::PaymentMethod,
     payment_method_type: Option<common_enums::PaymentMethodType>,
     payment_method_data: domain::PaymentMethodData,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
     customer_id: id_type::GlobalCustomerId,
     is_network_tokenization_enabled: bool,
 ) -> CustomResult<domain::PaymentMethod, errors::ApiErrorResponse> {
@@ -2276,8 +2276,8 @@ pub async fn create_proxy_card_payment_method_in_modular_service(
     profile_id: &id_type::ProfileId,
     payment_method: common_enums::PaymentMethod,
     payment_method_type: Option<common_enums::PaymentMethodType>,
-    vault_card: hyperswitch_domain_models::payment_method_data::ExternalVaultCard,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    vault_card: orbix_domain_models::payment_method_data::ExternalVaultCard,
+    billing_address: Option<orbix_domain_models::address::Address>,
     customer_id: id_type::GlobalCustomerId,
 ) -> CustomResult<domain::PaymentMethod, errors::ApiErrorResponse> {
     // Proxy flow: the card comes from `proxy_card_data`, so `payment_method_data` is None.
@@ -2316,8 +2316,8 @@ pub async fn create_proxy_card_payment_method_in_modular_service(
     Ok(payment_method_with_raw_data.0)
 }
 
-/// Response shape for the external hyperswitch vault token-details endpoint
-/// (`GET {hyperswitch_vault_base_url}/payment-methods/token/{token}/details`). Only the permanent
+/// Response shape for the external orbix vault token-details endpoint
+/// (`GET {orbix_vault_base_url}/payment-methods/token/{token}/details`). Only the permanent
 /// payment method id is consumed; other fields are ignored.
 #[cfg(feature = "v1")]
 #[derive(Debug, Deserialize)]
@@ -2327,12 +2327,12 @@ struct VaultTokenDetailsResponse {
 }
 
 /// Resolve a temporary vault token to the permanent payment method id by calling the external
-/// (SaaS) hyperswitch vault directly.
+/// (SaaS) orbix vault directly.
 ///
-/// Used by the external vault proxy flow when the external vault is the hyperswitch vault — the
+/// Used by the external vault proxy flow when the external vault is the orbix vault — the
 /// request carries a temporary token that must be exchanged for the permanent id before it is
 /// persisted in the payment method entry. The vault is configured as a connector, so the call
-/// targets `connectors.hyperswitch_vault.base_url` (which already includes the `/v2` prefix) and is
+/// targets `connectors.orbix_vault.base_url` (which already includes the `/v2` prefix) and is
 /// authenticated as the merchant using the external vault connector account's credentials
 /// (`api-key` + profile id) — not the pay server's internal API key.
 ///
@@ -2347,7 +2347,7 @@ pub async fn get_permanent_pm_id_from_temporary_token(
 ) -> CustomResult<String, errors::ApiErrorResponse> {
     let url = format!(
         "{}/payment-methods/token/{}/details",
-        state.conf.connectors.hyperswitch_vault.base_url, temporary_token
+        state.conf.connectors.orbix_vault.base_url, temporary_token
     );
 
     let request = RequestBuilder::new()
@@ -2377,11 +2377,11 @@ pub async fn get_permanent_pm_id_from_temporary_token(
         .inspect_err(|err| {
             logger::error!(
                 error=?err,
-                "hyperswitch vault token details call failed (transport)"
+                "orbix vault token details call failed (transport)"
             );
         })
         .change_context(errors::ApiErrorResponse::InternalServerError)
-        .attach_printable("Failed to call hyperswitch vault token details endpoint")?;
+        .attach_printable("Failed to call orbix vault token details endpoint")?;
 
     let status_code = response.status().as_u16();
     response
@@ -2391,11 +2391,11 @@ pub async fn get_permanent_pm_id_from_temporary_token(
         .ok_or_else(|| {
             logger::error!(
                 status_code,
-                "hyperswitch vault token details endpoint returned non-success status"
+                "orbix vault token details endpoint returned non-success status"
             );
             error_stack::report!(errors::ApiErrorResponse::InternalServerError)
         })
-        .attach_printable("Hyperswitch vault token details endpoint returned an error status")?;
+        .attach_printable("Orbix Gateway vault token details endpoint returned an error status")?;
 
     let token_details = response
         .json::<VaultTokenDetailsResponse>()
@@ -2404,11 +2404,11 @@ pub async fn get_permanent_pm_id_from_temporary_token(
             logger::error!(
                 error=?err,
                 status_code,
-                "failed to parse hyperswitch vault token details response"
+                "failed to parse orbix vault token details response"
             );
         })
         .change_context(errors::ApiErrorResponse::InternalServerError)
-        .attach_printable("Failed to parse hyperswitch vault token details response")?;
+        .attach_printable("Failed to parse orbix vault token details response")?;
 
     logger::info!("resolved permanent payment method id from temporary vault token");
     Ok(token_details.id)

@@ -7,8 +7,8 @@
 use common_enums::{ExecutionMode, ExecutionPath, GatewaySystem};
 use common_utils::id_type;
 use external_services::grpc_client::LineageIds;
-use hyperswitch_domain_models::{payments::HeaderPayload, platform::Processor};
-use hyperswitch_interfaces::api::gateway::GatewayContext;
+use orbix_domain_models::{payments::HeaderPayload, platform::Processor};
+use orbix_interfaces::api::gateway::GatewayContext;
 
 use crate::core::payments::helpers;
 
@@ -35,7 +35,7 @@ pub struct RouterGatewayContext {
     /// Merchant connector account details (v2)
     #[cfg(feature = "v2")]
     pub merchant_connector_account:
-        hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
+        orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
 
     /// Execution mode (Primary, Shadow, etc.)
     pub execution_mode: ExecutionMode,
@@ -76,7 +76,7 @@ impl RouterGatewayContext {
         processor: Processor,
         #[cfg(feature = "v1")] merchant_connector_account: helpers::MerchantConnectorAccountType,
         #[cfg(feature = "v2")]
-        merchant_connector_account: hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
+        merchant_connector_account: orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
         merchant_id: id_type::MerchantId,
         profile_id: id_type::ProfileId,
         creds_identifier: Option<String>,
@@ -106,7 +106,7 @@ impl RouterGatewayContext {
         lineage_ids: LineageIds,
         #[cfg(feature = "v1")] merchant_connector_account: helpers::MerchantConnectorAccountType,
         #[cfg(feature = "v2")]
-        merchant_connector_account: hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
+        merchant_connector_account: orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
         creds_identifier: Option<String>,
         execution_path: ExecutionPath,
         rollout_result: helpers::RolloutExecutionResult,

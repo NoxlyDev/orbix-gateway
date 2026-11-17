@@ -2,7 +2,7 @@
 
 use diesel_models::enums;
 use error_stack::report;
-use hyperswitch_interfaces::api::ConnectorSpecifications;
+use orbix_interfaces::api::ConnectorSpecifications;
 use router_env::logger;
 
 use crate::{

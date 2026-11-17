@@ -1,5 +1,5 @@
 use common_utils::types::StringMajorUnit;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use super::amount;
 

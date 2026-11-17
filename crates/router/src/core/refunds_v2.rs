@@ -4,12 +4,12 @@ use api_models::{enums::Connector, refunds::RefundErrorDetails};
 use common_utils::{id_type, types as common_utils_types};
 use diesel_models::refund as diesel_refund;
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     refunds::RefundListConstraints,
     router_data::{ErrorResponse, RouterData},
     router_data_v2::RefundFlowData,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::{Connector as ConnectorTrait, ConnectorIntegration},
     connector_integration_v2::{ConnectorIntegrationV2, ConnectorV2},
     errors::not_supported_message,
@@ -144,7 +144,7 @@ pub async fn trigger_refund_to_gateway(
     return_raw_connector_response: Option<bool>,
 ) -> errors::RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let db = &*state.store;
 
@@ -271,7 +271,7 @@ pub async fn internal_trigger_refund_to_gateway(
     return_raw_connector_response: Option<bool>,
 ) -> errors::RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let storage_scheme = processor.get_account().storage_scheme;
 
@@ -732,7 +732,7 @@ pub async fn refund_retrieve_core(
     refund: diesel_refund::Refund,
 ) -> errors::RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let db = &*state.store;
 
@@ -856,7 +856,7 @@ pub async fn sync_refund_with_gateway(
     return_raw_connector_response: Option<bool>,
 ) -> errors::RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let db = &*state.store;
 
@@ -967,7 +967,7 @@ pub async fn internal_sync_refund_with_gateway(
     return_raw_connector_response: Option<bool>,
 ) -> errors::RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let connector_enum = merchant_connector_details.connector_name;
 
@@ -1228,7 +1228,7 @@ pub async fn validate_and_create_refund(
         .unwrap_or(payment_attempt.get_total_amount());
 
     let refund_amount_details =
-        hyperswitch_domain_models::refunds::RefundAmountDetails::from(refund_amount);
+        orbix_domain_models::refunds::RefundAmountDetails::from(refund_amount);
     refunds_validator::validate_refund_amount(
         total_amount_captured,
         &all_refunds,
@@ -1421,7 +1421,7 @@ pub async fn schedule_refund_execution(
     return_raw_connector_response: Option<bool>,
 ) -> errors::RouterResult<(
     diesel_refund::Refund,
-    Option<hyperswitch_masking::Secret<String>>,
+    Option<orbix_masking::Secret<String>>,
 )> {
     let db = &*state.store;
     let runner = storage::ProcessTrackerRunner::RefundWorkflowRouter;

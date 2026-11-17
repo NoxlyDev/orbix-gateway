@@ -2,7 +2,7 @@
 CREATE TYPE "AttemptStatus" AS ENUM (
     'started',
     'authentication_failed',
-    'juspay_declined',
+    'orbix_declined',
     'pending_vbv',
     'vbv_successful',
     'authorized',

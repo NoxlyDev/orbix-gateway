@@ -12,7 +12,7 @@ use common_utils::{
 };
 use diesel_models::PayoutLinkUpdate;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::api::{GenericLinks, GenericLinksData};
+use orbix_domain_models::api::{GenericLinks, GenericLinksData};
 
 use super::errors::{RouterResponse, StorageErrorExt};
 use crate::{
@@ -208,7 +208,7 @@ pub async fn initiate_payout_link(
             let required_field_override = api::RequiredFieldsOverrideRequest {
                 billing: address
                     .as_ref()
-                    .map(hyperswitch_domain_models::address::Address::from)
+                    .map(orbix_domain_models::address::Address::from)
                     .map(From::from),
             };
 
@@ -220,7 +220,7 @@ pub async fn initiate_payout_link(
             ));
 
             let js_data = payouts::PayoutLinkDetails {
-                publishable_key: hyperswitch_masking::Secret::new(
+                publishable_key: orbix_masking::Secret::new(
                     platform
                         .get_processor()
                         .get_account()
@@ -332,13 +332,13 @@ pub async fn initiate_payout_link(
 pub async fn filter_payout_methods(
     state: &SessionState,
     platform: &domain::Platform,
-    payout: &hyperswitch_domain_models::payouts::payouts::Payouts,
+    payout: &orbix_domain_models::payouts::payouts::Payouts,
     address: Option<&domain::Address>,
 ) -> errors::RouterResult<(
     Vec<link_utils::EnabledPaymentMethod>,
     HashMap<(common_enums::PaymentMethod, common_enums::PaymentMethodType), Vec<String>>,
 )> {
-    use hyperswitch_masking::ExposeInterface;
+    use orbix_masking::ExposeInterface;
 
     let db = &*state.store;
     //Fetch all merchant connector accounts

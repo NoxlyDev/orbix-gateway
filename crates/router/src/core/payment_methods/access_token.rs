@@ -1,7 +1,7 @@
 use common_utils::{ext_traits::AsyncExt, id_type};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::types::VaultRouterData;
-use hyperswitch_interfaces::consts;
+use orbix_domain_models::types::VaultRouterData;
+use orbix_interfaces::consts;
 
 use crate::{
     core::{

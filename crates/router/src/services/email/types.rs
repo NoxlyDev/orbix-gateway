@@ -5,7 +5,7 @@ use common_utils::{errors::CustomResult, pii};
 use diesel_models::organization::OrganizationBridge;
 use error_stack::ResultExt;
 use external_services::email::{EmailContents, EmailData, EmailError};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 
 use crate::{configs, consts, routes::SessionState};
 #[cfg(feature = "olap")]
@@ -239,7 +239,7 @@ pub mod html {
                 user_name,
                 user_email,
             } => format!(
-                "Dear Hyperswitch Support Team,
+                "Dear Orbix Gateway Support Team,
 
 Dashboard Pro Feature Request,
 Feature name  : {feature_name}
@@ -761,7 +761,7 @@ impl EmailData for WelcomeToCommunity {
         let body = html::get_html_body(EmailBody::WelcomeToCommunity);
 
         Ok(EmailContents {
-            subject: "Thank you for signing up on Hyperswitch Dashboard!".to_string(),
+            subject: "Thank you for signing up on Orbix Gateway Dashboard!".to_string(),
             body: external_services::email::IntermediateString::new(body),
             recipients: self.recipient_email.clone().into_inner().into(),
         })

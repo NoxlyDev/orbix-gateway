@@ -71,8 +71,8 @@ pub struct ConnectorFeatureMatrixResponse {
     /// The base url of the connector
     pub base_url: Option<String>,
     /// The category of the connector
-    #[schema(value_type = HyperswitchConnectorCategory, example = "payment_gateway")]
-    pub category: common_enums::HyperswitchConnectorCategory,
+    #[schema(value_type = OrbixConnectorCategory, example = "payment_gateway")]
+    pub category: common_enums::OrbixConnectorCategory,
     /// The integration status of the connector
     #[schema(value_type = ConnectorIntegrationStatus, example = "live")]
     pub integration_status: common_enums::ConnectorIntegrationStatus,

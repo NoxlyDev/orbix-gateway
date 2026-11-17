@@ -15,10 +15,10 @@ pub use ::payment_methods::core::errors::VaultError;
 use actix_web::{body::BoxBody, ResponseError};
 pub use common_utils::errors::{CustomResult, ParsingError, ValidationError};
 use diesel_models::errors as storage_errors;
-pub use hyperswitch_domain_models::errors::api_error_response::{
+pub use orbix_domain_models::errors::api_error_response::{
     ApiErrorResponse, ErrorType, NotImplementedMessage,
 };
-pub use hyperswitch_interfaces::errors::ConnectorError;
+pub use orbix_interfaces::errors::ConnectorError;
 pub use redis_interface::errors::RedisError;
 use scheduler::errors as sch_errors;
 use storage_impl::errors as storage_impl_errors;

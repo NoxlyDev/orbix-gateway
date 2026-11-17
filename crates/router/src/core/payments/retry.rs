@@ -3,7 +3,7 @@ use std::vec::IntoIter;
 use common_utils::{ext_traits::Encode, types::MinorUnit};
 use diesel_models::enums as storage_enums;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{ext_traits::OptionExt, mandates};
+use orbix_domain_models::{ext_traits::OptionExt, mandates};
 use router_env::{logger, tracing::instrument};
 
 use crate::{
@@ -113,7 +113,7 @@ where
     };
 
     // Each retry builds a fresh `RouterData` starting at `None`, so accumulate here to keep
-    // earlier attempts' connector time from being billed to Hyperswitch as `latency - hs_latency`.
+    // earlier attempts' connector time from being billed to Orbix Gateway as `latency - hs_latency`.
     let mut external_latency_total = router_data.external_latency;
 
     if should_step_up {
@@ -343,7 +343,7 @@ pub async fn get_gsm<F, FData>(
     state: &app::SessionState,
     router_data: &types::RouterData<F, FData, types::PaymentsResponseData>,
     card_network: Option<common_enums::CardNetwork>,
-) -> RouterResult<Option<hyperswitch_domain_models::gsm::GatewayStatusMap>> {
+) -> RouterResult<Option<orbix_domain_models::gsm::GatewayStatusMap>> {
     let error_response = router_data.response.as_ref().err();
     let subflow = get_flow_name::<F>()?;
     let error_code = error_response.map(|err| err.code.to_owned());
@@ -366,7 +366,7 @@ pub async fn get_gsm<F, FData>(
 
 #[instrument(skip_all)]
 pub fn get_gsm_decision(
-    option_gsm: Option<hyperswitch_domain_models::gsm::GatewayStatusMap>,
+    option_gsm: Option<orbix_domain_models::gsm::GatewayStatusMap>,
 ) -> storage_enums::GsmDecision {
     let option_gsm_decision = option_gsm
         .as_ref()
@@ -408,7 +408,7 @@ pub async fn do_retry<'a, F, ApiRequest, FData, D>(
     business_profile: &domain::Profile,
     should_retry_with_pan: bool,
     routing_decision: Option<routing_helpers::RoutingDecisionData>,
-    initial_gsm: Option<hyperswitch_domain_models::gsm::GatewayStatusMap>,
+    initial_gsm: Option<orbix_domain_models::gsm::GatewayStatusMap>,
     feature_config: &core_utils::FeatureConfig,
     post_frm_capture_hold: bool,
 ) -> RouterResult<(
@@ -479,7 +479,7 @@ where
             None,
             validate_result,
             schedule_time,
-            hyperswitch_domain_models::payments::HeaderPayload::default(),
+            orbix_domain_models::payments::HeaderPayload::default(),
             business_profile,
             true,
             merchant_connector_account.clone(),
@@ -508,7 +508,7 @@ where
         payments::CallConnectorAction::Trigger,
         merchant_connector_account,
         req_state.clone(),
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
         frm_suggestion,
         call_connector_service_response,
         &dimensions,
@@ -528,7 +528,7 @@ pub async fn modify_trackers<F, FData, D>(
     storage_scheme: storage_enums::MerchantStorageScheme,
     router_data: types::RouterData<F, FData, types::PaymentsResponseData>,
     is_step_up: bool,
-    initial_gsm: Option<hyperswitch_domain_models::gsm::GatewayStatusMap>,
+    initial_gsm: Option<orbix_domain_models::gsm::GatewayStatusMap>,
 ) -> RouterResult<()>
 where
     F: Clone + Send,
@@ -549,7 +549,7 @@ pub async fn modify_trackers<F, FData, D>(
     storage_scheme: domain::ProcessorStorageScheme,
     router_data: types::RouterData<F, FData, types::PaymentsResponseData>,
     is_step_up: bool,
-    initial_gsm: Option<hyperswitch_domain_models::gsm::GatewayStatusMap>,
+    initial_gsm: Option<orbix_domain_models::gsm::GatewayStatusMap>,
 ) -> RouterResult<()>
 where
     F: Clone + Send,

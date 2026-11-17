@@ -18,11 +18,11 @@ use common_utils::{
 };
 use error_stack::{report, ResultExt};
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payment_method_data::{
+use orbix_domain_models::payment_method_data::{
     NetworkTokenDetails, NetworkTokenDetailsPaymentMethod,
 };
-use hyperswitch_interfaces::consts::USER_AGENT;
-use hyperswitch_masking::{ErasedMaskSerialize, ExposeInterface, Mask, PeekInterface, Secret};
+use orbix_interfaces::consts::USER_AGENT;
+use orbix_masking::{ErasedMaskSerialize, ExposeInterface, Mask, PeekInterface, Secret};
 use josekit::jwe;
 
 use super::transformers::DeleteCardResp;
@@ -746,7 +746,7 @@ pub async fn get_token_from_tokenization_service(
         .clone()
         .map(|value| value.into_inner())
         .and_then(|payment_method_data| match payment_method_data {
-            hyperswitch_domain_models::payment_method_data::PaymentMethodsData::NetworkToken(
+            orbix_domain_models::payment_method_data::PaymentMethodsData::NetworkToken(
                 token,
             ) => Some(token),
             _ => None,
@@ -1267,7 +1267,7 @@ pub async fn get_altid_for_card(
     currency: api_models::enums::Currency,
     auth_ref_number: Option<String>,
 ) -> CustomResult<
-    hyperswitch_domain_models::payment_method_data::NetworkTokenData,
+    orbix_domain_models::payment_method_data::NetworkTokenData,
     errors::NetworkTokenizationError,
 > {
     let card_detail: domain::CardDetail = card.into();

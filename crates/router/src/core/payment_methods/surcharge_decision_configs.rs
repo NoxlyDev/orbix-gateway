@@ -119,7 +119,7 @@ pub async fn perform_surcharge_decision_management_for_payment_method_list(
     algorithm_ref: routing::RoutingAlgorithmRef,
     payment_attempt: &storage::PaymentAttempt,
     payment_intent: &storage::PaymentIntent,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
     response_payment_method_types: &mut [api_models::payment_methods::ResponsePaymentMethodsEnabled],
 ) -> ConditionalConfigResult<(
     types::SurchargeMetadata,
@@ -239,7 +239,7 @@ pub async fn perform_surcharge_decision_management_for_session_flow(
     algorithm_ref: routing::RoutingAlgorithmRef,
     payment_attempt: &storage::PaymentAttempt,
     payment_intent: &storage::PaymentIntent,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
     payment_method_type_list: &Vec<common_enums::PaymentMethodType>,
 ) -> ConditionalConfigResult<types::SurchargeMetadata> {
     let mut surcharge_metadata = types::SurchargeMetadata::new(payment_attempt.attempt_id.clone());

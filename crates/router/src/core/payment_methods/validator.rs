@@ -2,7 +2,7 @@ use api_models::{admin, payment_methods::PaymentMethodCollectLinkRequest};
 use common_utils::{link_utils, validation::ValidateXSSOrSQLi};
 use diesel_models::generic_link::PaymentMethodCollectLinkData;
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 #[cfg(feature = "v1")]
 use crate::core::payments::helpers as payment_helpers;

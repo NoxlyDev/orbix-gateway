@@ -20,7 +20,7 @@ common_enums = { version = "0.1.0", path = "../common_enums" }
 common_utils = { version = "0.1.0", path = "../common_utils" }
 euclid_macros = { version = "0.1.0", path = "../euclid_macros" }
 router_derive = { version = "0.1.0", path = "../router_derive" }
-hyperswitch_constraint_graph = { version = "0.1.0", path = "../hyperswitch_constraint_graph", features = ["viz"] }
+orbix_constraint_graph = { version = "0.1.0", path = "../orbix_constraint_graph", features = ["viz"] }
 
 [features]
 default = []

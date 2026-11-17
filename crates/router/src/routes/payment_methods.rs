@@ -13,7 +13,7 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use common_utils::{errors::CustomResult, id_type, transformers::ForeignFrom};
 use diesel_models::enums::IntentStatus;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     bulk_tokenization::CardNetworkTokenizeRequest, merchant_key_store::MerchantKeyStore,
     payment_methods::PaymentMethodCustomerMigrate, sdk_auth::SdkAuthorization,
     transformers::ForeignTryFrom,
@@ -1494,20 +1494,20 @@ impl ParentPaymentMethodToken {
         (parent_pm_token, payment_method): (&String, api_models::enums::PaymentMethod),
     ) -> Self {
         Self {
-            key_for_token: format!("pm_token_{parent_pm_token}_{payment_method}_hyperswitch"),
+            key_for_token: format!("pm_token_{parent_pm_token}_{payment_method}_orbix"),
         }
     }
 
     #[cfg(feature = "v2")]
     pub fn create_key_for_token(parent_pm_token: &String) -> Self {
         Self {
-            key_for_token: format!("pm_token_{parent_pm_token}_hyperswitch"),
+            key_for_token: format!("pm_token_{parent_pm_token}_orbix"),
         }
     }
 
     #[cfg(feature = "v2")]
     pub fn return_key_for_token(parent_pm_token: &String) -> String {
-        format!("pm_token_{parent_pm_token}_hyperswitch")
+        format!("pm_token_{parent_pm_token}_orbix")
     }
 
     pub async fn insert(

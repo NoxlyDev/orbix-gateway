@@ -34,7 +34,7 @@ if [[ ! -f "${MITM_CERT_PATH}" ]]; then
   exit 1
 fi
 
-# Encode newlines as literal \r\n sequences — this is what Hyperswitch's
+# Encode newlines as literal \r\n sequences — this is what Orbix Gateway's
 # apply_mitm_certificate() expects (it does replace("\\r\\n", "\n") to decode)
 MITM_CERT=$(sed 's/$/\\r\\n/' "${MITM_CERT_PATH}" | tr -d '\n')
 
@@ -60,7 +60,7 @@ trap 'echo ""; echo "==> Stopping redirect proxy (PID=${REDIRECT_PROXY_PID})..."
 
 # ── Print env vars BEFORE blocking on mitmproxy ───────────────────────────
 echo ""
-echo "Copy these exports into the Hyperswitch terminal, then start the router:"
+echo "Copy these exports into the Orbix Gateway terminal, then start the router:"
 echo "──────────────────────────────────────────────────────────────────────"
 echo "export ROUTER__PROXY__HTTPS_URL=\"http://127.0.0.1:${PROXY_PORT}\""
 echo "export ROUTER__PROXY__HTTP_URL=\"http://127.0.0.1:${PROXY_PORT}\""

@@ -31,7 +31,7 @@ impl
         _customer: &Option<domain::Customer>,
         _merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
         _merchant_recipient_data: Option<types::MerchantRecipientData>,
-        _header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        _header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
     ) -> RouterResult<types::PaymentsExtendAuthorizationRouterData> {
         todo!()
@@ -46,7 +46,7 @@ impl
         business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _payment_method: Option<common_enums::PaymentMethod>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         connector_callback_urls: &mut ConnectorCallbackUrls,
@@ -86,7 +86,7 @@ impl Feature<api::ExtendAuthorization, types::PaymentsExtendAuthorizationData>
         call_connector_action: payments::CallConnectorAction,
         connector_request: Option<services::Request>,
         _business_profile: &domain::Profile,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _return_raw_connector_response: Option<bool>,
         _gateway_context: payments::gateway::context::RouterGatewayContext,
     ) -> RouterResult<Self> {

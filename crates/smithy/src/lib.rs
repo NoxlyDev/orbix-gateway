@@ -977,12 +977,12 @@ fn extract_namespace_and_mixin(attrs: &[Attribute]) -> syn::Result<(String, bool
             })?; // Propagate parsing errors
 
             return Ok((
-                namespace.unwrap_or_else(|| "com.hyperswitch.default".to_string()),
+                namespace.unwrap_or_else(|| "com.orbix.default".to_string()),
                 mixin,
             ));
         }
     }
-    Ok(("com.hyperswitch.default".to_string(), false))
+    Ok(("com.orbix.default".to_string(), false))
 }
 
 fn extract_fields(fields: &Fields) -> syn::Result<Vec<SmithyField>> {

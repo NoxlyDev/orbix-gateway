@@ -13,7 +13,7 @@
 use common_utils::{id_type, types::MinorUnit};
 use error_stack::ResultExt;
 use external_services::grpc_client::LineageIds;
-use hyperswitch_domain_models::platform::Processor;
+use orbix_domain_models::platform::Processor;
 use unified_connector_service_client::payments as payments_grpc;
 
 use super::{build_unified_connector_service_auth_metadata, get_ucs_client};
@@ -158,7 +158,7 @@ pub async fn call_unified_connector_service_for_frm_notification(
         .into_inner();
 
     let response =
-        hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData::foreign_try_from(
+        orbix_domain_models::router_response_types::NotifyConnectorResponseData::foreign_try_from(
             response,
         )
         .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -169,7 +169,7 @@ pub async fn call_unified_connector_service_for_frm_notification(
 
 #[cfg(feature = "v1")]
 fn validate_notify_connector_response(
-    response: hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData,
+    response: orbix_domain_models::router_response_types::NotifyConnectorResponseData,
     connector_name: String,
 ) -> RouterResult<()> {
     if response.error_code.is_some()
@@ -180,9 +180,9 @@ fn validate_notify_connector_response(
             errors::ApiErrorResponse::ExternalConnectorError {
                 code: response
                     .error_code
-                    .unwrap_or_else(|| hyperswitch_interfaces::consts::NO_ERROR_CODE.to_string()),
+                    .unwrap_or_else(|| orbix_interfaces::consts::NO_ERROR_CODE.to_string()),
                 message: response.error_message.unwrap_or_else(|| {
-                    hyperswitch_interfaces::consts::NO_ERROR_MESSAGE.to_string()
+                    orbix_interfaces::consts::NO_ERROR_MESSAGE.to_string()
                 }),
                 connector: connector_name,
                 status_code: response.status_code,
@@ -196,7 +196,7 @@ fn validate_notify_connector_response(
 
 #[cfg(all(test, feature = "v1"))]
 mod tests {
-    use hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData;
+    use orbix_domain_models::router_response_types::NotifyConnectorResponseData;
 
     use super::validate_notify_connector_response;
 

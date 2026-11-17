@@ -13,7 +13,7 @@ use common_types::refunds::ExternalSurchargeRefundDetails;
 use common_utils::types::MinorUnit;
 use diesel_models::refund::{Refund, RefundUpdate};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_request_types::{PaymentsSurchargeRefundCompleteData, PaymentsSurchargeRefundInitData},
     router_response_types::{SurchargeRefundCompleteResponseData, SurchargeRefundInitResponseData},
 };
@@ -119,7 +119,7 @@ impl SurchargeRefundBalances {
         &self,
         requested_order_amount: MinorUnit,
     ) -> RouterResult<()> {
-        hyperswitch_domain_models::refunds::validate_surcharge_order_amount(
+        orbix_domain_models::refunds::validate_surcharge_order_amount(
             self.original_order_amount,
             self.remaining_order_amount,
             requested_order_amount.get_amount_as_i64(),
@@ -347,11 +347,11 @@ pub async fn complete_from_webhook(
     surcharge_account: helpers::MerchantConnectorAccountType,
     refund_id: &str,
 ) -> error_stack::Result<
-    Option<hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData>,
+    Option<orbix_domain_models::router_response_types::NotifyConnectorResponseData>,
     errors::ApiClientError,
 > {
     let acknowledged =
-        hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData {
+        orbix_domain_models::router_response_types::NotifyConnectorResponseData {
             status_code: 200,
             error_code: None,
             error_message: None,

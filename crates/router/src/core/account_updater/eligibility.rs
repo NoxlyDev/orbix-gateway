@@ -4,7 +4,7 @@ use api_models::payment_methods::{CardDetail, RawPaymentMethodData};
 use common_enums::{PaymentMethod, PaymentMethodStatus};
 use common_utils::{errors::CustomResult, fp_utils::when};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::payment_method_data::PaymentMethodsData;
+use orbix_domain_models::payment_method_data::PaymentMethodsData;
 use router_env::{instrument, tracing};
 use unified_connector_service_cards::CardNumber;
 use unified_connector_service_client::payments as payments_grpc;

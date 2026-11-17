@@ -2,9 +2,9 @@
 
 ## Introduction
 
-This directory contains the configs for deployments of Hyperswitch in different hosted environments.
+This directory contains the configs for deployments of Orbix Gateway in different hosted environments.
 
-Hyperswitch has **3** components namely,
+Orbix Gateway has **3** components namely,
 
 - router
 - drainer
@@ -18,7 +18,7 @@ We maintain configs for the `router` component for 3 different environments, nam
 - Sandbox
 - Production
 
-To learn about what "router", "drainer" and "scheduler" is, please refer to the [Hyperswitch architecture][architecture] documentation.
+To learn about what "router", "drainer" and "scheduler" is, please refer to the [Orbix Gateway architecture][architecture] documentation.
 
 ### Tree structure
 
@@ -43,9 +43,9 @@ The `integration_test.toml`, `sandbox.toml`, and `production.toml` files are con
 
 The `env_specific.toml` file contains values that are specific to the environment. This file is kept separate because the values in it are sensitive and are meant to be set by the user. The `env_specific.toml` file is merged with the `integration_test.toml`, `sandbox.toml`, or `production.toml` file to create the final configuration file for the router.
 
-For example, to build and deploy Hyperswitch in the **sandbox environment**, you can duplicate the `env_specific.toml` file and rename it as `sandbox_config.toml`. Then, update the values in the file with the proper values for the sandbox environment.
+For example, to build and deploy Orbix Gateway in the **sandbox environment**, you can duplicate the `env_specific.toml` file and rename it as `sandbox_config.toml`. Then, update the values in the file with the proper values for the sandbox environment.
 
-The environment-specific `sandbox.toml` file, which contains the Hyperswitch recommended defaults, is merged with the `sandbox_config.toml` file to create the final configuration file called `sandbox_release.toml`. This file is marked as ready for deploying on the sandbox environment.
+The environment-specific `sandbox.toml` file, which contains the Orbix Gateway recommended defaults, is merged with the `sandbox_config.toml` file to create the final configuration file called `sandbox_release.toml`. This file is marked as ready for deploying on the sandbox environment.
 
 1. Duplicate the `env_specific.toml` file and rename it as `sandbox_config.toml`:
 
@@ -72,7 +72,7 @@ The environment-specific `sandbox.toml` file, which contains the Hyperswitch rec
 
 The scheduler has two components, namely `consumer` and `producer`.
 
-The `consumer.toml` and `producer.toml` files are the configuration files for the `consumer` and `producer`, respectively. These files contain the default values recommended by Hyperswitch.
+The `consumer.toml` and `producer.toml` files are the configuration files for the `consumer` and `producer`, respectively. These files contain the default values recommended by Orbix Gateway.
 
 ### Generating a Config File for the Scheduler
 
@@ -96,14 +96,14 @@ You can use `cat` to merge the files in the terminal.
 
 Drainer is an independent component, and hence, the drainer configs can be used directly provided that the user updates the `drainer.toml` file with proper values before using.
 
-## Running Hyperswitch through Docker Compose
+## Running Orbix Gateway through Docker Compose
 
 To run the router, you can use the following snippet in the `docker-compose.yml` file:
 
 ```yaml
 ### Application services
-hyperswitch-server:
-  image: docker.juspay.io/juspaydotin/hyperswitch-router:latest # This pulls the latest image from Docker Hub. If you wish to use a version without added features (like KMS), you can replace `latest` with `standalone`. However, please note that the standalone version is not recommended for production use.
+orbix-server:
+  image: docker.orbix.example/orbix/orbix-router:latest # This pulls the latest image from Docker Hub. If you wish to use a version without added features (like KMS), you can replace `latest` with `standalone`. However, please note that the standalone version is not recommended for production use.
   command: /local/bin/router --config-path /local/config/deployments/sandbox_release.toml # <--- Change this to the config file that is generated for the environment.
   ports:
     - "8080:8080"
@@ -114,8 +114,8 @@ hyperswitch-server:
 To run the producer, you can use the following snippet in the `docker-compose.yml` file:
 
 ```yaml
-hyperswitch-producer:
-  image: docker.juspay.io/juspaydotin/hyperswitch-producer:latest
+orbix-producer:
+  image: docker.orbix.example/orbix/orbix-producer:latest
   command: /local/bin/scheduler --config-path /local/config/deployments/producer_sandbox_release.toml # <--- Change this to the config file that is generated for the environment.
   volumes:
     - ./config:/local/config
@@ -126,8 +126,8 @@ hyperswitch-producer:
 To run the consumer, you can use the following snippet in the `docker-compose.yml` file:
 
 ```yaml
-hyperswitch-consumer:
-  image: docker.juspay.io/juspaydotin/hyperswitch-consumer:latest
+orbix-consumer:
+  image: docker.orbix.example/orbix/orbix-consumer:latest
   command: /local/bin/scheduler --config-path /local/config/deployments/consumer_sandbox_release.toml # <--- Change this to the config file that is generated for the environment
   volumes:
     - ./config:/local/config
@@ -138,8 +138,8 @@ hyperswitch-consumer:
 To run the drainer, you can use the following snippet in the `docker-compose.yml` file:
 
 ```yaml
-hyperswitch-drainer:
-  image: docker.juspay.io/juspaydotin/hyperswitch-drainer:latest
+orbix-drainer:
+  image: docker.orbix.example/orbix/orbix-drainer:latest
   command: /local/bin/drainer --config-path /local/config/deployments/drainer.toml
   volumes:
     - ./config:/local/config

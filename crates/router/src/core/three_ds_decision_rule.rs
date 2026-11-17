@@ -7,7 +7,7 @@ use euclid::{
     backend::{self, inputs as dsl_inputs, EuclidBackend},
     frontend::ast,
 };
-use hyperswitch_domain_models::platform::Platform;
+use orbix_domain_models::platform::Platform;
 use router_env::{instrument, logger};
 
 use crate::{

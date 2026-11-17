@@ -108,7 +108,7 @@ mod id_type {
     #[macro_export]
     macro_rules! impl_serializable_secret_id_type {
         ($type:ty) => {
-            impl hyperswitch_masking::SerializableSecret for $type {}
+            impl orbix_masking::SerializableSecret for $type {}
         };
     }
 }

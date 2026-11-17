@@ -1,7 +1,7 @@
 use common_enums::{CountryAlpha2, MerchantProductType};
 use common_types::primitive_wrappers::SafeString;
 use common_utils::{id_type, pii};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use strum::EnumString;
 
 #[cfg(feature = "v1")]
@@ -70,7 +70,7 @@ pub struct OnboardingSurvey {
     pub designation: Option<SafeString>,
     pub about_business: Option<SafeString>,
     pub business_website: Option<SafeString>,
-    pub hyperswitch_req: Option<SafeString>,
+    pub orbix_req: Option<SafeString>,
     pub major_markets: Option<Vec<SafeString>>,
     pub business_size: Option<SafeString>,
     pub required_features: Option<Vec<SafeString>>,

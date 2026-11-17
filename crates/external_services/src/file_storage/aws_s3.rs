@@ -1,4 +1,4 @@
-//! Hyperswitch adapter over the shared [`cloud_services`] S3 client.
+//! Orbix Gateway adapter over the shared [`cloud_services`] S3 client.
 
 #[cfg(feature = "gcs_object_storage")]
 use cloud_services::storage::gcs::GcsObjectStorageConfig;

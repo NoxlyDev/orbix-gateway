@@ -1,8 +1,8 @@
 use common_utils::types::keymanager::{KeyManagerMetricsContext, KeyManagerState};
-pub use hyperswitch_domain_models::type_encryption::{
+pub use orbix_domain_models::type_encryption::{
     crypto_operation, AsyncLift, CryptoOperation, Lift, OptionalEncryptableJsonType,
 };
-use hyperswitch_interfaces::configs;
+use orbix_interfaces::configs;
 use payment_methods::state as pm_state;
 
 use crate::{
@@ -76,13 +76,13 @@ impl From<&app::SessionState> for pm_state::PaymentMethodsState {
 
 pub struct ConnectorConversionHandler;
 
-impl hyperswitch_interfaces::api_client::ConnectorConverter for ConnectorConversionHandler {
+impl orbix_interfaces::api_client::ConnectorConverter for ConnectorConversionHandler {
     fn get_connector_enum_by_name(
         &self,
         connector: &str,
     ) -> common_utils::errors::CustomResult<
-        hyperswitch_interfaces::connector_integration_interface::ConnectorEnum,
-        hyperswitch_domain_models::errors::api_error_response::ApiErrorResponse,
+        orbix_interfaces::connector_integration_interface::ConnectorEnum,
+        orbix_domain_models::errors::api_error_response::ApiErrorResponse,
     > {
         api_types::ConnectorData::convert_connector(connector)
     }

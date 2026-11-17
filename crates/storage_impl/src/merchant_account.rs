@@ -4,12 +4,12 @@ use std::collections::HashMap;
 use common_utils::ext_traits::AsyncExt;
 use diesel_models::merchant_account as storage;
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     master_key::MasterKeyInterface,
     merchant_account::{self as domain, MerchantAccountInterface},
     merchant_key_store::{MerchantKeyStore, MerchantKeyStoreInterface},
 };
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use router_env::instrument;
 
 #[cfg(feature = "accounts_cache")]
@@ -876,8 +876,8 @@ use common_utils::{
     type_name,
     types::keymanager::{self},
 };
-use hyperswitch_domain_models::type_encryption::{crypto_operation, AsyncLift, CryptoOperation};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::type_encryption::{crypto_operation, AsyncLift, CryptoOperation};
+use orbix_masking::Secret;
 
 #[cfg(feature = "v1")]
 impl ForeignFrom<domain::MerchantAccountUpdate> for MerchantAccountUpdateInternal {

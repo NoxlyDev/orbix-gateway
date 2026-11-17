@@ -1,7 +1,7 @@
 //! `deja::test_support::recording_correlation` must be sufficient on its own for
 //! a host to record a boundary from a test.
 //!
-//! The gap this closes was found from the outside: a hyperswitch test called
+//! The gap this closes was found from the outside: a orbix test called
 //! `set_recording_decision` and recorded nothing, because a decision registered
 //! for a correlation is not the same as that correlation being CURRENT. The
 //! facade re-exported the setter but not the guard, so the host had to add

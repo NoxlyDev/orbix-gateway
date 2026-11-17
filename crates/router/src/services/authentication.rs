@@ -11,10 +11,10 @@ use base64::Engine;
 use common_enums::{MerchantAccountType, TokenPurpose};
 use common_utils::{date_time, fp_utils, id_type};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::sdk_auth::SdkAuthorization;
+use orbix_domain_models::sdk_auth::SdkAuthorization;
 #[cfg(feature = "v2")]
-use hyperswitch_masking::ExposeInterface;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::ExposeInterface;
+use orbix_masking::PeekInterface;
 use jsonwebtoken::{
     decode, errors::ErrorKind::ExpiredSignature, Algorithm, DecodingKey, Validation,
 };
@@ -441,7 +441,7 @@ pub trait BasicAuthProvider {
     fn get_credentials<A>(
         state: &A,
         identifier: &str,
-    ) -> RouterResult<(Self::Identity, hyperswitch_masking::Secret<String>)>
+    ) -> RouterResult<(Self::Identity, orbix_masking::Secret<String>)>
     where
         A: SessionStateInfo;
 }
@@ -467,7 +467,7 @@ impl BasicAuthProvider for OidcAuthProvider {
     fn get_credentials<A>(
         state: &A,
         identifier: &str,
-    ) -> RouterResult<(Self::Identity, hyperswitch_masking::Secret<String>)>
+    ) -> RouterResult<(Self::Identity, orbix_masking::Secret<String>)>
     where
         A: SessionStateInfo,
     {
@@ -6484,7 +6484,7 @@ pub fn strip_basic_auth_token(token: &str) -> RouterResult<&str> {
 
 fn parse_basic_auth_credentials(
     headers: &HeaderMap,
-) -> RouterResult<(String, hyperswitch_masking::Secret<String>)> {
+) -> RouterResult<(String, orbix_masking::Secret<String>)> {
     let authorization_header = get_header_value_by_key(headers::AUTHORIZATION.to_string(), headers)
         .change_context(errors::ApiErrorResponse::InvalidBasicAuth)?
         .get_required_value(headers::AUTHORIZATION)?;
@@ -6511,7 +6511,7 @@ fn parse_basic_auth_credentials(
 
     Ok((
         identifier.to_string(),
-        hyperswitch_masking::Secret::new(secret.to_string()),
+        orbix_masking::Secret::new(secret.to_string()),
     ))
 }
 

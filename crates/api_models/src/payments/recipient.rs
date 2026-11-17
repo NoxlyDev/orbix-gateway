@@ -6,7 +6,7 @@ use common_utils::{
     pii::Email,
     transformers::ForeignFrom,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use utoipa::ToSchema;
 
 use crate::payments::AddressDetails;

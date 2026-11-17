@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Setup UI based on environment
 function setupUI() {
-  const isHosted = window.location.hostname === "integ.hyperswitch.io";
+  const isHosted = window.location.hostname === "integ.orbix.example";
 
   // Show/hide report loader for hosted environment
   const reportLoader = document.getElementById("reportLoader");
@@ -102,7 +102,7 @@ async function loadDashboardData() {
     let response;
 
     // Simple logic: local uses dashboard-data.json, hosted uses report_latest.json
-    if (window.location.hostname === "integ.hyperswitch.io") {
+    if (window.location.hostname === "integ.orbix.example") {
       // Hosted environment - use latest report
       response = await fetch("./reports/report_latest.json");
     } else {
@@ -119,7 +119,7 @@ async function loadDashboardData() {
   } catch (error) {
     console.error("Error loading dashboard data:", error);
     const environment =
-      window.location.hostname === "integ.hyperswitch.io" ? "hosted" : "local";
+      window.location.hostname === "integ.orbix.example" ? "hosted" : "local";
     showError(
       `Failed to load dashboard data for ${environment} environment. ${environment === "local" ? "Make sure to run the report generator first." : "Check if the latest report is available."}`
     );
@@ -131,7 +131,7 @@ async function loadLatestReport() {
   try {
     let response;
 
-    if (window.location.hostname === "integ.hyperswitch.io") {
+    if (window.location.hostname === "integ.orbix.example") {
       // Hosted environment - load latest report
       response = await fetch("./reports/report_latest.json");
     } else {

@@ -51,7 +51,7 @@ export default function (data) {
                 "card_cvc": "123"
             }
         },
-        "statement_descriptor_name": "Juspay",
+        "statement_descriptor_name": "Orbix",
         "statement_descriptor_suffix": "Router",
         "metadata": {
             "udf1": "value1",

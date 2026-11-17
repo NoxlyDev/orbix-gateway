@@ -8,7 +8,7 @@ use common_utils::{
     types::CreatedBy,
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::payment_method_data::CardDetailsPaymentMethod;
+use orbix_domain_models::payment_method_data::CardDetailsPaymentMethod;
 use router_env::{instrument, logger, tracing};
 use unified_connector_service_client::payments as payments_grpc;
 

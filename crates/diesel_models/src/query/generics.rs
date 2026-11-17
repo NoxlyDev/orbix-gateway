@@ -21,8 +21,8 @@ use diesel::{
 };
 use error_stack::{report, ResultExt};
 #[cfg(feature = "deja")]
-use hyperswitch_masking::PeekInterface;
-use hyperswitch_masking::Secret;
+use orbix_masking::PeekInterface;
+use orbix_masking::Secret;
 use router_env::logger;
 
 use crate::{

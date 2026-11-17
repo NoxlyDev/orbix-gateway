@@ -1,10 +1,10 @@
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     behaviour::{Conversion, ReverseConversion},
     merchant_key_store as domain,
     merchant_key_store::MerchantKeyStoreInterface,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router_env::instrument;
 
 #[cfg(feature = "accounts_cache")]

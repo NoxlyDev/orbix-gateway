@@ -1,5 +1,5 @@
 use common_enums::CountryAlpha2;
-use hyperswitch_masking::ExposeOptionInterface;
+use orbix_masking::ExposeOptionInterface;
 
 use super::super::*;
 

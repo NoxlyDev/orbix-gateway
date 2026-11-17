@@ -1,5 +1,5 @@
 use common_utils::id_type;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use time::PrimitiveDateTime;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, utoipa::ToSchema)]

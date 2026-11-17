@@ -2,7 +2,7 @@ use api_models::revenue_recovery_data_backfill::{
     CsvParsingError, RetryStatsMigrationCsvResult, RetryStatsMigrationResponse,
 };
 use futures::StreamExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     api::ApplicationResponse,
     revenue_recovery::{
         retry_stats_cluster_key::RetryStatsClusterKey, retry_stats_document::StatsDocument,

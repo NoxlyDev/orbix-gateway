@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::config_patch::Patch;
 use bytes::Bytes;
-use hyperswitch_masking::{Maskable, Secret};
+use orbix_masking::{Maskable, Secret};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 

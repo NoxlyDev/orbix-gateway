@@ -1,6 +1,6 @@
 use common_utils::ext_traits::{ByteSliceExt, Encode};
 use error_stack::ResultExt;
-pub use hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountInterface;
+pub use orbix_domain_models::merchant_connector_account::MerchantConnectorAccountInterface;
 use router_env::instrument;
 use storage_impl::redis::kv_store::RedisConnInterface;
 
@@ -99,8 +99,8 @@ mod merchant_connector_account_cache_tests {
     };
     use diesel_models::enums::ConnectorType;
     use error_stack::ResultExt;
-    use hyperswitch_domain_models::master_key::MasterKeyInterface;
-    use hyperswitch_masking::PeekInterface;
+    use orbix_domain_models::master_key::MasterKeyInterface;
+    use orbix_masking::PeekInterface;
     use storage_impl::{
         behaviour::Conversion,
         redis::{

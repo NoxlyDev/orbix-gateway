@@ -11,8 +11,8 @@ use common_utils::{
 };
 use error_stack::{Report, ResultExt};
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::PaymentIntentData;
-use hyperswitch_masking::{ExposeInterface, ExposeOptionInterface};
+use orbix_domain_models::payments::PaymentIntentData;
+use orbix_masking::{ExposeInterface, ExposeOptionInterface};
 
 use super::{ConstructFlowSpecificData, Feature};
 use crate::{
@@ -54,7 +54,7 @@ impl
         customer: &Option<domain::Customer>,
         merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
     ) -> RouterResult<types::PaymentsSessionRouterData> {
         Box::pin(transformers::construct_payment_router_data_for_sdk_session(
@@ -85,7 +85,7 @@ impl
         business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         payment_method: Option<common_enums::PaymentMethod>,
         payment_method_type: Option<common_enums::PaymentMethodType>,
         connector_callback_urls: &mut ConnectorCallbackUrls,
@@ -123,7 +123,7 @@ impl Feature<api::Session, types::PaymentsSessionData> for types::PaymentsSessio
         call_connector_action: payments::CallConnectorAction,
         _connector_request: Option<services::Request>,
         business_profile: &domain::Profile,
-        header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: orbix_domain_models::payments::HeaderPayload,
         _return_raw_connector_response: Option<bool>,
         gateway_context: gateway_context::RouterGatewayContext,
     ) -> RouterResult<Self> {
@@ -253,8 +253,8 @@ fn is_dynamic_fields_required(
 fn build_apple_pay_session_request(
     state: &routes::SessionState,
     request: payment_types::ApplepaySessionRequest,
-    apple_pay_merchant_cert: hyperswitch_masking::Secret<String>,
-    apple_pay_merchant_cert_key: hyperswitch_masking::Secret<String>,
+    apple_pay_merchant_cert: orbix_masking::Secret<String>,
+    apple_pay_merchant_cert_key: orbix_masking::Secret<String>,
 ) -> RouterResult<services::Request> {
     let mut url = state.conf.connectors.applepay.base_url.to_owned();
     url.push_str("paymentservices/paymentSession");
@@ -279,7 +279,7 @@ async fn create_applepay_session_token(
     router_data: &types::PaymentsSessionRouterData,
     connector: &api::ConnectorData,
     business_profile: &domain::Profile,
-    header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: orbix_domain_models::payments::HeaderPayload,
 ) -> RouterResult<types::PaymentsSessionRouterData> {
     let delayed_response = is_session_response_delayed(state, connector);
     let apple_pay_next_action =
@@ -632,7 +632,7 @@ async fn create_applepay_session_token(
 
 fn create_paze_session_token(
     router_data: &types::PaymentsSessionRouterData,
-    _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    _header_payload: orbix_domain_models::payments::HeaderPayload,
 ) -> RouterResult<types::PaymentsSessionRouterData> {
     let paze_wallet_details = router_data
         .connector_wallets_details
@@ -670,7 +670,7 @@ fn create_paze_session_token(
 fn create_samsung_pay_session_token(
     state: &routes::SessionState,
     router_data: &types::PaymentsSessionRouterData,
-    header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: orbix_domain_models::payments::HeaderPayload,
     connector: &api::ConnectorData,
     business_profile: &domain::Profile,
 ) -> RouterResult<types::PaymentsSessionRouterData> {
@@ -955,7 +955,7 @@ fn create_apple_pay_session_response(
     connector_name: String,
     delayed_response: bool,
     next_action: payment_types::NextActionCall,
-    header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: orbix_domain_models::payments::HeaderPayload,
 ) -> RouterResult<types::PaymentsSessionRouterData> {
     match session_response {
         Some(response) => Ok(types::PaymentsSessionRouterData {
@@ -1035,7 +1035,7 @@ async fn resolve_wallet_eligibility_next_action(
     let dimensions = dimension_state::Dimensions::new()
         .with_processor_merchant_id(business_profile.merchant_id.clone().into())
         .with_provider_merchant_id(
-            hyperswitch_domain_models::platform::ProviderMerchantId::new(
+            orbix_domain_models::platform::ProviderMerchantId::new(
                 business_profile.merchant_id.clone(),
             ),
         )
@@ -1358,9 +1358,9 @@ fn get_allowed_payment_methods_from_cards(
 
 /// Resolve the tokenization specification that is sent to the Google Pay SDK.
 ///
-/// `INTERNAL_GATEWAY` is a Hyperswitch internal marker and is not a tokenization type Google
+/// `INTERNAL_GATEWAY` is a Orbix Gateway internal marker and is not a tokenization type Google
 /// understands, so it is resolved here into a `PAYMENT_GATEWAY` specification pointing at
-/// Hyperswitch's own registered gateway. The card is then encrypted to a key we hold, which is
+/// Orbix Gateway's own registered gateway. The card is then encrypted to a key we hold, which is
 /// what lets the merchant onboard without registering a keypair of its own.
 ///
 /// `DIRECT` and `PAYMENT_GATEWAY` are passed through exactly as the merchant configured them.
@@ -1388,7 +1388,7 @@ fn resolve_google_pay_tokenization_specification(
                     ),
                 parameters: payment_types::GpayTokenParameters {
                     gateway: Some(gateway),
-                    // The Hyperswitch merchant id keeps each merchant individually identifiable
+                    // The Orbix Gateway merchant id keeps each merchant individually identifiable
                     // in the token, which a fixed constant would not.
                     gateway_merchant_id: Some(merchant_id.get_string_repr().to_owned()),
                     // A gateway specification carries no public key, and therefore no protocol
@@ -1444,7 +1444,7 @@ fn resolve_google_pay_tokenization_specification(
 ///
 /// Under `INTERNAL_GATEWAY` the merchant chooses whether to register with the Google Pay Business
 /// Console itself. If it did, its own id is used exactly as under `DIRECT`; if it did not, the
-/// common Hyperswitch merchant id from config is substituted. Both are supported configurations.
+/// common Orbix Gateway merchant id from config is substituted. Both are supported configurations.
 ///
 /// Never applied to `DIRECT` or `PAYMENT_GATEWAY`: substituting our merchant id into a merchant's
 /// own integration would change who Google treats as the merchant of record.
@@ -1488,7 +1488,7 @@ fn resolve_google_pay_merchant_id(
 fn construct_stripe_publishable_key(
     gpay_token_specific_parameters: &payment_types::GpayTokenParameters,
     router_data: &types::PaymentsSessionRouterData,
-) -> Option<hyperswitch_masking::Secret<String>> {
+) -> Option<orbix_masking::Secret<String>> {
     let suffix =
         if let Some(common_types::payments::SplitPaymentsRequest::StripeSplitPayment(stripe)) =
             &router_data.request.split_payments
@@ -1507,7 +1507,7 @@ fn construct_stripe_publishable_key(
     gpay_token_specific_parameters
         .stripe_publishable_key
         .clone()
-        .map(|key| hyperswitch_masking::Secret::new(format!("{}{}", key, suffix)))
+        .map(|key| orbix_masking::Secret::new(format!("{}{}", key, suffix)))
 }
 
 fn is_session_response_delayed(
@@ -1547,7 +1547,7 @@ where
         _confirm: Option<bool>,
         call_connector_action: payments::CallConnectorAction,
         business_profile: &domain::Profile,
-        header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: orbix_domain_models::payments::HeaderPayload,
         gateway_context: gateway_context::RouterGatewayContext,
     ) -> RouterResult<Self>;
 }
@@ -1749,7 +1749,7 @@ impl RouterDataSession for types::PaymentsSessionRouterData {
         _confirm: Option<bool>,
         call_connector_action: payments::CallConnectorAction,
         business_profile: &domain::Profile,
-        header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: orbix_domain_models::payments::HeaderPayload,
         gateway_context: gateway_context::RouterGatewayContext,
     ) -> RouterResult<Self> {
         match connector.get_token {

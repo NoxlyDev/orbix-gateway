@@ -6,10 +6,10 @@
 //!
 //! The middleware wraps the request future in `scope_correlation`, so every
 //! boundary that fires synchronously within a poll of that future is attributed.
-//! But work moved onto a `tokio::spawn`ed task escapes that wrapper. Hyperswitch
+//! But work moved onto a `tokio::spawn`ed task escapes that wrapper. Orbix Gateway
 //! runs handlers on actix's per-worker runtimes, which the main `#[tokio::main]`
 //! runtime builder does not own — so tokio's task-lifecycle hooks cannot reach
-//! them. A tracing layer can: hyperswitch already propagates the request span
+//! them. A tracing layer can: orbix already propagates the request span
 //! into spawned tasks via `.in_current_span()`, and a layer's `on_enter` fires
 //! wherever the task is polled, on any runtime.
 //!

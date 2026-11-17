@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use cards::CardNumber;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router::types::{self, domain, storage::enums};
 use test_utils::connector_auth;
 

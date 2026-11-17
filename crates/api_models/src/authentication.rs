@@ -7,7 +7,7 @@ use common_utils::{
 };
 #[cfg(feature = "v1")]
 use error_stack::ResultExt;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 use utoipa::ToSchema;

@@ -77,7 +77,7 @@ pub async fn setup_intents_create(
                 payments::CallConnectorAction::Trigger,
                 None,
                 None,
-                hyperswitch_domain_models::payments::HeaderPayload::default(),
+                orbix_domain_models::payments::HeaderPayload::default(),
                 None,
             )
         },
@@ -161,7 +161,7 @@ pub async fn setup_intents_retrieve(
                 payments::CallConnectorAction::Trigger,
                 None,
                 None,
-                hyperswitch_domain_models::payments::HeaderPayload::default(),
+                orbix_domain_models::payments::HeaderPayload::default(),
                 None,
             )
         },
@@ -247,7 +247,7 @@ pub async fn setup_intents_update(
                 payments::CallConnectorAction::Trigger,
                 None,
                 None,
-                hyperswitch_domain_models::payments::HeaderPayload::default(),
+                orbix_domain_models::payments::HeaderPayload::default(),
                 None,
             )
         },
@@ -334,7 +334,7 @@ pub async fn setup_intents_confirm(
                 payments::CallConnectorAction::Trigger,
                 None,
                 None,
-                hyperswitch_domain_models::payments::HeaderPayload::default(),
+                orbix_domain_models::payments::HeaderPayload::default(),
                 None,
             )
         },

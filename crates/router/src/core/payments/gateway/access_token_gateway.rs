@@ -4,11 +4,11 @@ use async_trait::async_trait;
 use common_enums::{CallConnectorAction, ConnectorType, ExecutionPath};
 use common_utils::{errors::CustomResult, id_type, request::Request, ucs_types};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_data::RouterData, router_flow_types as domain,
     router_request_types::AccessTokenRequestData,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::gateway as payment_gateway,
     connector_integration_interface::{BoxedConnectorIntegrationInterface, RouterDataConversion},
     errors::ConnectorError,
@@ -34,7 +34,7 @@ impl<RCD>
         RCD,
         Self,
         AccessTokenRequestData,
-        hyperswitch_domain_models::router_data::AccessToken,
+        orbix_domain_models::router_data::AccessToken,
         RouterGatewayContext,
     > for domain::access_token_auth::AccessTokenAuth
 where
@@ -45,7 +45,7 @@ where
         + RouterDataConversion<
             Self,
             AccessTokenRequestData,
-            hyperswitch_domain_models::router_data::AccessToken,
+            orbix_domain_models::router_data::AccessToken,
         >,
 {
     async fn execute(
@@ -55,12 +55,12 @@ where
             Self,
             RCD,
             AccessTokenRequestData,
-            hyperswitch_domain_models::router_data::AccessToken,
+            orbix_domain_models::router_data::AccessToken,
         >,
         router_data: &RouterData<
             Self,
             AccessTokenRequestData,
-            hyperswitch_domain_models::router_data::AccessToken,
+            orbix_domain_models::router_data::AccessToken,
         >,
         call_connector_action: CallConnectorAction,
         _connector_request: Option<Request>,
@@ -70,7 +70,7 @@ where
         RouterData<
             Self,
             AccessTokenRequestData,
-            hyperswitch_domain_models::router_data::AccessToken,
+            orbix_domain_models::router_data::AccessToken,
         >,
         ConnectorError,
     > {
@@ -128,10 +128,10 @@ where
                 #[cfg(feature = "v2")]
                 {
                     match &merchant_connector_account {
-                        hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails::MerchantConnectorAccount(mca) => {
+                        orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails::MerchantConnectorAccount(mca) => {
                             Some(mca.connector_type)
                         }
-                        hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails::MerchantConnectorDetails(_) => None,
+                        orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails::MerchantConnectorDetails(_) => None,
                     }
                 }
             };
@@ -258,7 +258,7 @@ impl<RCD>
         SessionState,
         RCD,
         AccessTokenRequestData,
-        hyperswitch_domain_models::router_data::AccessToken,
+        orbix_domain_models::router_data::AccessToken,
         RouterGatewayContext,
     > for domain::access_token_auth::AccessTokenAuth
 where
@@ -269,7 +269,7 @@ where
         + RouterDataConversion<
             Self,
             AccessTokenRequestData,
-            hyperswitch_domain_models::router_data::AccessToken,
+            orbix_domain_models::router_data::AccessToken,
         >,
 {
     fn get_gateway(
@@ -280,7 +280,7 @@ where
             RCD,
             Self,
             AccessTokenRequestData,
-            hyperswitch_domain_models::router_data::AccessToken,
+            orbix_domain_models::router_data::AccessToken,
             RouterGatewayContext,
         >,
     > {

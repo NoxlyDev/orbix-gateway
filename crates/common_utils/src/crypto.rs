@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 use base64::Engine;
 use error_stack::ResultExt;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use ring::{
     aead::{self, BoundKey, OpeningKey, SealingKey, UnboundKey},
     hmac, rand as ring_rand,
@@ -697,7 +697,7 @@ pub struct Encryptable<T: Clone> {
     encrypted: Secret<Vec<u8>, EncryptionStrategy>,
 }
 
-impl<T: Clone, S: hyperswitch_masking::Strategy<T>> Encryptable<Secret<T, S>> {
+impl<T: Clone, S: orbix_masking::Strategy<T>> Encryptable<Secret<T, S>> {
     /// constructor function to be used by the encryptor and decryptor to generate the data type
     pub fn new(
         masked_data: Secret<T, S>,
@@ -762,9 +762,9 @@ impl<T: Clone> Deref for Encryptable<Secret<T>> {
     }
 }
 
-impl<T: Clone> hyperswitch_masking::Serialize for Encryptable<T>
+impl<T: Clone> orbix_masking::Serialize for Encryptable<T>
 where
-    T: hyperswitch_masking::Serialize,
+    T: orbix_masking::Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -796,7 +796,7 @@ where
 /// keeps its encrypted half. Applied per field with
 /// `#[serde(with = "…encryptable_exact")]` (or `::optional` for an `Option`).
 pub mod encryptable_exact {
-    use hyperswitch_masking::PeekInterface;
+    use orbix_masking::PeekInterface;
     use serde::{Deserialize, Serialize};
 
     use super::{Encryptable, Secret};
@@ -1060,7 +1060,7 @@ impl SignMessage for RsaPssSha256 {
 
 #[cfg(test)]
 mod encryptable_exact_tests {
-    use hyperswitch_masking::{PeekInterface, Secret};
+    use orbix_masking::{PeekInterface, Secret};
     use serde::{Deserialize, Serialize};
 
     use super::Encryptable;

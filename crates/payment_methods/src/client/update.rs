@@ -7,9 +7,9 @@ use common_utils::{
     pii::Email,
     request::{Method, RequestContent},
 };
-use hyperswitch_domain_models::payment_method_data::{PaymentMethodData, WalletData};
-use hyperswitch_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::payment_method_data::{PaymentMethodData, WalletData};
+use orbix_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
@@ -226,7 +226,7 @@ impl UpdatePaymentMethod {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     UpdatePaymentMethod,
     method = Method::Put,
     path = "/{prefix}/payment-methods/{id}/update-saved-payment-method",

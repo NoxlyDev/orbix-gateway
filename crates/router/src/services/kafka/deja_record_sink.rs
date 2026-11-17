@@ -118,7 +118,7 @@ struct MarkerBody<'a> {
     payload: &'a serde_json::Value,
 }
 
-pub struct HyperswitchKafkaRecordSinkConfig<'a> {
+pub struct OrbixKafkaRecordSinkConfig<'a> {
     pub brokers: &'a [String],
     pub topic: &'a str,
     pub recording_run_id: &'a str,
@@ -135,7 +135,7 @@ pub struct HyperswitchKafkaRecordSinkConfig<'a> {
 
 /// `RecordSink<deja::DejaRecord>` implementation over a deja-owned,
 /// durability-hardened Kafka producer.
-pub struct HyperswitchKafkaRecordSink {
+pub struct OrbixKafkaRecordSink {
     producer: ThreadedProducer<DefaultProducerContext>,
     topic: String,
     recording_run_id: String,
@@ -146,11 +146,11 @@ pub struct HyperswitchKafkaRecordSink {
     code_sha: Option<String>,
 }
 
-impl HyperswitchKafkaRecordSink {
+impl OrbixKafkaRecordSink {
     /// Build the sink with its own hardened producer from the broker list of
-    /// Hyperswitch's events config (the brokers are shared; the producer and
+    /// Orbix Gateway's events config (the brokers are shared; the producer and
     /// its delivery guarantees are not).
-    pub fn new(config: HyperswitchKafkaRecordSinkConfig<'_>) -> io::Result<Self> {
+    pub fn new(config: OrbixKafkaRecordSinkConfig<'_>) -> io::Result<Self> {
         // Start from the deployment-wide base client config (shared cluster
         // provisioning), then layer the recording sink's delivery guarantees
         // on top — a separate client with its own queue and delivery thread.
@@ -304,7 +304,7 @@ impl HyperswitchKafkaRecordSink {
     }
 }
 
-impl deja::RecordSink<deja::DejaRecord> for HyperswitchKafkaRecordSink {
+impl deja::RecordSink<deja::DejaRecord> for OrbixKafkaRecordSink {
     fn write_batch(&mut self, records: &[deja::DejaRecord]) -> io::Result<()> {
         for record in records {
             match record {

@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 #[cfg(feature = "olap")]
 use common_utils::types::{ConnectorTransactionIdTrait, MinorUnit};
 use diesel_models::{errors::DatabaseError, refund as diesel_refund};
-use hyperswitch_domain_models::refunds;
+use orbix_domain_models::refunds;
 
 use super::MockDb;
 use crate::{
@@ -150,7 +150,7 @@ pub trait RefundInterface {
 #[cfg(not(feature = "kv_store"))]
 mod storage {
     use error_stack::report;
-    use hyperswitch_domain_models::refunds;
+    use orbix_domain_models::refunds;
     use router_env::instrument;
 
     use super::RefundInterface;
@@ -546,7 +546,7 @@ mod storage {
     use common_utils::{ext_traits::Encode, fallback_reverse_lookup_not_found};
     use diesel_models::refund as diesel_refund;
     use error_stack::{report, ResultExt};
-    use hyperswitch_domain_models::refunds;
+    use orbix_domain_models::refunds;
     use redis_interface::HsetnxReply;
     use router_env::instrument;
     use storage_impl::redis::kv_store::{

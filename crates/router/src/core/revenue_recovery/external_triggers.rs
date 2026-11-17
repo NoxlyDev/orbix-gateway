@@ -14,14 +14,14 @@ use common_utils::{
 };
 use diesel_models::{business_profile::RevenueRecoveryConfig, process_tracker::business_status};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments::{get_next_retry_for_intent_status, PaymentIntent, PaymentIntentData},
     platform::Platform,
     revenue_recovery::{RecoveryPaymentAttempt, RecoveryPaymentIntent},
     type_encryption::{crypto_operation, CryptoOperation},
     ApiModelToDieselModelConvertor,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::{instrument, logger, tracing};
 use scheduler::errors as sch_errors;
 use time::{Duration, PrimitiveDateTime};
@@ -336,7 +336,7 @@ async fn decide_recovery_request_retry(
 }
 
 /// A charged card is healthy again, so its retry history starts over, as it does for the retries
-/// Hyperswitch makes.
+/// Orbix Gateway makes.
 async fn reset_card_history_after_a_charge(state: &SessionState, request: &RecoveryPaymentsCreate) {
     match request.transaction_status {
         RecoveryTransactionStatus::Failure => {}
@@ -590,7 +590,7 @@ async fn save_trigger_state(
             api_models::enums::UpdateActiveAttempt::NoAction,
         ),
         payment_intent.id,
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
     ))
     .await
     .map(|_| ())
@@ -1295,7 +1295,7 @@ async fn read_invoice(
             id: payment_id.clone(),
         },
         payment_id.clone(),
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
     ))
     .await?;
     Ok(payment_data.payment_intent)

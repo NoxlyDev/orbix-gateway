@@ -7,10 +7,10 @@ use common_utils::{
 };
 use diesel_models::{errors::DatabaseError, kv};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::merchant_key_store::MerchantKeyStore;
+use orbix_domain_models::merchant_key_store::MerchantKeyStore;
 #[cfg(not(feature = "payouts"))]
-use hyperswitch_domain_models::{PayoutAttemptInterface, PayoutsInterface};
-use hyperswitch_masking::StrongSecret;
+use orbix_domain_models::{PayoutAttemptInterface, PayoutsInterface};
+use orbix_masking::StrongSecret;
 use redis_interface::{errors::RedisError, types::HsetnxReply};
 use router_env::logger;
 use serde::de;
@@ -336,7 +336,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
     }
 
     // Equivalent of find_resource_by_id but where the conversion trait is still
-    // implemented in the hyperswitch_domain_models crate (used by types not yet
+    // implemented in the orbix_domain_models crate (used by types not yet
     // migrated to the storage_impl Conversion impls, e.g. PaymentIntent).
     pub async fn find_resource_by_id_old<D, R, M>(
         &self,
@@ -346,7 +346,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
         find_by: FindResourceBy<'_>,
     ) -> error_stack::Result<D, errors::StorageError>
     where
-        D: Debug + Sync + hyperswitch_domain_models::behaviour::Conversion,
+        D: Debug + Sync + orbix_domain_models::behaviour::Conversion,
         M: de::DeserializeOwned
             + serde::Serialize
             + Debug
@@ -354,7 +354,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
             + UniqueConstraints
             + Sync
             + Send
-            + hyperswitch_domain_models::behaviour::ReverseConversion<D>,
+            + orbix_domain_models::behaviour::ReverseConversion<D>,
         R: futures::Future<Output = error_stack::Result<M, DatabaseError>> + Send,
     {
         let database_call = || async {
@@ -637,7 +637,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
     }
 
     // Equivalent of insert_resource but where the conversion trait is still
-    // implemented in the hyperswitch_domain_models crate (used by types not yet
+    // implemented in the orbix_domain_models crate (used by types not yet
     // migrated to the storage_impl Conversion impls, e.g. PaymentIntent).
     pub async fn insert_resource_old<D, R, M, DrainerQueryFut>(
         &self,
@@ -654,7 +654,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
         }: InsertResourceParams<'_, DrainerQueryFut>,
     ) -> error_stack::Result<D, errors::StorageError>
     where
-        D: Debug + Sync + hyperswitch_domain_models::behaviour::Conversion,
+        D: Debug + Sync + orbix_domain_models::behaviour::Conversion,
         M: de::DeserializeOwned
             + serde::Serialize
             + Debug
@@ -662,7 +662,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
             + UniqueConstraints
             + Sync
             + Send
-            + hyperswitch_domain_models::behaviour::ReverseConversion<D>,
+            + orbix_domain_models::behaviour::ReverseConversion<D>,
         R: futures::Future<Output = error_stack::Result<M, DatabaseError>> + Send,
         DrainerQueryFut:
             futures::Future<Output = diesel_models::StorageResult<kv::SerializableQuery>> + Send,
@@ -728,7 +728,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
     }
 
     // Equivalent of update_resource but where the conversion trait is still
-    // implemented in the hyperswitch_domain_models crate (used by types not yet
+    // implemented in the orbix_domain_models crate (used by types not yet
     // migrated to the storage_impl Conversion impls, e.g. PaymentIntent).
     pub async fn update_resource_old<D, R, M, DrainerQueryFut>(
         &self,
@@ -742,7 +742,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
         }: UpdateResourceParams<'_, DrainerQueryFut>,
     ) -> error_stack::Result<D, errors::StorageError>
     where
-        D: Debug + Sync + hyperswitch_domain_models::behaviour::Conversion,
+        D: Debug + Sync + orbix_domain_models::behaviour::Conversion,
         M: de::DeserializeOwned
             + serde::Serialize
             + Debug
@@ -750,7 +750,7 @@ impl<T: DatabaseStore> KVRouterStore<T> {
             + UniqueConstraints
             + Sync
             + Send
-            + hyperswitch_domain_models::behaviour::ReverseConversion<D>,
+            + orbix_domain_models::behaviour::ReverseConversion<D>,
         R: futures::Future<Output = error_stack::Result<M, DatabaseError>> + Send,
         DrainerQueryFut:
             futures::Future<Output = diesel_models::StorageResult<kv::SerializableQuery>> + Send,

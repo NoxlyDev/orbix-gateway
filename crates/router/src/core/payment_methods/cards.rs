@@ -51,10 +51,10 @@ use euclid::{
     dssa::graph::{AnalysisContext, CgraphExt},
     frontend::dir,
 };
-use hyperswitch_constraint_graph as cgraph;
-use hyperswitch_domain_models::{customer::CustomerUpdate, mandates::CommonMandateReference};
-use hyperswitch_interfaces::secrets_interface::secret_state::RawSecret;
-use hyperswitch_masking::Secret;
+use orbix_constraint_graph as cgraph;
+use orbix_domain_models::{customer::CustomerUpdate, mandates::CommonMandateReference};
+use orbix_interfaces::secrets_interface::secret_state::RawSecret;
+use orbix_masking::Secret;
 #[cfg(feature = "v1")]
 use kgraph_utils::transformers::IntoDirValue;
 use router_env::instrument;
@@ -791,7 +791,7 @@ impl PaymentMethodsController for PmCards<'_> {
             )
             .await;
 
-        let pmd = hyperswitch_domain_models::vault::PaymentMethodVaultingData::from(
+        let pmd = orbix_domain_models::vault::PaymentMethodVaultingData::from(
             api_models::payment_methods::PaymentMethodCreateData::BankDebit(bank_debit_data)
                 .clone(),
         );
@@ -900,7 +900,7 @@ impl PaymentMethodsController for PmCards<'_> {
             )
             .await;
 
-        let pmd = hyperswitch_domain_models::vault::PaymentMethodVaultingData::from(
+        let pmd = orbix_domain_models::vault::PaymentMethodVaultingData::from(
             api_models::payment_methods::PaymentMethodCreateData::Wallet(wallet_data).clone(),
         );
 
@@ -998,7 +998,7 @@ impl PaymentMethodsController for PmCards<'_> {
         ),
         errors::VaultError,
     > {
-        let pmd = hyperswitch_domain_models::vault::PaymentMethodVaultingData::from(
+        let pmd = orbix_domain_models::vault::PaymentMethodVaultingData::from(
             api_models::payment_methods::PaymentMethodCreateData::BankRedirect(bank_redirect_data)
                 .clone(),
         );
@@ -1008,7 +1008,7 @@ impl PaymentMethodsController for PmCards<'_> {
             .attach_printable("Failed to encode Vaulting data to string")?;
 
         let payload = pm_types::VaultFingerprintRequest {
-            key: hyperswitch_domain_models::vault::V1VaultEntityId::new(
+            key: orbix_domain_models::vault::V1VaultEntityId::new(
                 // The merchant_id should belong to the Provider
                 key_store.merchant_id.clone(),
                 customer_id.to_owned(),
@@ -1063,7 +1063,7 @@ impl PaymentMethodsController for PmCards<'_> {
         } else {
             // The merchant_id should belong to the Provider
             let payload = pm_types::AddVaultRequest {
-                entity_id: hyperswitch_domain_models::vault::V1VaultEntityId::new(
+                entity_id: orbix_domain_models::vault::V1VaultEntityId::new(
                     key_store.merchant_id.clone(),
                     customer_id.to_owned(),
                 ),
@@ -1134,7 +1134,7 @@ impl PaymentMethodsController for PmCards<'_> {
         ))
         .await?;
 
-        logger::debug!("card added to hyperswitch-card-vault");
+        logger::debug!("card added to orbix-card-vault");
         Ok(add_card_to_hs_resp)
     }
 
@@ -1177,7 +1177,7 @@ impl PaymentMethodsController for PmCards<'_> {
         card_reference: Option<&str>,
     ) -> errors::CustomResult<
         (
-            hyperswitch_domain_models::payment_methods::PaymentMethodResponse,
+            orbix_domain_models::payment_methods::PaymentMethodResponse,
             Option<payment_methods::DataDuplicationCheck>,
         ),
         errors::VaultError,
@@ -1514,7 +1514,7 @@ impl PaymentMethodsController for PmCards<'_> {
         customer_id: &id_type::CustomerId,
         is_v2_pm: bool,
     ) -> errors::CustomResult<
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+        orbix_domain_models::vault::PaymentMethodVaultingData,
         errors::VaultError,
     > {
         let should_trigger_fingerprint_migration =
@@ -1527,7 +1527,7 @@ impl PaymentMethodsController for PmCards<'_> {
 
         let payload = if !is_v2_pm {
             pm_types::VaultRetrieveRequest {
-                entity_id: hyperswitch_domain_models::vault::V1VaultEntityId::new(
+                entity_id: orbix_domain_models::vault::V1VaultEntityId::new(
                     merchant_id.clone(),
                     customer_id.clone(),
                 ),
@@ -1563,7 +1563,7 @@ impl PaymentMethodsController for PmCards<'_> {
         &self,
         merchant_id: &id_type::MerchantId,
         vault_id: &domain::VaultId,
-        data: &hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+        data: &orbix_domain_models::vault::PaymentMethodVaultingData,
     ) -> errors::CustomResult<(), errors::VaultError> {
         let payload = pm_types::AddVaultRequestNew {
             entity_id: merchant_id.clone(),
@@ -1589,7 +1589,7 @@ impl PaymentMethodsController for PmCards<'_> {
     async fn get_fingerprint_id_from_vault(
         &self,
         entity_id: &Option<String>,
-        fingerprint_data: &hyperswitch_domain_models::vault::FingerprintData,
+        fingerprint_data: &orbix_domain_models::vault::FingerprintData,
         fingerprint_id: String,
     ) -> errors::CustomResult<String, errors::VaultError> {
         let entity_id = entity_id
@@ -2166,7 +2166,7 @@ pub fn encode_add_vault_request(
     should_trigger_fingerprint_migration: bool,
     merchant_id: id_type::MerchantId,
     customer_id: &id_type::CustomerId,
-    pmd: hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+    pmd: orbix_domain_models::vault::PaymentMethodVaultingData,
     ttl: i64,
     vault_id: Option<domain::VaultId>,
 ) -> errors::CustomResult<Vec<u8>, errors::VaultError> {
@@ -2197,7 +2197,7 @@ pub fn encode_add_vault_request(
     } else {
         // Legacy v1 add path keeps the original merchant-and-customer entity id shape.
         pm_types::AddVaultRequest {
-            entity_id: hyperswitch_domain_models::vault::V1VaultEntityId::new(
+            entity_id: orbix_domain_models::vault::V1VaultEntityId::new(
                 merchant_id,
                 customer_id.to_owned(),
             ),
@@ -2217,7 +2217,7 @@ pub fn encode_vault_fingerprint_request(
     should_trigger_fingerprint_migration: bool,
     merchant_id: id_type::MerchantId,
     customer_id: id_type::CustomerId,
-    pmd: &hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+    pmd: &orbix_domain_models::vault::PaymentMethodVaultingData,
     key: Option<String>,
 ) -> errors::CustomResult<Vec<u8>, errors::VaultError> {
     if should_trigger_fingerprint_migration {
@@ -2242,7 +2242,7 @@ pub fn encode_vault_fingerprint_request(
 
         pm_types::VaultFingerprintRequest {
             data,
-            key: hyperswitch_domain_models::vault::V1VaultEntityId::new(merchant_id, customer_id),
+            key: orbix_domain_models::vault::V1VaultEntityId::new(merchant_id, customer_id),
         }
         .encode_to_vec()
         .change_context(errors::VaultError::RequestEncodingFailed)
@@ -2256,7 +2256,7 @@ pub fn encode_add_vault_request(
     should_trigger_fingerprint_migration: bool,
     merchant_id: id_type::MerchantId,
     customer_id: &id_type::GlobalCustomerId,
-    pmd: hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+    pmd: orbix_domain_models::vault::PaymentMethodVaultingData,
     ttl: i64,
     vault_id: Option<domain::VaultId>,
 ) -> errors::CustomResult<Vec<u8>, errors::VaultError> {
@@ -2319,7 +2319,7 @@ pub fn encode_vault_retrieve_request(
     if should_trigger_fingerprint_migration {
         pm_types::VaultRetrieveRequestNew {
             entity_id: merchant_id,
-            vault_id: hyperswitch_domain_models::payment_methods::VaultId::generate(
+            vault_id: orbix_domain_models::payment_methods::VaultId::generate(
                 token_ref.to_owned(),
             ),
         }
@@ -2329,11 +2329,11 @@ pub fn encode_vault_retrieve_request(
         .change_context(errors::ApiErrorResponse::InternalServerError)
     } else {
         pm_types::VaultRetrieveRequest {
-            entity_id: hyperswitch_domain_models::vault::V1VaultEntityId::new(
+            entity_id: orbix_domain_models::vault::V1VaultEntityId::new(
                 merchant_id,
                 customer_id.to_owned(),
             ),
-            vault_id: hyperswitch_domain_models::payment_methods::VaultId::generate(
+            vault_id: orbix_domain_models::payment_methods::VaultId::generate(
                 token_ref.to_owned(),
             ),
         }
@@ -2382,7 +2382,7 @@ pub fn encode_vault_retrieve_request(
     if should_trigger_fingerprint_migration {
         pm_types::VaultRetrieveRequestNew {
             entity_id: merchant_id,
-            vault_id: hyperswitch_domain_models::payment_methods::VaultId::generate(
+            vault_id: orbix_domain_models::payment_methods::VaultId::generate(
                 token_ref.to_owned(),
             ),
         }
@@ -2393,7 +2393,7 @@ pub fn encode_vault_retrieve_request(
     } else {
         pm_types::VaultRetrieveRequest {
             entity_id: customer_id.clone(),
-            vault_id: hyperswitch_domain_models::payment_methods::VaultId::generate(
+            vault_id: orbix_domain_models::payment_methods::VaultId::generate(
                 token_ref.to_owned(),
             ),
         }
@@ -3187,10 +3187,10 @@ fn customer_payment_method_update_response(
 
 #[cfg(feature = "v1")]
 pub(crate) fn get_paypal_wallet_info(
-    connector_response: Option<&hyperswitch_domain_models::router_data::ConnectorResponseData>,
+    connector_response: Option<&orbix_domain_models::router_data::ConnectorResponseData>,
 ) -> Option<PaymentMethodDataWalletInfo> {
     match connector_response?.additional_payment_method_data.as_ref()? {
-        hyperswitch_domain_models::router_data::AdditionalPaymentMethodConnectorResponse::Paypal {
+        orbix_domain_models::router_data::AdditionalPaymentMethodConnectorResponse::Paypal {
             email,
             payer_id,
         } if email.is_some() || payer_id.is_some() => Some(PaymentMethodDataWalletInfo {
@@ -3341,14 +3341,14 @@ pub async fn get_vault_fingerprint(
     state: &routes::SessionState,
     merchant_id: &id_type::MerchantId,
     customer_id: &id_type::CustomerId,
-    pmd: &hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+    pmd: &orbix_domain_models::vault::PaymentMethodVaultingData,
 ) -> errors::CustomResult<String, errors::VaultError> {
     let data = serde_json::to_string(pmd)
         .change_context(errors::VaultError::RequestEncodingFailed)
         .attach_printable("Failed to encode vaulting data to string")?;
 
     let payload = pm_types::VaultFingerprintRequest {
-        key: hyperswitch_domain_models::vault::V1VaultEntityId::new(
+        key: orbix_domain_models::vault::V1VaultEntityId::new(
             merchant_id.clone(),
             customer_id.clone(),
         ),
@@ -3379,7 +3379,7 @@ pub async fn prepare_bank_redirect_payment_method_update(
     platform: &domain::Platform,
     pm: &domain::PaymentMethod,
     merchant_connector_id: Option<id_type::MerchantConnectorAccountId>,
-    bank_redirect_update: hyperswitch_domain_models::payment_method_data::BankRedirectData,
+    bank_redirect_update: orbix_domain_models::payment_method_data::BankRedirectData,
     business_profile: &Profile,
 ) -> errors::CustomResult<storage::PaymentMethodUpdate, errors::ApiErrorResponse> {
     let key_manager_state = state.into();
@@ -3389,7 +3389,7 @@ pub async fn prepare_bank_redirect_payment_method_update(
     let payment_method_data = domain::PaymentMethodData::BankRedirect(bank_redirect_update.clone());
 
     match bank_redirect_update {
-        hyperswitch_domain_models::payment_method_data::BankRedirectData::OpenBanking {
+        orbix_domain_models::payment_method_data::BankRedirectData::OpenBanking {
             account_number,
             iban,
             sort_code,
@@ -3483,7 +3483,7 @@ pub async fn prepare_bank_redirect_payment_method_update(
                 connector_payment_method_details: Box::new(connector_payment_method_details),
             })
         }
-        hyperswitch_domain_models::payment_method_data::BankRedirectData::Trustly {
+        orbix_domain_models::payment_method_data::BankRedirectData::Trustly {
             country: _,
             account_holder_name,
             bank_name,
@@ -3497,8 +3497,8 @@ pub async fn prepare_bank_redirect_payment_method_update(
                         state,
                         &pm.merchant_id,
                         customer_id,
-                        &hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankRedirect(
-                            hyperswitch_domain_models::payment_method_data::BankRedirectDetail::Trustly {
+                        &orbix_domain_models::vault::PaymentMethodVaultingData::BankRedirect(
+                            orbix_domain_models::payment_method_data::BankRedirectDetail::Trustly {
                                 connector_instrument_id,
                             },
                         ),
@@ -4674,7 +4674,7 @@ pub async fn build_merchant_enabled_pms_context(
     payment_attempt: Option<&storage::PaymentAttempt>,
     billing_address: Option<&domain::Address>,
     shipping_address: Option<&domain::Address>,
-    customer: Option<&hyperswitch_domain_models::customer::Customer>,
+    customer: Option<&orbix_domain_models::customer::Customer>,
     is_cit_transaction: bool,
 ) -> errors::RouterResult<MerchantEnabledPmsContext> {
     let db = &*state.store;
@@ -6386,7 +6386,7 @@ pub async fn do_list_customer_pm_fetch_customer_if_not_passed(
         .await
     } else {
         let cloned_secret = req.and_then(|r| r.client_secret.as_ref().cloned());
-        let payment_intent: Option<hyperswitch_domain_models::payments::PaymentIntent> =
+        let payment_intent: Option<orbix_domain_models::payments::PaymentIntent> =
             helpers::verify_payment_intent_time_and_client_secret(&state, &platform, cloned_secret)
                 .await?;
 
@@ -6755,15 +6755,15 @@ pub async fn list_customer_payment_method(
             .and_then(|b_profile| b_profile.get_order_fulfillment_time())
             .unwrap_or(consts::DEFAULT_INTENT_FULFILLMENT_TIME);
 
-        let hyperswitch_token_data = pm_list_context
-            .hyperswitch_token_data
+        let orbix_token_data = pm_list_context
+            .orbix_token_data
             .get_required_value("PaymentTokenData")?;
 
         ParentPaymentMethodToken::create_key_for_token((
             &parent_payment_method_token,
             pma.payment_method,
         ))
-        .insert(intent_fulfillment_time, hyperswitch_token_data, state)
+        .insert(intent_fulfillment_time, orbix_token_data, state)
         .await?;
 
         if let Some(metadata) = pma.metadata {
@@ -6849,7 +6849,7 @@ pub async fn get_pm_list_context(
                 bank_transfer_details: None,
                 #[cfg(feature = "payouts")]
                 wallet_details: None,
-                hyperswitch_token_data: is_payment_associated.then_some(
+                orbix_token_data: is_payment_associated.then_some(
                     PaymentTokenData::permanent_card(
                         Some(pm.get_id().clone()),
                         pm.locker_id.clone().or(Some(pm.get_id().clone())),
@@ -6906,7 +6906,7 @@ pub async fn get_pm_list_context(
                 bank_transfer_details: None,
                 #[cfg(feature = "payouts")]
                 wallet_details,
-                hyperswitch_token_data: is_payment_associated
+                orbix_token_data: is_payment_associated
                     .then_some(PaymentTokenData::wallet_token(pm.get_id().clone())),
             })
         }
@@ -6927,7 +6927,7 @@ pub async fn get_pm_list_context(
             ),
             #[cfg(feature = "payouts")]
             wallet_details: None,
-            hyperswitch_token_data: parent_payment_method_token
+            orbix_token_data: parent_payment_method_token
                 .map(|token| PaymentTokenData::temporary_generic(token.clone())),
         }),
 
@@ -6937,7 +6937,7 @@ pub async fn get_pm_list_context(
             bank_transfer_details: None,
             #[cfg(feature = "payouts")]
             wallet_details: None,
-            hyperswitch_token_data: is_payment_associated.then_some(
+            orbix_token_data: is_payment_associated.then_some(
                 PaymentTokenData::temporary_generic(generate_id(consts::ID_LENGTH, "token")),
             ),
         }),
@@ -7112,7 +7112,7 @@ where
     let key = key_store.key.get_inner().peek();
     let identifier = Identifier::Merchant(key_store.merchant_id.clone());
     let decrypted_data = common_utils::metrics::utils::record_operation_time(
-        domain::types::crypto_operation::<serde_json::Value, hyperswitch_masking::WithType>(
+        domain::types::crypto_operation::<serde_json::Value, orbix_masking::WithType>(
             &state.into(),
             type_name!(T),
             domain::types::CryptoOperation::DecryptOptional(data),
@@ -7350,7 +7350,7 @@ pub async fn get_pm_list_context_for_bank_debit(
                     bank_transfer_details: None,
                     #[cfg(feature = "payouts")]
                     wallet_details: None,
-                    hyperswitch_token_data: is_payment_associated.then_some(token_data),
+                    orbix_token_data: is_payment_associated.then_some(token_data),
                 };
 
                 Ok(Some(payment_method_list_context))
@@ -7367,7 +7367,7 @@ pub async fn get_pm_list_context_for_bank_debit(
                     bank_transfer_details: None,
                     #[cfg(feature = "payouts")]
                     wallet_details: None,
-                    hyperswitch_token_data: is_payment_associated.then_some(token_data),
+                    orbix_token_data: is_payment_associated.then_some(token_data),
                 }))
             }
             domain::PaymentMethodsData::NetworkToken(_) => {
@@ -7432,7 +7432,7 @@ pub async fn get_pm_list_context_for_bank_redirect(
                     bank_transfer_details: None,
                     #[cfg(feature = "payouts")]
                     wallet_details: None,
-                    hyperswitch_token_data: is_payment_associated.then_some(token_data),
+                    orbix_token_data: is_payment_associated.then_some(token_data),
                 }))
             } else {
                 Ok(None)
@@ -7554,7 +7554,7 @@ pub async fn get_bank_debit_from_hs_locker(
     provider: &domain::Provider,
     customer_id: &id_type::CustomerId,
     token_ref: &str,
-) -> errors::RouterResult<hyperswitch_domain_models::payment_method_data::BankDebitDetail> {
+) -> errors::RouterResult<orbix_domain_models::payment_method_data::BankDebitDetail> {
     let should_trigger_fingerprint_migration =
         payment_method_utils::get_should_trigger_fingerprint_migration(
             state,
@@ -7583,7 +7583,7 @@ pub async fn get_bank_debit_from_hs_locker(
         .change_context(errors::ApiErrorResponse::InternalServerError)?;
 
     match stored_pm_resp.data {
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankDebit(
+        orbix_domain_models::vault::PaymentMethodVaultingData::BankDebit(
             bank_debit_detail,
         ) => Ok(bank_debit_detail),
         _ => Err(errors::ApiErrorResponse::InternalServerError)
@@ -7597,13 +7597,13 @@ pub async fn get_bank_redirect_from_hs_locker(
     provider: &domain::Provider,
     customer_id: &id_type::CustomerId,
     token_ref: &str,
-) -> errors::RouterResult<hyperswitch_domain_models::payment_method_data::BankRedirectDetail> {
+) -> errors::RouterResult<orbix_domain_models::payment_method_data::BankRedirectDetail> {
     let vault_request = pm_types::VaultRetrieveRequest {
-        entity_id: hyperswitch_domain_models::vault::V1VaultEntityId::new(
+        entity_id: orbix_domain_models::vault::V1VaultEntityId::new(
             provider.get_account().get_id().clone(),
             customer_id.to_owned(),
         ),
-        vault_id: hyperswitch_domain_models::payment_methods::VaultId::generate(
+        vault_id: orbix_domain_models::payment_methods::VaultId::generate(
             token_ref.to_owned(),
         ),
     };
@@ -7626,7 +7626,7 @@ pub async fn get_bank_redirect_from_hs_locker(
         .change_context(errors::ApiErrorResponse::InternalServerError)?;
 
     match stored_pm_resp.data {
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankRedirect(
+        orbix_domain_models::vault::PaymentMethodVaultingData::BankRedirect(
             bank_redirect_detail,
         ) => Ok(bank_redirect_detail),
         _ => Err(errors::ApiErrorResponse::InternalServerError)
@@ -7640,7 +7640,7 @@ pub async fn get_wallet_from_hs_locker(
     provider: &domain::Provider,
     customer_id: &id_type::CustomerId,
     token_ref: &str,
-) -> errors::RouterResult<hyperswitch_domain_models::payment_method_data::WalletDetail> {
+) -> errors::RouterResult<orbix_domain_models::payment_method_data::WalletDetail> {
     let should_trigger_fingerprint_migration =
         payment_method_utils::get_should_trigger_fingerprint_migration(
             state,
@@ -7669,7 +7669,7 @@ pub async fn get_wallet_from_hs_locker(
         .change_context(errors::ApiErrorResponse::InternalServerError)?;
 
     match stored_pm_resp.data {
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::Wallet(wallet_detail) => {
+        orbix_domain_models::vault::PaymentMethodVaultingData::Wallet(wallet_detail) => {
             Ok(wallet_detail)
         }
         _ => Err(errors::ApiErrorResponse::InternalServerError)
@@ -7781,7 +7781,7 @@ where
         .change_context(errors::StorageError::SerializationFailed)
         .attach_printable("Unable to encode data")?;
 
-    let secret_data = Secret::<_, hyperswitch_masking::WithType>::new(encoded_data);
+    let secret_data = Secret::<_, orbix_masking::WithType>::new(encoded_data);
 
     let encrypted_data = domain::types::crypto_operation(
         key_manager_state,

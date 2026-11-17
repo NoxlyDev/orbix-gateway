@@ -5,7 +5,7 @@ use common_enums::{connector_enums::Connector, Currency, PaymentMethodType, Payo
 use common_utils::id_type;
 use external_services::superposition;
 use heck::ToPascalCase;
-pub use hyperswitch_domain_models::platform::{ProcessorMerchantId, ProviderMerchantId};
+pub use orbix_domain_models::platform::{ProcessorMerchantId, ProviderMerchantId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum DimensionError {

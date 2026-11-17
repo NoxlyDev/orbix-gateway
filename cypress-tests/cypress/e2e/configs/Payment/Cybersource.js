@@ -1467,7 +1467,7 @@ export const connectorDetails = {
                     required_field: "payment_method_data.billing.email",
                     display_name: "email",
                     field_type: "user_email_address",
-                    value: "hyperswitch_sdk_demo_id@gmail.com",
+                    value: "orbix_sdk_demo_id@gmail.com",
                   },
                   "billing.address.zip": {
                     required_field: "payment_method_data.billing.address.zip",
@@ -1559,7 +1559,7 @@ export const connectorDetails = {
                     required_field: "payment_method_data.billing.email",
                     display_name: "email",
                     field_type: "user_email_address",
-                    value: "hyperswitch.example@gmail.com",
+                    value: "orbix.example@gmail.com",
                   },
                   "payment_method_data.card.card_cvc": {
                     required_field: "payment_method_data.card.card_cvc",
@@ -1647,7 +1647,7 @@ export const connectorDetails = {
                     required_field: "payment_method_data.billing.email",
                     display_name: "email",
                     field_type: "user_email_address",
-                    value: "hyperswitch.example@gmail.com",
+                    value: "orbix.example@gmail.com",
                   },
                 },
               },

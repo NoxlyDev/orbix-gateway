@@ -1,5 +1,5 @@
-use hyperswitch_domain_models::address::{Address, AddressDetails, PhoneDetails};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::address::{Address, AddressDetails, PhoneDetails};
+use orbix_masking::Secret;
 use router::types::{self, api, storage::enums, AccessToken};
 
 use crate::{
@@ -85,8 +85,8 @@ fn get_default_payment_info() -> Option<utils::PaymentInfo> {
 
 fn payment_method_details() -> Option<types::PaymentsAuthorizeData> {
     Some(types::PaymentsAuthorizeData {
-        router_return_url: Some("https://hyperswitch.io".to_string().into()),
-        webhook_url: Some("https://hyperswitch.io".to_string()),
+        router_return_url: Some("https://orbix.example".to_string().into()),
+        webhook_url: Some("https://orbix.example".to_string()),
         currency: enums::Currency::EUR,
         ..PaymentAuthorizeType::default().0
     })
@@ -116,7 +116,7 @@ async fn should_fail_for_refund_on_unsuccessed_payment() {
             get_connector_transaction_id(response.response).unwrap(),
             Some(types::RefundsData {
                 refund_amount: response.request.amount,
-                webhook_url: Some("https://hyperswitch.io".to_string()),
+                webhook_url: Some("https://orbix.example".to_string()),
                 ..utils::PaymentRefundType::default().0
             }),
             get_default_payment_info(),
@@ -137,7 +137,7 @@ async fn should_fail_for_refund_amount_higher_than_payment_amount() {
             "PWGKCZ91M4JJ0".to_string(),
             Some(types::RefundsData {
                 refund_amount: 150,
-                webhook_url: Some("https://hyperswitch.io".to_string()),
+                webhook_url: Some("https://orbix.example".to_string()),
                 ..utils::PaymentRefundType::default().0
             }),
             get_default_payment_info(),

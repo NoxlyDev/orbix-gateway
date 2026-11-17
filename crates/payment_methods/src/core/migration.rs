@@ -4,8 +4,8 @@ use common_utils::id_type;
 use csv::Reader;
 use error_stack::ResultExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::{api, platform};
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::{api, platform};
+use orbix_masking::PeekInterface;
 use rdkafka::message::ToBytes;
 use router_env::instrument;
 
@@ -216,8 +216,8 @@ fn parse_csv(data: &[u8]) -> csv::Result<Vec<pm_api::PaymentMethodRecord>> {
 
 #[instrument(skip_all)]
 pub fn validate_card_expiry(
-    card_exp_month: &hyperswitch_masking::Secret<String>,
-    card_exp_year: &hyperswitch_masking::Secret<String>,
+    card_exp_month: &orbix_masking::Secret<String>,
+    card_exp_year: &orbix_masking::Secret<String>,
 ) -> errors::CustomResult<(), errors::ApiErrorResponse> {
     let exp_month = card_exp_month
         .peek()

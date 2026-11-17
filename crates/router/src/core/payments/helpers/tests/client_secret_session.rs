@@ -27,7 +27,7 @@ fn test_authenticate_client_secret_session_not_expired() {
         fingerprint_id: None,
         off_session: None,
         client_secret: Some("1".to_string()),
-        active_attempt: hyperswitch_domain_models::RemoteStorageObject::ForeignID(
+        active_attempt: orbix_domain_models::RemoteStorageObject::ForeignID(
             "nopes".to_string(),
         ),
         business_country: None,
@@ -130,7 +130,7 @@ fn test_authenticate_client_secret_session_expired() {
         setup_future_usage: None,
         off_session: None,
         client_secret: Some("1".to_string()),
-        active_attempt: hyperswitch_domain_models::RemoteStorageObject::ForeignID(
+        active_attempt: orbix_domain_models::RemoteStorageObject::ForeignID(
             "nopes".to_string(),
         ),
         business_country: None,
@@ -231,7 +231,7 @@ fn test_authenticate_client_secret_expired() {
         off_session: None,
         client_secret: None,
         fingerprint_id: None,
-        active_attempt: hyperswitch_domain_models::RemoteStorageObject::ForeignID(
+        active_attempt: orbix_domain_models::RemoteStorageObject::ForeignID(
             "nopes".to_string(),
         ),
         business_country: None,

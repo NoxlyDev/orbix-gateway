@@ -2,7 +2,7 @@ pub mod utils;
 use api_models::verifications::{self, ApplepayMerchantResponse};
 use common_utils::{errors::CustomResult, request::RequestContent};
 use error_stack::ResultExt;
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 
 use crate::{core::errors, headers, logger, routes::SessionState, services};
 

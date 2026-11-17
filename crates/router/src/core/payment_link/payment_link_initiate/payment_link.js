@@ -248,7 +248,7 @@ function boot() {
       }
       orderDetails.push({
         "amount": (paymentDetails.amount - charges).toFixed(2),
-        "product_img_link": "https://live.hyperswitch.io/payment-link-assets/cart_placeholder.png",
+        "product_img_link": "https://live.orbix.example/payment-link-assets/cart_placeholder.png",
         "product_name": translations.miscellaneousCharges + "\n" +
           translations.miscellaneousChargesDetail,
         "quantity": null
@@ -876,20 +876,20 @@ function renderDescription(paymentDetails) {
 
 /**
  * Uses
- *    - Creates and returns a div element with the HyperSwitch branding SVG
+ *    - Creates and returns a div element with the Orbix Gateway branding SVG
  * @param {String} wrapperId 
  * @returns {HTMLDivElement} brandingWrapperNode
  */
-function createHyperSwitchBrandingSVGElement(wrapperId) {
+function createOrbixBrandingSVGElement(wrapperId) {
   var brandingWrapperNode = document.createElement("div");
   brandingWrapperNode.id = wrapperId;
-  brandingWrapperNode.innerHTML = '<svg class="fill-current" height="18" width="130"><use xlink:href="#hyperswitch-brand" x="0" y="0" height="18" width="130"></use></svg>';
+  brandingWrapperNode.innerHTML = '<svg class="fill-current" height="18" width="130"><use xlink:href="#orbix-brand" x="0" y="0" height="18" width="130"></use></svg>';
   return brandingWrapperNode;
 }
 
 /**
  * Uses
- *    - Creates and appends HyperSwitch branding in appropriate sections based on the viewport dimensions (web vs mobile views)
+ *    - Creates and appends Orbix Gateway branding in appropriate sections based on the viewport dimensions (web vs mobile views)
  * @param {PaymentDetails} paymentDetails
  */
 function renderBranding(paymentDetails) {
@@ -897,12 +897,12 @@ function renderBranding(paymentDetails) {
     // Append below cart section for web views
     var cartItemNode = document.getElementById("hyper-checkout-cart");
     if (cartItemNode instanceof HTMLDivElement) {
-      var brandingWrapper = createHyperSwitchBrandingSVGElement("powered-by-hyper");
+      var brandingWrapper = createOrbixBrandingSVGElement("powered-by-hyper");
       cartItemNode.appendChild(brandingWrapper);
     }
 
     // Append in document's body for mobile views
-    var mobileBrandingWrapper = createHyperSwitchBrandingSVGElement("hyper-footer");
+    var mobileBrandingWrapper = createOrbixBrandingSVGElement("hyper-footer");
     document.body.appendChild(mobileBrandingWrapper);
     if (!window.state.isMobileView) {
       hide("#hyper-footer");

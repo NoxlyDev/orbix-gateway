@@ -146,7 +146,7 @@ pub async fn attach_server_context(
     platform: domain::Platform,
     profile_id: Option<id_type::ProfileId>,
     payment_id: &id_type::PaymentId,
-    header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: orbix_domain_models::payments::HeaderPayload,
     response: &mut payment_types::PaymentsResponse,
 ) {
     tracing::Span::current().record("payment_id", payment_id.get_string_repr());
@@ -248,7 +248,7 @@ async fn session_tokens(
     platform: domain::Platform,
     profile_id: Option<id_type::ProfileId>,
     payment_id: &id_type::PaymentId,
-    header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: orbix_domain_models::payments::HeaderPayload,
 ) -> errors::RouterResult<payment_types::PaymentsSessionResponse> {
     logger::info!("server-integration: calling session-token core");
 

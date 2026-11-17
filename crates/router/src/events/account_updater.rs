@@ -1,6 +1,6 @@
 use common_enums::CardNetwork;
 use common_utils::{errors::CustomResult, id_type};
-use hyperswitch_domain_models::payment_method_data::PaymentMethodsData;
+use orbix_domain_models::payment_method_data::PaymentMethodsData;
 use serde::Serialize;
 use time::OffsetDateTime;
 

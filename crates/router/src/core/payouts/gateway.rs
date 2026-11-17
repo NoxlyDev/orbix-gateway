@@ -8,7 +8,7 @@ pub mod recipient_account_gateway;
 pub mod recipient_gateway;
 pub mod sync_gateway;
 
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::gateway,
     connector_integration_interface::{BoxedConnectorIntegrationInterface, RouterDataConversion},
     errors::ConnectorError,

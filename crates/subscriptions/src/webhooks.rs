@@ -4,11 +4,11 @@ use api_models::webhooks::WebhookResponseTracker;
 use common_enums::{connector_enums::Connector, InvoiceStatus};
 use common_utils::{consts, errors::CustomResult, generate_id};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     business_profile, errors::api_error_response as errors, invoice, merchant_connector_account,
     platform,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::ConnectorCommon, connector_integration_interface, errors::ConnectorError,
     webhooks::IncomingWebhook,
 };
@@ -28,7 +28,7 @@ pub async fn incoming_webhook_flow(
     _webhook_details: api_models::webhooks::IncomingWebhookDetails,
     source_verified: bool,
     connector_enum: &connector_integration_interface::ConnectorEnum,
-    request_details: &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+    request_details: &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
     event_type: api_models::webhooks::IncomingWebhookEvent,
     merchant_connector_account: merchant_connector_account::MerchantConnectorAccount,
 ) -> CustomResult<WebhookResponseTracker, errors::ApiErrorResponse> {

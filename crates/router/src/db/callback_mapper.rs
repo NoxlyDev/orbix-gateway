@@ -1,5 +1,5 @@
 use error_stack::report;
-use hyperswitch_domain_models::callback_mapper as domain;
+use orbix_domain_models::callback_mapper as domain;
 use router_env::instrument;
 use storage_impl::{DataModelExt, MockDb};
 

@@ -54,7 +54,7 @@ jobs:
 
   check-msrv:
     name: Check compilation on MSRV toolchain
-    runs-on: hyperswitch-runners-merge
+    runs-on: orbix-runners-merge
 
     env:
       # sccache restored as one archive instead of S3 — avoids per-object round trips.
@@ -162,7 +162,7 @@ jobs:
 
   test:
     name: Run tests on stable toolchain
-    runs-on: hyperswitch-runners-merge
+    runs-on: orbix-runners-merge
 
     env:
       # sccache on local disk, restored/saved as one archive instead of its
@@ -279,7 +279,7 @@ jobs:
 
   check-v2:
     name: Check compilation for V2 features
-    runs-on: hyperswitch-runners-merge
+    runs-on: orbix-runners-merge
 
     env:
       # sccache on local disk, restored/saved as a single uncompressed archive

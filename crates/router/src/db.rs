@@ -52,10 +52,10 @@ use diesel_models::{
 };
 use error_stack::ResultExt;
 #[cfg(feature = "payouts")]
-use hyperswitch_domain_models::payouts::{
+use orbix_domain_models::payouts::{
     payout_attempt::PayoutAttemptInterface, payouts::PayoutsInterface,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     authentication::AuthenticationInterface,
     card_issuer::CardIssuersInterface,
     cards_info::CardsInfoInterface,
@@ -64,7 +64,7 @@ use hyperswitch_domain_models::{
     payments::{payment_attempt::PaymentAttemptInterface, payment_intent::PaymentIntentInterface},
 };
 #[cfg(not(feature = "payouts"))]
-use hyperswitch_domain_models::{PayoutAttemptInterface, PayoutsInterface};
+use orbix_domain_models::{PayoutAttemptInterface, PayoutsInterface};
 use redis_interface::errors::RedisError;
 use router_env::logger;
 #[cfg(feature = "v2")]

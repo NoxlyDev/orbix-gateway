@@ -3,8 +3,8 @@ use std::str::FromStr;
 use api_models::{webhook_events, webhooks};
 use common_utils::{crypto::SignMessage, ext_traits::Encode};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData;
-use hyperswitch_masking::Secret;
+use orbix_domain_models::router_response_types::NotifyConnectorResponseData;
+use orbix_masking::Secret;
 use serde::Serialize;
 
 use crate::{
@@ -248,7 +248,7 @@ impl WebhookPayload {
     #[cfg(feature = "v1")]
     pub fn build_surcharge_payload(
         surcharge_event: enums::EventType,
-        payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+        payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
         merchant_surcharge_connector: &MerchantConnectorAccount,
     ) -> errors::CustomResult<Option<Self>, errors::ApiErrorResponse> {
         let connector = common_enums::connector_enums::Connector::from_str(

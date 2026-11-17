@@ -20,7 +20,7 @@ CREATE TABLE outgoing_webhook_events_queue (
     `processor_merchant_id` Nullable(String),
     `initiator_merchant_id` Nullable(String)
 ) ENGINE = Kafka SETTINGS kafka_broker_list = 'kafka0:29092',
-kafka_topic_list = 'hyperswitch-outgoing-webhook-events',
+kafka_topic_list = 'orbix-outgoing-webhook-events',
 kafka_group_name = 'hyper',
 kafka_format = 'JSONEachRow',
 kafka_handle_error_mode = 'stream';

@@ -487,7 +487,7 @@ export const connectorDetails = {
     // The "save a card" step earlier in this scenario (card_pm.
     // SaveCardUseNo3DSAutoCapture) itself fails for ilixium (pre-existing
     // auto-capture limitation, see that fixture above) -- no payment_token
-    // ever gets saved, so this confirm reaches hyperswitch core with no
+    // ever gets saved, so this confirm reaches orbix core with no
     // saved payment method and no raw card data, and core itself (not the
     // connector) rejects it before ever reaching ilixium.
     ConfirmWithOfferAppliedSavedCard: getCustomExchange({

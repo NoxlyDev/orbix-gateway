@@ -1,4 +1,4 @@
-//! Does the in-band pairing survive the execution stack hyperswitch actually
+//! Does the in-band pairing survive the execution stack orbix actually
 //! uses? Production drives diesel through `async-bb8-diesel` over a `bb8`
 //! pool: the query runs inside `conn.run(|c| …)` on a `spawn_blocking`
 //! thread. The captured helpers take the wire rows in that SAME closure and

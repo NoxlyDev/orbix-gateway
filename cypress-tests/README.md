@@ -1,8 +1,8 @@
-# Hyperswitch Cypress Testing Framework <!-- omit in toc -->
+# Orbix Gateway Cypress Testing Framework <!-- omit in toc -->
 
 ## Overview
 
-This is a comprehensive testing framework built with [Cypress](https://cypress.io) to automate testing for [Hyperswitch](https://github.com/juspay/hyperswitch/). The framework supports API testing with features like multiple credential management, configuration management, global state handling, and extensive utility functions. The framework provides extensive support for API testing with advanced features including:
+This is a comprehensive testing framework built with [Cypress](https://cypress.io) to automate testing for [Orbix Gateway](https://github.com/orbix/orbix/). The framework supports API testing with features like multiple credential management, configuration management, global state handling, and extensive utility functions. The framework provides extensive support for API testing with advanced features including:
 
 - [Multiple credential management](#multiple-credential-support)
 - [Dynamic configuration management](#dynamic-configuration-management)
@@ -53,8 +53,8 @@ This is a comprehensive testing framework built with [Cypress](https://cypress.i
 For experienced users who want to get started quickly:
 
 ```shell
-git clone https://github.com/juspay/hyperswitch.git
-cd hyperswitch/cypress-tests
+git clone https://github.com/orbix/orbix.git
+cd orbix/cypress-tests
 npm ci
 # connector_id must be replaced with the connector name that is being tested (e.g. stripe, paypal, etc.)
 CYPRESS_CONNECTOR="connector_id" npm run cypress:ci
@@ -66,7 +66,7 @@ CYPRESS_CONNECTOR="connector_id" npm run cypress:ci
 
 - Node.js 24.x or newer (matching the CI runtime)
 - npm or yarn
-- [Hyperswitch development environment](https://github.com/juspay/hyperswitch/blob/main/docs/try_local_system.md)
+- [Orbix Gateway development environment](https://github.com/orbix/orbix/blob/main/docs/try_local_system.md)
 
 > [!NOTE]
 > To learn about the hardware requirements and software dependencies for running Cypress, refer to the [official documentation](https://docs.cypress.io/app/get-started/install-cypress).
@@ -76,8 +76,8 @@ CYPRESS_CONNECTOR="connector_id" npm run cypress:ci
 1. Clone the repository and switch to the project directory:
 
    ```shell
-   git clone https://github.com/juspay/hyperswitch.git
-   cd hyperswitch/cypress-tests
+   git clone https://github.com/orbix/orbix.git
+   cd orbix/cypress-tests
    ```
 
 2. Install Cypress and its dependencies to `cypress-tests` directory by running the following command:
@@ -101,7 +101,7 @@ CYPRESS_CONNECTOR="connector_id" npm run cypress:ci
 3. Set up the cards database:
 
    ```shell
-   psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
+   psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
    ```
 
 4. Set environment variables for cypress
@@ -464,21 +464,21 @@ curl -X POST "http://localhost:3010/silverflow/charges" \
 -d '{"merchantAcceptorResolver":"merchant123","card":{"number":"4111111111111111","expMonth":12,"expYear":2025,"cvc":"123"},"amount":{"value":1000,"currency":"USD"},"type":"authorization","clearingMode":"auto"}'
 ```
 
-### Using with Hyperswitch
+### Using with Orbix Gateway
 
-To use the mock server with Hyperswitch, you need to redirect the base URL for the Silverflow connector to the mock server. Run Hyperswitch with the following environment variable:
+To use the mock server with Orbix Gateway, you need to redirect the base URL for the Silverflow connector to the mock server. Run Orbix Gateway with the following environment variable:
 
 ```bash
 ROUTER__CONNECTORS__SILVERFLOW__BASE_URL=http://localhost:3010/silverflow cargo r
 ```
 
-This will redirect all Silverflow API calls from Hyperswitch to your local mock server instead of the actual Silverflow API.
+This will redirect all Silverflow API calls from Orbix Gateway to your local mock server instead of the actual Silverflow API.
 
 ## Additional Resources
 
 - [Cypress Documentation](https://docs.cypress.io/)
 - [API Testing Best Practices](https://docs.cypress.io/guides/end-to-end-testing/api-testing)
-- [Hyperswitch API Documentation](https://hyperswitch.io/docs)
+- [Orbix Gateway API Documentation](https://orbix.example/docs)
 
 ## Contributing
 

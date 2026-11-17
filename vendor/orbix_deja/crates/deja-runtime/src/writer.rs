@@ -92,7 +92,7 @@ impl MarkerKind {
 /// Sink abstraction for completed records.
 ///
 /// JSONL is the development sink. A Kafka sink can implement this trait without
-/// changing macro expansion, event building, or Hyperswitch instrumentation.
+/// changing macro expansion, event building, or Orbix Gateway instrumentation.
 pub trait RecordSink<T>: Send + 'static {
     fn write_batch(&mut self, records: &[T]) -> io::Result<()>;
 

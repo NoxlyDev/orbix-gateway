@@ -1,6 +1,6 @@
 use common_utils::{encryption::Encryption, id_type};
 use diesel::{AsChangeset, Identifiable, Insertable, Queryable, Selectable};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use crate::schema::hierarchical_resources;
 

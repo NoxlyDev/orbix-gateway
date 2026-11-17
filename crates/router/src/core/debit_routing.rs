@@ -4,7 +4,7 @@ use api_models::{enums as api_enums, open_router};
 use common_enums::enums;
 use common_utils::{errors::CustomResult, ext_traits::ValueExt, id_type};
 use error_stack::ResultExt;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 
 use super::{
     payments::{OperationSessionGetters, OperationSessionSetters},
@@ -184,7 +184,7 @@ where
 }
 
 fn is_currency_supported(
-    payment_intent: &hyperswitch_domain_models::payments::PaymentIntent,
+    payment_intent: &orbix_domain_models::payments::PaymentIntent,
     debit_routing_config: &settings::DebitRoutingConfig,
 ) -> bool {
     payment_intent
@@ -217,7 +217,7 @@ where
                 && matches!(
                     payment_data.get_payment_method_token().cloned(),
                     Some(
-                        hyperswitch_domain_models::router_data::PaymentMethodToken::ApplePayDecrypt(
+                        orbix_domain_models::router_data::PaymentMethodToken::ApplePayDecrypt(
                             _
                         )
                     )
@@ -456,7 +456,7 @@ where
         .get_payment_method_info()?
         .get_payment_methods_data()?;
 
-    if let hyperswitch_domain_models::payment_method_data::PaymentMethodsData::Card(card) =
+    if let orbix_domain_models::payment_method_data::PaymentMethodsData::Card(card) =
         payment_methods_data
     {
         return Some(extract_card_info_from_saved_card(&card));
@@ -466,7 +466,7 @@ where
 }
 
 fn extract_card_info_from_saved_card(
-    card: &hyperswitch_domain_models::payment_method_data::CardDetailsPaymentMethod,
+    card: &orbix_domain_models::payment_method_data::CardDetailsPaymentMethod,
 ) -> ExtractedCardInfo {
     match (&card.co_badged_card_data, &card.card_isin) {
         (Some(co_badged), _) => {
@@ -486,7 +486,7 @@ where
     D: OperationSessionGetters<F>,
 {
     match payment_data.get_payment_method_data() {
-        Some(hyperswitch_domain_models::payment_method_data::PaymentMethodData::Card(card)) => {
+        Some(orbix_domain_models::payment_method_data::PaymentMethodData::Card(card)) => {
             logger::debug!("Using card data from payment request");
             ExtractedCardInfo::new(
                 None,
@@ -494,7 +494,7 @@ where
                 Some(Secret::new(card.card_number.get_extended_card_bin())),
             )
         }
-        Some(hyperswitch_domain_models::payment_method_data::PaymentMethodData::Wallet(
+        Some(orbix_domain_models::payment_method_data::PaymentMethodData::Wallet(
             wallet_data,
         )) => extract_from_wallet_data(wallet_data, payment_data),
         _ => ExtractedCardInfo::empty(),
@@ -502,14 +502,14 @@ where
 }
 
 fn extract_from_wallet_data<F, D>(
-    wallet_data: &hyperswitch_domain_models::payment_method_data::WalletData,
+    wallet_data: &orbix_domain_models::payment_method_data::WalletData,
     payment_data: &D,
 ) -> ExtractedCardInfo
 where
     D: OperationSessionGetters<F>,
 {
     match wallet_data {
-        hyperswitch_domain_models::payment_method_data::WalletData::ApplePay(_) => {
+        orbix_domain_models::payment_method_data::WalletData::ApplePay(_) => {
             logger::debug!("Using Apple Pay data from payment request");
             let apple_pay_isin = extract_apple_pay_isin(payment_data);
             ExtractedCardInfo::new(None, None, apple_pay_isin)
@@ -523,7 +523,7 @@ where
     D: OperationSessionGetters<F>,
 {
     payment_data.get_payment_method_token().and_then(|token| {
-        if let hyperswitch_domain_models::router_data::PaymentMethodToken::ApplePayDecrypt(
+        if let orbix_domain_models::router_data::PaymentMethodToken::ApplePayDecrypt(
             apple_pay_decrypt_data,
         ) = token
         {

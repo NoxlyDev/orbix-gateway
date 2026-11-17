@@ -1,4 +1,4 @@
-pub use hyperswitch_domain_models::payment_method_data::{
+pub use orbix_domain_models::payment_method_data::{
     AliPayQr, ApplePayFlow, ApplePayThirdPartySdkData, ApplePayWalletData, ApplepayPaymentMethod,
     BankDebitData, BankRedirectData, BankTransferData, BoletoVoucherData, Card, CardDetail,
     CardRedirectData, CardToken, CashappQr, CryptoData, GcashRedirection, GiftCardData,

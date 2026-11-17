@@ -1,13 +1,13 @@
 [package]
 name = "cloud_services"
-description = "Cloud provider clients (KMS, object storage) shared across Hyperswitch services"
+description = "Cloud provider clients (KMS, object storage) shared across Orbix Gateway services"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
-# Deliberately free of Hyperswitch crates (no `common_utils`, `router_env` or `error-stack`),
-# so services outside this workspace can depend on it without pulling in Hyperswitch.
+# Deliberately free of Orbix Gateway crates (no `common_utils`, `router_env` or `error-stack`),
+# so services outside this workspace can depend on it without pulling in Orbix Gateway.
 [features]
 default = []
 s3 = ["dep:aws-config", "dep:aws-sdk-s3", "dep:url"]

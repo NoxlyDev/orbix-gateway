@@ -24,7 +24,7 @@ pub async fn revenue_recovery_pt_retrieve_api() {}
 #[cfg(feature = "v2")]
 /// Revenue Recovery - Create
 ///
-/// Record a transaction made outside of Hyperswitch against an invoice.
+/// Record a transaction made outside of Orbix Gateway against an invoice.
 #[utoipa::path(
     post,
     path = "/v2/recovery",

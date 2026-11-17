@@ -206,7 +206,7 @@ mod tests {
         assert!(SesConfig::default().validate().is_err());
         let config = SesConfig {
             email_role_arn: "arn:aws:iam::123456789012:role/ses".to_owned(),
-            sts_role_session_name: "hyperswitch".to_owned(),
+            sts_role_session_name: "orbix".to_owned(),
         };
         assert!(config.validate().is_ok());
     }

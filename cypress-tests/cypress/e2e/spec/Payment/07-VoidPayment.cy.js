@@ -320,7 +320,7 @@ describe("Card - NoThreeDS Manual payment flow test", () => {
         ]["VoidAfterConfirm"];
 
         // `allKeysRequired: true` is needed here, not just `force_sync`: once
-        // the attempt is already terminal (Voided), Hyperswitch's own
+        // the attempt is already terminal (Voided), Orbix Gateway's own
         // `should_call_connector` skips re-querying the connector, so a plain
         // force-synced retrieve would be served entirely from the DB and
         // never actually exercise Zift's `transactionType=void` sync

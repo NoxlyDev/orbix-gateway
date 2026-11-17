@@ -24,8 +24,8 @@ use diesel_models::{
     user_role::{UserRole, UserRoleNew},
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::api::ApplicationResponse;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_domain_models::api::ApplicationResponse;
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use time::PrimitiveDateTime;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -1269,7 +1269,7 @@ impl UserFromStorage {
                 key_manager_state,
                 EncryptionTransferRequest {
                     identifier: Identifier::User(self.get_user_id().to_string()),
-                    key: hyperswitch_masking::StrongSecret::new(consts::BASE64_ENGINE.encode(key)),
+                    key: orbix_masking::StrongSecret::new(consts::BASE64_ENGINE.encode(key)),
                 },
             )
             .await
@@ -1333,7 +1333,7 @@ impl UserFromStorage {
             .change_context(UserErrors::InternalServerError)?;
 
         Ok(
-            domain_types::crypto_operation::<String, hyperswitch_masking::WithType>(
+            domain_types::crypto_operation::<String, orbix_masking::WithType>(
                 key_manager_state,
                 type_name!(storage_user::User),
                 domain_types::CryptoOperation::DecryptOptional(self.0.totp_secret.clone()),

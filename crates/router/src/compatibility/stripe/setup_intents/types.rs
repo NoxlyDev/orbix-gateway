@@ -3,7 +3,7 @@ use std::str::FromStr;
 use api_models::payments;
 use common_utils::{date_time, ext_traits::StringExt, id_type, pii as secret};
 use error_stack::ResultExt;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router_env::logger;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

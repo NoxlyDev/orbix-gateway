@@ -6,8 +6,8 @@ pub use api_models::refunds::{
 pub use api_models::refunds::{RefundMetadataUpdateRequest, RefundsCreateRequest};
 #[cfg(feature = "v1")]
 pub use api_models::refunds::{RefundRequest, RefundReverseRequest};
-pub use hyperswitch_domain_models::router_flow_types::refunds::{Execute, RSync, VoidPostRefund};
-pub use hyperswitch_interfaces::api::refunds::{Refund, RefundExecute, RefundSync};
+pub use orbix_domain_models::router_flow_types::refunds::{Execute, RSync, VoidPostRefund};
+pub use orbix_interfaces::api::refunds::{Refund, RefundExecute, RefundSync};
 
 use crate::types::{storage::enums as storage_enums, transformers::ForeignFrom};
 

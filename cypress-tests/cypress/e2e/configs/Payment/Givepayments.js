@@ -4,7 +4,7 @@ import {
   singleUseMandateData,
 } from "./Commons";
 
-const generateGivepaymentsEmail = () => "venkatakarthik.m@juspay.in";
+const generateGivepaymentsEmail = () => "venkatakarthik.m@orbix.example";
 
 const successfulNo3DSCardDetails = {
   card_number: "4111111111111111",

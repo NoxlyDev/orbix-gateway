@@ -6,7 +6,7 @@ pub use api_models::customers::{
 };
 use common_utils::ext_traits::ValueExt;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::customer;
+use orbix_domain_models::customer;
 use serde::Serialize;
 
 #[cfg(feature = "v1")]

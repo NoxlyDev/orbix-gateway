@@ -5,7 +5,7 @@ use diesel_models::tokenization as tokenization_diesel;
 #[cfg(all(feature = "v2", feature = "tokenization_v2"))]
 use error_stack::{report, ResultExt};
 #[cfg(all(feature = "v2", feature = "tokenization_v2"))]
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     behaviour::{Conversion, ReverseConversion},
     merchant_key_store::MerchantKeyStore,
 };
@@ -23,22 +23,22 @@ pub trait TokenizationInterface {}
 pub trait TokenizationInterface {
     async fn insert_tokenization(
         &self,
-        tokenization: hyperswitch_domain_models::tokenization::Tokenization,
+        tokenization: orbix_domain_models::tokenization::Tokenization,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>;
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>;
 
     async fn get_entity_id_vault_id_by_token_id(
         &self,
         token: &common_utils::id_type::GlobalTokenId,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>;
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>;
 
     async fn update_tokenization_record(
         &self,
-        tokenization: hyperswitch_domain_models::tokenization::Tokenization,
-        tokenization_update: hyperswitch_domain_models::tokenization::TokenizationUpdate,
+        tokenization: orbix_domain_models::tokenization::Tokenization,
+        tokenization_update: orbix_domain_models::tokenization::TokenizationUpdate,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>;
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>;
 }
 
 #[async_trait::async_trait]
@@ -46,9 +46,9 @@ pub trait TokenizationInterface {
 impl<T: DatabaseStore> TokenizationInterface for RouterStore<T> {
     async fn insert_tokenization(
         &self,
-        tokenization: hyperswitch_domain_models::tokenization::Tokenization,
+        tokenization: orbix_domain_models::tokenization::Tokenization,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         let conn = connection::pg_connection_write(self).await?;
 
@@ -73,7 +73,7 @@ impl<T: DatabaseStore> TokenizationInterface for RouterStore<T> {
         &self,
         token: &common_utils::id_type::GlobalTokenId,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         let conn = connection::pg_connection_read(self).await?;
 
@@ -96,10 +96,10 @@ impl<T: DatabaseStore> TokenizationInterface for RouterStore<T> {
 
     async fn update_tokenization_record(
         &self,
-        tokenization_record: hyperswitch_domain_models::tokenization::Tokenization,
-        tokenization_update: hyperswitch_domain_models::tokenization::TokenizationUpdate,
+        tokenization_record: orbix_domain_models::tokenization::Tokenization,
+        tokenization_update: orbix_domain_models::tokenization::TokenizationUpdate,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         let conn = connection::pg_connection_write(self).await?;
 
@@ -122,9 +122,9 @@ impl<T: DatabaseStore> TokenizationInterface for RouterStore<T> {
 impl<T: DatabaseStore> TokenizationInterface for KVRouterStore<T> {
     async fn insert_tokenization(
         &self,
-        tokenization: hyperswitch_domain_models::tokenization::Tokenization,
+        tokenization: orbix_domain_models::tokenization::Tokenization,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         self.router_store
             .insert_tokenization(tokenization, merchant_key_store)
@@ -135,7 +135,7 @@ impl<T: DatabaseStore> TokenizationInterface for KVRouterStore<T> {
         &self,
         token: &common_utils::id_type::GlobalTokenId,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         self.router_store
             .get_entity_id_vault_id_by_token_id(token, merchant_key_store)
@@ -144,10 +144,10 @@ impl<T: DatabaseStore> TokenizationInterface for KVRouterStore<T> {
 
     async fn update_tokenization_record(
         &self,
-        tokenization_record: hyperswitch_domain_models::tokenization::Tokenization,
-        tokenization_update: hyperswitch_domain_models::tokenization::TokenizationUpdate,
+        tokenization_record: orbix_domain_models::tokenization::Tokenization,
+        tokenization_update: orbix_domain_models::tokenization::TokenizationUpdate,
         merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         self.router_store
             .update_tokenization_record(
@@ -164,9 +164,9 @@ impl<T: DatabaseStore> TokenizationInterface for KVRouterStore<T> {
 impl TokenizationInterface for MockDb {
     async fn insert_tokenization(
         &self,
-        _tokenization: hyperswitch_domain_models::tokenization::Tokenization,
+        _tokenization: orbix_domain_models::tokenization::Tokenization,
         _merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         Err(errors::StorageError::MockDbError)?
     }
@@ -174,17 +174,17 @@ impl TokenizationInterface for MockDb {
         &self,
         _token: &common_utils::id_type::GlobalTokenId,
         _merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         Err(errors::StorageError::MockDbError)?
     }
 
     async fn update_tokenization_record(
         &self,
-        _tokenization_record: hyperswitch_domain_models::tokenization::Tokenization,
-        _tokenization_update: hyperswitch_domain_models::tokenization::TokenizationUpdate,
+        _tokenization_record: orbix_domain_models::tokenization::Tokenization,
+        _tokenization_update: orbix_domain_models::tokenization::TokenizationUpdate,
         _merchant_key_store: &MerchantKeyStore,
-    ) -> CustomResult<hyperswitch_domain_models::tokenization::Tokenization, errors::StorageError>
+    ) -> CustomResult<orbix_domain_models::tokenization::Tokenization, errors::StorageError>
     {
         Err(errors::StorageError::MockDbError)?
     }

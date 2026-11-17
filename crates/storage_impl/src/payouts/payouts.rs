@@ -29,8 +29,8 @@ use diesel_models::{
 };
 use error_stack::ResultExt;
 #[cfg(feature = "olap")]
-use hyperswitch_domain_models::payouts::PayoutFetchConstraints;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payouts::PayoutFetchConstraints;
+use orbix_domain_models::{
     merchant_key_store::MerchantKeyStore,
     payouts::{
         payout_attempt::PayoutAttempt,
@@ -38,7 +38,7 @@ use hyperswitch_domain_models::{
     },
     type_encryption::{crypto_operation, CryptoOperation, EncryptedJsonType},
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use redis_interface::HsetnxReply;
 use router_env::instrument;
 
@@ -1075,7 +1075,7 @@ impl Conversion for Payouts {
     ) -> CustomResult<Self, ValidationError> {
         let sender_details = crypto_operation::<
             EncryptedJsonType<api_models::sender::SenderDetails>,
-            hyperswitch_masking::WithType,
+            orbix_masking::WithType,
         >(
             state,
             common_utils::type_name!(DieselPayouts),

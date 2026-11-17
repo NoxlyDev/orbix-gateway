@@ -1,7 +1,7 @@
 pub mod transformers;
 
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::{ExposeInterface, Mask};
+use orbix_masking::{ExposeInterface, Mask};
 
 use common_utils::{
     errors::CustomResult,
@@ -10,7 +10,7 @@ use common_utils::{
     request::{Method, Request, RequestBuilder, RequestContent},
 };
 
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_data::{AccessToken, ConnectorAuthType, ErrorResponse, RouterData},
     router_flow_types::{
         access_token_auth::AccessTokenAuth,
@@ -31,7 +31,7 @@ use hyperswitch_domain_models::{
         PaymentsCaptureRouterData, PaymentsSyncRouterData, RefundSyncRouterData, RefundsRouterData,
     },
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::{self, ConnectorCommon, ConnectorCommonExt, ConnectorIntegration, ConnectorValidation, ConnectorSpecifications},
     configs::Connectors,
     errors,
@@ -42,14 +42,14 @@ use hyperswitch_interfaces::{
 use std::sync::LazyLock;
 
 use common_enums::enums;
-use hyperswitch_interfaces::api::ConnectorSpecifications;
-use hyperswitch_domain_models::router_response_types::{ConnectorInfo, SupportedPaymentMethods};
+use orbix_interfaces::api::ConnectorSpecifications;
+use orbix_domain_models::router_response_types::{ConnectorInfo, SupportedPaymentMethods};
 use crate::{
     constants::headers,
     types::ResponseRouterData,
     utils,
 };
-use hyperswitch_domain_models::payment_method_data::PaymentMethodData;
+use orbix_domain_models::payment_method_data::PaymentMethodData;
 
 use transformers as {{project-name | downcase}};
 
@@ -96,7 +96,7 @@ where
         &self,
         req: &RouterData<Flow, Request, Response>,
         _connectors: &Connectors,
-    ) -> CustomResult<Vec<(String, hyperswitch_masking::Maskable<String>)>, errors::ConnectorError> {
+    ) -> CustomResult<Vec<(String, orbix_masking::Maskable<String>)>, errors::ConnectorError> {
         let mut header = vec![(
             headers::CONTENT_TYPE.to_string(),
             self.get_content_type().to_string().into(),
@@ -127,7 +127,7 @@ impl ConnectorCommon for {{project-name | downcase | pascal_case}} {
         connectors.{{project-name}}.base_url.as_ref()
     }
 
-    fn get_auth_header(&self, auth_type:&ConnectorAuthType)-> CustomResult<Vec<(String,hyperswitch_masking::Maskable<String>)>,errors::ConnectorError> {
+    fn get_auth_header(&self, auth_type:&ConnectorAuthType)-> CustomResult<Vec<(String,orbix_masking::Maskable<String>)>,errors::ConnectorError> {
         let auth =  {{project-name | downcase}}::{{project-name | downcase | pascal_case}}AuthType::try_from(auth_type)
             .change_context(errors::ConnectorError::FailedToObtainAuthType)?;
         Ok(vec![(headers::AUTHORIZATION.to_string(), auth.api_key.expose().into_masked())])
@@ -207,7 +207,7 @@ impl
         PaymentsAuthorizeData,
         PaymentsResponseData,
     > for {{project-name | downcase | pascal_case}} {
-    fn get_headers(&self, req: &PaymentsAuthorizeRouterData, connectors: &Connectors,) -> CustomResult<Vec<(String, hyperswitch_masking::Maskable<String>)>,errors::ConnectorError> {
+    fn get_headers(&self, req: &PaymentsAuthorizeRouterData, connectors: &Connectors,) -> CustomResult<Vec<(String, orbix_masking::Maskable<String>)>,errors::ConnectorError> {
         self.build_headers(req, connectors)
     }
 
@@ -287,7 +287,7 @@ impl
         &self,
         req: &PaymentsSyncRouterData,
         connectors: &Connectors,
-    ) -> CustomResult<Vec<(String, hyperswitch_masking::Maskable<String>)>, errors::ConnectorError> {
+    ) -> CustomResult<Vec<(String, orbix_masking::Maskable<String>)>, errors::ConnectorError> {
         self.build_headers(req, connectors)
     }
 
@@ -357,7 +357,7 @@ impl
         &self,
         req: &PaymentsCaptureRouterData,
         connectors: &Connectors,
-    ) -> CustomResult<Vec<(String, hyperswitch_masking::Maskable<String>)>, errors::ConnectorError> {
+    ) -> CustomResult<Vec<(String, orbix_masking::Maskable<String>)>, errors::ConnectorError> {
         self.build_headers(req, connectors)
     }
 
@@ -441,7 +441,7 @@ impl
         RefundsData,
         RefundsResponseData,
     > for {{project-name | downcase | pascal_case}} {
-    fn get_headers(&self, req: &RefundsRouterData<Execute>, connectors: &Connectors,) -> CustomResult<Vec<(String,hyperswitch_masking::Maskable<String>)>,errors::ConnectorError> {
+    fn get_headers(&self, req: &RefundsRouterData<Execute>, connectors: &Connectors,) -> CustomResult<Vec<(String,orbix_masking::Maskable<String>)>,errors::ConnectorError> {
         self.build_headers(req, connectors)
     }
 
@@ -506,7 +506,7 @@ impl
 
 impl
     ConnectorIntegration<RSync, RefundsData, RefundsResponseData> for {{project-name | downcase | pascal_case}} {
-    fn get_headers(&self, req: &RefundSyncRouterData,connectors: &Connectors,) -> CustomResult<Vec<(String, hyperswitch_masking::Maskable<String>)>,errors::ConnectorError> {
+    fn get_headers(&self, req: &RefundSyncRouterData,connectors: &Connectors,) -> CustomResult<Vec<(String, orbix_masking::Maskable<String>)>,errors::ConnectorError> {
         self.build_headers(req, connectors)
     }
 
@@ -577,7 +577,7 @@ impl webhooks::IncomingWebhook for {{project-name | downcase | pascal_case}} {
     fn get_webhook_resource_object(
         &self,
         _request: &webhooks::IncomingWebhookRequestDetails<'_>,
-    ) -> CustomResult<Box<dyn hyperswitch_masking::ErasedMaskSerialize>, errors::ConnectorError> {
+    ) -> CustomResult<Box<dyn orbix_masking::ErasedMaskSerialize>, errors::ConnectorError> {
         Err(report!(errors::ConnectorError::WebhooksNotImplemented))
     }
 }
@@ -588,7 +588,7 @@ static {{project-name | upcase}}_SUPPORTED_PAYMENT_METHODS: LazyLock<SupportedPa
 static {{project-name | upcase}}_CONNECTOR_INFO: ConnectorInfo = ConnectorInfo {
     display_name: "{{project-name | downcase | pascal_case}}",
     description: "{{project-name | downcase | pascal_case}} connector",
-    connector_type: enums::HyperswitchConnectorCategory::PaymentGateway,
+    connector_type: enums::OrbixConnectorCategory::PaymentGateway,
     integration_status: enums::ConnectorIntegrationStatus::Live,
 };
 

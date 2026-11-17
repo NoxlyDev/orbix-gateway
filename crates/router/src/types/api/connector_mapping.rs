@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use error_stack::{report, ResultExt};
-use hyperswitch_connectors::connectors::{
+use orbix_connectors::connectors::{
     Citigate, Payconex, Paynearme, Paytm, Phonepe, Worldpayraft, D24,
 };
 
@@ -327,8 +327,8 @@ impl ConnectorData {
                 enums::Connector::Helcim => {
                     Ok(ConnectorEnum::Old(Box::new(connector::Helcim::new())))
                 }
-                enums::Connector::HyperswitchVault => {
-                    Ok(ConnectorEnum::Old(Box::new(&connector::HyperswitchVault)))
+                enums::Connector::OrbixVault => {
+                    Ok(ConnectorEnum::Old(Box::new(&connector::OrbixVault)))
                 }
                 enums::Connector::Hyperpg => {
                     Ok(ConnectorEnum::Old(Box::new(connector::Hyperpg::new())))
@@ -351,8 +351,8 @@ impl ConnectorData {
                 enums::Connector::Jpmorgan => {
                     Ok(ConnectorEnum::Old(Box::new(connector::Jpmorgan::new())))
                 }
-                enums::Connector::Juspaythreedsserver => Ok(ConnectorEnum::Old(Box::new(
-                    connector::Juspaythreedsserver::new(),
+                enums::Connector::Orbixthreedsserver => Ok(ConnectorEnum::Old(Box::new(
+                    connector::Orbixthreedsserver::new(),
                 ))),
                 enums::Connector::Klarna => {
                     Ok(ConnectorEnum::Old(Box::new(connector::Klarna::new())))
@@ -420,7 +420,7 @@ impl ConnectorData {
                 }
                 enums::Connector::Payu => Ok(ConnectorEnum::Old(Box::new(connector::Payu::new()))),
                 enums::Connector::Peachpayments => Ok(ConnectorEnum::Old(Box::new(
-                    hyperswitch_connectors::connectors::Peachpayments::new(),
+                    orbix_connectors::connectors::Peachpayments::new(),
                 ))),
                 enums::Connector::Placetopay => {
                     Ok(ConnectorEnum::Old(Box::new(connector::Placetopay::new())))
@@ -558,7 +558,7 @@ impl ConnectorData {
                 | enums::Connector::Gpayments
                 | enums::Connector::Threedsecureio
                 | enums::Connector::Cardinal
-                | enums::Connector::Juspay
+                | enums::Connector::Orbix
                 | enums::Connector::Taxjar => {
                     Err(report!(errors::ConnectorError::InvalidConnectorName)
                         .attach_printable(format!("invalid connector name: {connector_name}")))

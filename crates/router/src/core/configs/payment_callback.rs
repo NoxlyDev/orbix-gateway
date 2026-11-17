@@ -8,7 +8,7 @@
 //! `common_utils::consts::DEFAULT_INTENT_FULFILLMENT_TIME` seconds.
 
 use error_stack::ResultExt;
-use hyperswitch_domain_models::configs::ConfigInterface;
+use orbix_domain_models::configs::ConfigInterface;
 use serde::Deserialize;
 use storage_impl::errors::StorageError;
 

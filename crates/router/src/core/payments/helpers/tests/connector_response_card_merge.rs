@@ -1,4 +1,4 @@
-use hyperswitch_domain_models::router_data::AdditionalPaymentMethodConnectorResponse;
+use orbix_domain_models::router_data::AdditionalPaymentMethodConnectorResponse;
 
 use super::super::add_connector_response_to_additional_payment_data;
 

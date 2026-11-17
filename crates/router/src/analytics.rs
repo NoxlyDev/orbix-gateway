@@ -37,7 +37,7 @@ pub mod routes {
     use diesel_models::enums::UserStatus;
     use error_stack::{report, ResultExt};
     use futures::{stream::FuturesUnordered, StreamExt};
-    use hyperswitch_masking::ExposeInterface;
+    use orbix_masking::ExposeInterface;
     use router_env::logger;
 
     use crate::{
@@ -2263,7 +2263,7 @@ pub mod routes {
             req,
             json_payload,
             AnalyticsFlow::GetConnectorEvents,
-            ConnectorEventSource::Hyperswitch,
+            ConnectorEventSource::Orbix,
         )
         .await
     }

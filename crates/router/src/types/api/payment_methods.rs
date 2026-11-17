@@ -142,7 +142,7 @@ impl PaymentMethodCreateExt for PaymentMethodIntentConfirm {
 pub(crate) trait PaymentMethodSessionExt {
     fn validate(
         &self,
-        payment_method_session: &hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        payment_method_session: &orbix_domain_models::payment_methods::PaymentMethodSession,
     ) -> RouterResult<()>;
 }
 
@@ -150,7 +150,7 @@ pub(crate) trait PaymentMethodSessionExt {
 impl PaymentMethodSessionExt for api_models::payment_methods::PaymentMethodSessionConfirmRequest {
     fn validate(
         &self,
-        payment_method_session: &hyperswitch_domain_models::payment_methods::PaymentMethodSession,
+        payment_method_session: &orbix_domain_models::payment_methods::PaymentMethodSession,
     ) -> RouterResult<()> {
         utils::when(
             self.payment_method_type != api_models::enums::PaymentMethod::Card

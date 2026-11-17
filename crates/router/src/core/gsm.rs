@@ -96,7 +96,7 @@ pub async fn update_gsm_rule(
         sub_flow,
         code,
         message,
-        hyperswitch_domain_models::gsm::GatewayStatusMappingUpdate {
+        orbix_domain_models::gsm::GatewayStatusMappingUpdate {
             decision,
             status,
             router_error: Some(router_error),

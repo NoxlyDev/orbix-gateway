@@ -378,7 +378,7 @@ pub async fn connector_webhook_register() {}
 
 /// Configure Connector Webhook - Register
 ///
-/// List webhooks configured with hyperswitch at the connector
+/// List webhooks configured with orbix at the connector
 #[cfg(feature = "v1")]
 #[utoipa::path(
     get,
@@ -388,7 +388,7 @@ pub async fn connector_webhook_register() {}
         ("merchant_connector_id" = String, Path, description = "The unique identifier for the Merchant Connector")
     ),
       responses(
-        (status = 200, description = "List of webhooks configured with hyperswitch at the connector", body = ConnectorWebhookListResponse),
+        (status = 200, description = "List of webhooks configured with orbix at the connector", body = ConnectorWebhookListResponse),
         (status = 401, description = "Unauthorized request")
     ),
     tag = "Merchant Connector Account",

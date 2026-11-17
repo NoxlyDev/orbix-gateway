@@ -2,7 +2,7 @@ use api_models::external_service_auth as external_service_auth_api;
 use common_enums::Resource;
 use common_utils::fp_utils;
 use error_stack::ResultExt;
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use strum::IntoEnumIterator;
 
 use crate::{

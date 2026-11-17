@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use common_types::payments::{AcceptanceType, CustomerAcceptance};
 use common_utils::{id_type, types::MinorUnit};
-use hyperswitch_domain_models::mandates::{MandateAmountData, MandateData, MandateDataType};
+use orbix_domain_models::mandates::{MandateAmountData, MandateData, MandateDataType};
 
 use super::super::generate_mandate;
 

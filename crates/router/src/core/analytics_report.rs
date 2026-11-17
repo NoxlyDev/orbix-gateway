@@ -21,7 +21,7 @@ use common_utils::{
 };
 use error_stack::{report, ResultExt};
 use external_services::file_storage::MultipartUpload;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use router_env::instrument;
 
 use crate::{
@@ -340,7 +340,7 @@ async fn send_webhook(
         .method(services::Method::Post)
         .url(url.get_string_repr())
         .header("Content-Type", "application/json")
-        .header("User-Agent", "Hyperswitch-Webhook/1.0");
+        .header("User-Agent", "Orbix Gateway-Webhook/1.0");
     if let Some(hash_key) = payment_response_hash_key(state, &tracking_data.request).await? {
         request = request.header(
             "X-Webhook-Signature-512",

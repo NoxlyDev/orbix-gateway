@@ -129,7 +129,7 @@ pub struct PaymentAttempt {
     pub amount_capturable: MinorUnit,
     pub updated_by: String,
     pub merchant_connector_id: Option<id_type::MerchantConnectorAccountId>,
-    pub encoded_data: Option<hyperswitch_masking::Secret<String>>,
+    pub encoded_data: Option<orbix_masking::Secret<String>>,
     pub unified_code: Option<String>,
     pub unified_message: Option<String>,
     #[diesel(deserialize_as = RequiredFromNullable<MinorUnit>)]
@@ -141,7 +141,7 @@ pub struct PaymentAttempt {
     pub client_source: Option<String>,
     pub client_version: Option<String>,
     pub customer_acceptance:
-        Option<hyperswitch_masking::Secret<common_payments_types::CustomerAcceptance>>,
+        Option<orbix_masking::Secret<common_payments_types::CustomerAcceptance>>,
     pub profile_id: id_type::ProfileId,
     pub organization_id: id_type::OrganizationId,
     pub card_network: Option<String>,
@@ -431,7 +431,7 @@ pub struct PaymentAttemptNew {
     pub updated_by: String,
     pub merchant_connector_id: Option<id_type::MerchantConnectorAccountId>,
     pub redirection_data: Option<RedirectForm>,
-    pub encoded_data: Option<hyperswitch_masking::Secret<String>>,
+    pub encoded_data: Option<orbix_masking::Secret<String>>,
     pub unified_code: Option<String>,
     pub unified_message: Option<String>,
     pub net_amount: MinorUnit,
@@ -444,7 +444,7 @@ pub struct PaymentAttemptNew {
     pub client_source: Option<String>,
     pub client_version: Option<String>,
     pub customer_acceptance:
-        Option<hyperswitch_masking::Secret<common_payments_types::CustomerAcceptance>>,
+        Option<orbix_masking::Secret<common_payments_types::CustomerAcceptance>>,
     pub profile_id: id_type::ProfileId,
     pub organization_id: id_type::OrganizationId,
     pub card_network: Option<String>,
@@ -4735,12 +4735,12 @@ impl From<PaymentAttemptUpdate> for PaymentAttemptUpdateInternal {
 #[diesel(sql_type = diesel::sql_types::Jsonb)]
 pub enum RedirectForm {
     Form {
-        endpoint: hyperswitch_masking::Secret<String>,
+        endpoint: orbix_masking::Secret<String>,
         method: common_utils::request::Method,
-        form_fields: std::collections::HashMap<String, hyperswitch_masking::Secret<String>>,
+        form_fields: std::collections::HashMap<String, orbix_masking::Secret<String>>,
     },
     Html {
-        html_data: hyperswitch_masking::Secret<String>,
+        html_data: orbix_masking::Secret<String>,
     },
     BarclaycardAuthSetup {
         access_token: String,
@@ -4772,12 +4772,12 @@ pub enum RedirectForm {
         client_token: String,
         card_token: String,
         bin: String,
-        acs_url: hyperswitch_masking::Secret<String>,
+        acs_url: orbix_masking::Secret<String>,
     },
     Nmi {
         amount: String,
         currency: common_enums::Currency,
-        public_key: hyperswitch_masking::Secret<String>,
+        public_key: orbix_masking::Secret<String>,
         customer_vault_id: String,
         order_id: String,
     },

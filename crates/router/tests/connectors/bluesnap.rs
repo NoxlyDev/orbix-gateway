@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use common_utils::pii::Email;
-use hyperswitch_domain_models::address::{Address, AddressDetails};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::address::{Address, AddressDetails};
+use orbix_masking::Secret;
 use router::types::{self, domain, storage::enums, ConnectorAuthType, PaymentAddress};
 
 use crate::{

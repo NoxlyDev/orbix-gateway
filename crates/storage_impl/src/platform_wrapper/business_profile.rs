@@ -1,5 +1,5 @@
 use common_utils::errors::CustomResult;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     business_profile::{Profile, ProfileInterface},
     platform::Processor,
 };

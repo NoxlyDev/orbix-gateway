@@ -4,10 +4,10 @@ use diesel_models::PaymentIntent as DieselPaymentIntent;
 #[cfg(feature = "v1")]
 use error_stack::ResultExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::behaviour::Conversion;
+use orbix_domain_models::behaviour::Conversion;
 #[cfg(all(feature = "v1", feature = "olap"))]
-use hyperswitch_domain_models::platform::ProviderMerchantId;
-use hyperswitch_domain_models::{
+use orbix_domain_models::platform::ProviderMerchantId;
+use orbix_domain_models::{
     payments::{
         payment_intent::{PaymentIntentInterface, PaymentIntentUpdate},
         PaymentIntent,
@@ -25,7 +25,7 @@ impl PaymentIntentInterface for MockDb {
     async fn filter_payment_intent_by_constraints(
         &self,
         _processor_merchant_id: &ProcessorMerchantId,
-        _filters: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        _filters: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         _key_store: &ProcessorKeyStore,
         _storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<Vec<PaymentIntent>, StorageError> {
@@ -37,13 +37,13 @@ impl PaymentIntentInterface for MockDb {
     async fn get_filtered_payment_intents_attempt(
         &self,
         _merchant_id: &ProcessorMerchantId,
-        _constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        _constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         _merchant_key_store: &ProcessorKeyStore,
         _storage_scheme: ProcessorStorageScheme,
     ) -> error_stack::Result<
         Vec<(
             PaymentIntent,
-            Option<hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt>,
+            Option<orbix_domain_models::payments::payment_attempt::PaymentAttempt>,
         )>,
         StorageError,
     > {
@@ -54,7 +54,7 @@ impl PaymentIntentInterface for MockDb {
     async fn get_filtered_payment_intents_attempt_for_platform(
         &self,
         _provider_merchant_id: &ProviderMerchantId,
-        _filters: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        _filters: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
     ) -> CustomResult<
         Vec<(
             DieselPaymentIntent,
@@ -70,7 +70,7 @@ impl PaymentIntentInterface for MockDb {
     async fn get_payment_intents_attempt_count_for_platform(
         &self,
         _provider_merchant_id: &ProviderMerchantId,
-        _filters: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        _filters: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
     ) -> CustomResult<i64, StorageError> {
         // [#172]: Implement function for `MockDb`
         Err(StorageError::MockDbError)?
@@ -103,7 +103,7 @@ impl PaymentIntentInterface for MockDb {
     async fn get_filtered_active_attempt_ids_for_total_count(
         &self,
         _processor_merchant_id: &ProcessorMerchantId,
-        _constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        _constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         _storage_scheme: ProcessorStorageScheme,
     ) -> error_stack::Result<Vec<String>, StorageError> {
         // [#172]: Implement function for `MockDb`
@@ -114,7 +114,7 @@ impl PaymentIntentInterface for MockDb {
     async fn get_filtered_active_attempt_ids_for_total_count(
         &self,
         _merchant_id: &ProcessorMerchantId,
-        _constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        _constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         _storage_scheme: ProcessorStorageScheme,
     ) -> error_stack::Result<Vec<Option<String>>, StorageError> {
         // [#172]: Implement function for `MockDb`
@@ -125,13 +125,13 @@ impl PaymentIntentInterface for MockDb {
     async fn get_filtered_payment_intents_attempt(
         &self,
         _processor_merchant_id: &ProcessorMerchantId,
-        _constraints: &hyperswitch_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
+        _constraints: &orbix_domain_models::payments::payment_intent::PaymentIntentFetchConstraints,
         _key_store: &ProcessorKeyStore,
         _storage_scheme: ProcessorStorageScheme,
     ) -> error_stack::Result<
         Vec<(
             PaymentIntent,
-            hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+            orbix_domain_models::payments::payment_attempt::PaymentAttempt,
         )>,
         StorageError,
     > {

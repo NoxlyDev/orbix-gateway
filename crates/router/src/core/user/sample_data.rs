@@ -2,7 +2,7 @@ use api_models::user::sample_data::SampleDataRequest;
 use common_utils::errors::ReportSwitchExt;
 use diesel_models::{DisputeNew, RefundNew};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::PaymentIntent;
+use orbix_domain_models::payments::PaymentIntent;
 
 pub type SampleDataApiResponse<T> = SampleDataResult<ApplicationResponse<T>>;
 

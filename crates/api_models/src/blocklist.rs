@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 
 use common_enums::enums;
 use common_utils::events::ApiEventMetric;
-use hyperswitch_masking::StrongSecret;
+use orbix_masking::StrongSecret;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
@@ -227,7 +227,7 @@ pub struct BatchBlocklistJobStatusResponse {
     /// Exports only: short-lived signed link, generated per request and never stored. Null in the
     /// listing, which does not mint a link per row.
     #[schema(value_type = Option<String>)]
-    pub download_url: Option<hyperswitch_masking::Secret<url::Url>>,
+    pub download_url: Option<orbix_masking::Secret<url::Url>>,
     #[serde(default, with = "common_utils::custom_serde::iso8601::option")]
     pub download_url_expires_at: Option<time::PrimitiveDateTime>,
 }

@@ -174,7 +174,7 @@ impl
                                 }
                                 for (key, value) in &value_overrides {
                                     merged.entry(key.to_string()).and_modify(|rf| {
-                                        rf.value = Some(hyperswitch_masking::Secret::new(
+                                        rf.value = Some(orbix_masking::Secret::new(
                                             value.to_string(),
                                         ));
                                     });

@@ -5,10 +5,10 @@ use async_trait::async_trait;
 use common_enums;
 use common_utils::ext_traits::{Encode, ValueExt};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates::MandateTransactionType, payment_methods::VaultPaymentMethodData,
 };
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_masking::{ExposeInterface, Secret};
 use router_env::instrument;
 
 use super::{BoxedOperation, Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -44,10 +44,10 @@ pub struct PaymentExternalVaultProxyConfirm;
 pub(crate) fn build_external_vault_payment_method_data(
     request: &PaymentsRequest,
     payment_method_wrapper: Option<
-        &hyperswitch_domain_models::payment_methods::PaymentMethodWithRawData,
+        &orbix_domain_models::payment_methods::PaymentMethodWithRawData,
     >,
 ) -> RouterResult<
-    Option<hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData>,
+    Option<orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData>,
 > {
     // An MIT driven by `recurring_details` carries no `payment_method_data`: the card sits in the
     // external vault behind an alias and authorizes on the network transaction ID.
@@ -55,7 +55,7 @@ pub(crate) fn build_external_vault_payment_method_data(
         request
             .recurring_details
             .clone()
-            .map(hyperswitch_domain_models::payment_method_data::RecurringDetails::from)
+            .map(orbix_domain_models::payment_method_data::RecurringDetails::from)
             .and_then(|recurring_details| {
                 recurring_details.get_mandate_reference_id_and_external_vault_pmd_for_proxy_flow()
             })
@@ -68,9 +68,9 @@ pub(crate) fn build_external_vault_payment_method_data(
         .and_then(|pmd| pmd.payment_method_data.as_ref())
     {
         Some(api_models::payments::PaymentMethodData::ProxyCard(card)) => Some(
-            hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
+            orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
                 Box::new(
-                    hyperswitch_domain_models::payment_method_data::ExternalVaultCard::from(
+                    orbix_domain_models::payment_method_data::ExternalVaultCard::from(
                         (**card).clone(),
                     ),
                 ),
@@ -96,8 +96,8 @@ pub(crate) fn build_external_vault_payment_method_data(
                     let card_cvc = token_data.card_cvc.clone().get_required_value("card_cvc")?;
 
                     Some(
-                        hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
-                            Box::new(hyperswitch_domain_models::payment_method_data::ExternalVaultCard {
+                        orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
+                            Box::new(orbix_domain_models::payment_method_data::ExternalVaultCard {
                                 card_number: vault_card.card_number.clone(),
                                 card_exp_month,
                                 card_exp_year,
@@ -184,7 +184,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, PaymentsRequest>
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: &orbix_domain_models::payments::HeaderPayload,
         payment_method_fetch_data: PaymentMethodFetchData,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -455,12 +455,12 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, PaymentsRequest>
 
         let mandate_id = recurring_details
             .clone()
-            .map(hyperswitch_domain_models::payment_method_data::RecurringDetails::from)
+            .map(orbix_domain_models::payment_method_data::RecurringDetails::from)
             .and_then(|details| {
                 details.get_mandate_reference_id_and_external_vault_pmd_for_proxy_flow()
             })
             .map(|(mandate_reference_id, _external_vault_pmd)| {
-                hyperswitch_domain_models::mandates::MandateIds {
+                orbix_domain_models::mandates::MandateIds {
                     mandate_id: None,
                     mandate_reference_id: Some(mandate_reference_id),
                 }
@@ -551,7 +551,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, PaymentsRequest>
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(
         BoxedOperation<'b, F, PaymentsRequest, PaymentData<F>>,
@@ -680,7 +680,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, PaymentsRequest>
                     client_version: None,
                     customer_acceptance: payment_data.payment_attempt.customer_acceptance.clone(),
                     net_amount:
-                        hyperswitch_domain_models::payments::payment_attempt::NetAmount::new(
+                        orbix_domain_models::payments::payment_attempt::NetAmount::new(
                             payment_data.payment_attempt.net_amount.get_order_amount(),
                             payment_data.payment_intent.shipping_cost,
                             payment_data
@@ -842,7 +842,7 @@ impl<F: Clone + Send + Sync> Domain<F, PaymentsRequest, PaymentData<F>>
             Some(card_token) if feature_config.is_payment_method_modular_allowed => {
                 // 1. Resolve the payment_token to the actual stored payment_method_id via Redis.
                 //    This uses the same key construction as the regular Confirm flow's
-                //    fetch_payment_method (`pm_token_{token}_{payment_method}_hyperswitch`).
+                //    fetch_payment_method (`pm_token_{token}_{payment_method}_orbix`).
                 let payment_token = req
                     .payment_token
                     .clone()
@@ -963,7 +963,7 @@ impl<F: Clone + Send + Sync> Domain<F, PaymentsRequest, PaymentData<F>>
         // Only create for ExternalVaultCard (proxy card flow)
         let mut vault_card = match payment_data.external_vault_pmd.clone() {
             Some(
-                hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
+                orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
                     card,
                 ),
             ) => *card,
@@ -987,7 +987,7 @@ impl<F: Clone + Send + Sync> Domain<F, PaymentsRequest, PaymentData<F>>
             .unwrap_or(common_enums::PaymentMethod::Card);
         let payment_method_type = payment_data.payment_attempt.payment_method_type;
 
-        // When the external vault is the hyperswitch vault, the `card_number` carried on the request
+        // When the external vault is the orbix vault, the `card_number` carried on the request
         // is a *temporary* vault token. Exchange it for the permanent payment method id (served by
         // the external SaaS PM service) and persist that as the token in the PM entry. The external
         // service is a separate deployment, so authenticate with the external vault connector
@@ -995,7 +995,7 @@ impl<F: Clone + Send + Sync> Domain<F, PaymentsRequest, PaymentData<F>>
         // other vault, the request token is stored as-is.
         if business_profile
             .external_vault_details
-            .is_hyperswitch_vault()
+            .is_orbix_vault()
         {
             let vault_connector_id = business_profile
                 .external_vault_details
@@ -1021,7 +1021,7 @@ impl<F: Clone + Send + Sync> Domain<F, PaymentsRequest, PaymentData<F>>
                 .change_context(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Failed to parse external vault connector auth")?
             {
-                hyperswitch_domain_models::router_data::ConnectorAuthType::SignatureKey {
+                orbix_domain_models::router_data::ConnectorAuthType::SignatureKey {
                     api_key,
                     api_secret,
                     ..
@@ -1030,7 +1030,7 @@ impl<F: Clone + Send + Sync> Domain<F, PaymentsRequest, PaymentData<F>>
                     errors::ApiErrorResponse::InternalServerError
                 )
                 .attach_printable(
-                    "Unexpected auth type for hyperswitch external vault connector; expected SignatureKey",
+                    "Unexpected auth type for orbix external vault connector; expected SignatureKey",
                 )),
             }?;
 

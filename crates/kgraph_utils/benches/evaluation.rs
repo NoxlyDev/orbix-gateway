@@ -13,14 +13,14 @@ use euclid::{
     frontend::dir,
     types::{NumValue, NumValueRefinement},
 };
-use hyperswitch_constraint_graph::{CycleCheck, Memoization};
+use orbix_constraint_graph::{CycleCheck, Memoization};
 use kgraph_utils::{error::KgraphError, transformers::IntoDirValue, types::CountryCurrencyFilter};
 
 #[cfg(feature = "v1")]
 fn build_test_data(
     total_enabled: usize,
     total_pm_types: usize,
-) -> hyperswitch_constraint_graph::ConstraintGraph<dir::DirValue> {
+) -> orbix_constraint_graph::ConstraintGraph<dir::DirValue> {
     use api_models::{admin::*, payment_methods::*};
 
     let mut pms_enabled: Vec<PaymentMethodsEnabled> = Vec::new();
@@ -61,7 +61,7 @@ fn build_test_data(
     //     connector_type: api_enums::ConnectorType::FizOperations,
     //     connector_name: "stripe".to_string(),
     //     id: common_utils::generate_merchant_connector_account_id_of_default_length(),
-    //     connector_account_details: hyperswitch_masking::Secret::new(serde_json::json!({})),
+    //     connector_account_details: orbix_masking::Secret::new(serde_json::json!({})),
     //     disabled: None,
     //     metadata: None,
     //     payment_methods_enabled: Some(pms_enabled),

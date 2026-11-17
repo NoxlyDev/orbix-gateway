@@ -5,13 +5,13 @@ use config::{Environment, File};
 use external_services::managers::{
     encryption_management::EncryptionManagementConfig, secrets_management::SecretsManagementConfig,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     encryption_interface::EncryptionManagementInterface,
     secrets_interface::secret_state::{
         RawSecret, SecretState, SecretStateContainer, SecuredSecret,
     },
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use redis_interface as redis;
 pub use router_env::config::{Log, LogConsole, LogFile, LogTelemetry};
 use router_env::{env, logger};

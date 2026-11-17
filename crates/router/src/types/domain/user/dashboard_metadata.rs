@@ -1,6 +1,6 @@
 use api_models::user::dashboard_metadata as api;
 use diesel_models::enums::DashboardMetadata as DBEnum;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use time::PrimitiveDateTime;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

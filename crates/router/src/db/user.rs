@@ -1,6 +1,6 @@
 use diesel_models::{enums::TotpStatus, user as storage};
 use error_stack::report;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router_env::instrument;
 
 use super::{domain, MockDb};

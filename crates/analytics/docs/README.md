@@ -4,7 +4,7 @@ This document provides instructions on how to run Kafka and Clickhouse using Doc
 
 ## Architecture
      +------------------------+
-     |       Hyperswitch      |
+     |       Orbix Gateway      |
      +------------------------+
                 |
                 |

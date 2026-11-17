@@ -6,7 +6,7 @@ use euclid_macros::knowledge;
 use crate::dssa::graph::euclid_graph_prelude;
 use crate::frontend::dir;
 
-pub static ANALYSIS_GRAPH: LazyLock<hyperswitch_constraint_graph::ConstraintGraph<dir::DirValue>> =
+pub static ANALYSIS_GRAPH: LazyLock<orbix_constraint_graph::ConstraintGraph<dir::DirValue>> =
     LazyLock::new(|| {
         knowledge! {
             // Payment Method should be `Card` for a CardType to be present

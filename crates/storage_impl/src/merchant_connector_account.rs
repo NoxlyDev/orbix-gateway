@@ -1,7 +1,7 @@
 use common_utils::{encryption::Encryption, ext_traits::AsyncExt};
 use diesel_models::merchant_connector_account as storage;
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     merchant_connector_account::{self as domain, MerchantConnectorAccountInterface},
     merchant_key_store::MerchantKeyStore,
 };
@@ -1874,9 +1874,9 @@ use diesel_models::merchant_connector_account::{
     RevenueRecoveryMetadata as DieselRevenueRecoveryMetadata,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::errors::api_error_response;
-use hyperswitch_domain_models::type_encryption::{crypto_operation, CryptoOperation};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_domain_models::errors::api_error_response;
+use orbix_domain_models::type_encryption::{crypto_operation, CryptoOperation};
+use orbix_masking::{PeekInterface, Secret};
 
 #[cfg(feature = "v1")]
 #[async_trait::async_trait]

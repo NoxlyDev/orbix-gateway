@@ -4,7 +4,7 @@ use std::str::FromStr;
 use api_models::subscription as subscription_types;
 use common_utils::{errors::CustomResult, ext_traits::StringExt};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{self as domain, invoice::InvoiceUpdateRequest};
+use orbix_domain_models::{self as domain, invoice::InvoiceUpdateRequest};
 use router_env::logger;
 use scheduler::{
     errors,
@@ -30,12 +30,12 @@ const INVOICE_SYNC_WORKFLOW_TAG: &str = "INVOICE";
 pub struct InvoiceSyncHandler<'a> {
     pub state: &'a SessionState,
     pub tracking_data: storage::invoice_sync::InvoiceSyncTrackingData,
-    pub key_store: hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-    pub merchant_account: hyperswitch_domain_models::merchant_account::MerchantAccount,
-    pub customer: hyperswitch_domain_models::customer::Customer,
-    pub profile: hyperswitch_domain_models::business_profile::Profile,
-    pub subscription: hyperswitch_domain_models::subscription::Subscription,
-    pub invoice: hyperswitch_domain_models::invoice::Invoice,
+    pub key_store: orbix_domain_models::merchant_key_store::MerchantKeyStore,
+    pub merchant_account: orbix_domain_models::merchant_account::MerchantAccount,
+    pub customer: orbix_domain_models::customer::Customer,
+    pub profile: orbix_domain_models::business_profile::Profile,
+    pub subscription: orbix_domain_models::subscription::Subscription,
+    pub invoice: orbix_domain_models::invoice::Invoice,
 }
 
 #[cfg(feature = "v1")]
@@ -149,8 +149,8 @@ impl<'a> InvoiceSyncHandler<'a> {
     }
 
     pub fn generate_response(
-        subscription: &hyperswitch_domain_models::subscription::Subscription,
-        invoice: &hyperswitch_domain_models::invoice::Invoice,
+        subscription: &orbix_domain_models::subscription::Subscription,
+        invoice: &orbix_domain_models::invoice::Invoice,
         payment_response: &subscription_types::PaymentResponseData,
     ) -> CustomResult<
         subscription_types::ConfirmSubscriptionResponse,
@@ -235,7 +235,7 @@ impl<'a> InvoiceSyncHandler<'a> {
         payment_status: common_enums::AttemptStatus,
         connector_invoice_id: Option<common_utils::id_type::InvoiceId>,
         invoice_sync_status: storage::invoice_sync::InvoiceSyncPaymentStatus,
-    ) -> CustomResult<hyperswitch_domain_models::invoice::Invoice, router_errors::ApiErrorResponse>
+    ) -> CustomResult<orbix_domain_models::invoice::Invoice, router_errors::ApiErrorResponse>
     {
         if let Some(connector_invoice_id) = connector_invoice_id {
             Box::pin(self.perform_billing_processor_record_back(
@@ -257,7 +257,7 @@ impl<'a> InvoiceSyncHandler<'a> {
         payment_status: common_enums::AttemptStatus,
         connector_invoice_id: common_utils::id_type::InvoiceId,
         invoice_sync_status: storage::invoice_sync::InvoiceSyncPaymentStatus,
-    ) -> CustomResult<hyperswitch_domain_models::invoice::Invoice, router_errors::ApiErrorResponse>
+    ) -> CustomResult<orbix_domain_models::invoice::Invoice, router_errors::ApiErrorResponse>
     {
         logger::info!("perform_billing_processor_record_back");
 
@@ -307,7 +307,7 @@ impl<'a> InvoiceSyncHandler<'a> {
         process: ProcessTracker,
         payment_response: subscription_types::PaymentResponseData,
         connector_invoice_id: Option<common_utils::id_type::InvoiceId>,
-    ) -> CustomResult<hyperswitch_domain_models::invoice::Invoice, router_errors::ApiErrorResponse>
+    ) -> CustomResult<orbix_domain_models::invoice::Invoice, router_errors::ApiErrorResponse>
     {
         logger::info!(
             "transition_workflow_state called with status: {:?}",

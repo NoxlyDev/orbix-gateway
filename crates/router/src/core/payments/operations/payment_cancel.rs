@@ -4,8 +4,8 @@ use api_models::enums::FrmSuggestion;
 use async_trait::async_trait;
 use common_utils::ext_traits::AsyncExt;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payment_method_data::ApiPaymentMethodDataMandateIds;
-use hyperswitch_interfaces::api::ConnectorSpecifications;
+use orbix_domain_models::payment_method_data::ApiPaymentMethodDataMandateIds;
+use orbix_interfaces::api::ConnectorSpecifications;
 use router_env::instrument;
 
 use super::{BoxedOperation, Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -47,7 +47,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsCancelRe
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         payment_method_fetch_data: operations::PaymentMethodFetchData,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -102,7 +102,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsCancelRe
                 })
                 .is_some_and(|connector_data| {
                     connector_data.connector.is_pre_authorize_cancel_supported(
-                        hyperswitch_interfaces::api::CurrentFlowInfo::PreAuthorizeVoid {
+                        orbix_interfaces::api::CurrentFlowInfo::PreAuthorizeVoid {
                             payment_method_type: payment_attempt.payment_method_type,
                             attempt_status: payment_attempt.status,
                             is_mit_payment: true,
@@ -209,7 +209,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsCancelRe
 
         let recurring_mandate_payment_data =
             payment_attempt.payment_method_id.is_some().then(|| {
-                hyperswitch_domain_models::router_data::RecurringMandatePaymentData {
+                orbix_domain_models::router_data::RecurringMandatePaymentData {
                     payment_method_type: payment_attempt.payment_method_type,
                     original_payment_authorized_amount: None,
                     original_payment_authorized_currency: None,
@@ -305,7 +305,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsCancelReques
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(PaymentCancelOperation<'b, F>, PaymentData<F>)>
     where

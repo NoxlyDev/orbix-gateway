@@ -12,7 +12,7 @@ use diesel_models::{
     ReverseLookupNew,
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payouts::{
+use orbix_domain_models::payouts::{
     payout_attempt::{
         PayoutAttempt, PayoutAttemptInterface, PayoutAttemptNew, PayoutAttemptUpdate,
         PayoutListFilters,

@@ -26,8 +26,8 @@ use common_utils::{errors::CustomResult, ext_traits::ValueExt, types::AmountConv
 use diesel_models::authentication::Authentication;
 use error_stack::ResultExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::router_request_types::unified_authentication_service::UasAuthenticationResponseData;
-use hyperswitch_domain_models::{
+use orbix_domain_models::router_request_types::unified_authentication_service::UasAuthenticationResponseData;
+use orbix_domain_models::{
     errors::api_error_response::ApiErrorResponse,
     ext_traits::OptionExt,
     payment_method_data,
@@ -45,7 +45,7 @@ use hyperswitch_domain_models::{
         UasPreAuthenticationRouterData,
     },
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 
 use super::{
     errors::{RouterResponse, RouterResult},
@@ -79,14 +79,14 @@ impl UnifiedAuthenticationService for ClickToPay {
         service_details: Option<payments::CtpServiceDetails>,
         amount: common_utils::types::MinorUnit,
         currency: Option<common_enums::Currency>,
-        merchant_details: Option<&hyperswitch_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
-        billing_address: Option<&hyperswitch_domain_models::address::Address>,
+        merchant_details: Option<&orbix_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
+        billing_address: Option<&orbix_domain_models::address::Address>,
         acquirer_bin: Option<String>,
         acquirer_merchant_id: Option<String>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         routing_region: Option<common_enums::RoutingRegion>,
     ) -> RouterResult<UasPreAuthenticationRequestData> {
-        let domain_service_details = hyperswitch_domain_models::router_request_types::unified_authentication_service::CtpServiceDetails {
+        let domain_service_details = orbix_domain_models::router_request_types::unified_authentication_service::CtpServiceDetails {
             service_session_ids: Some(ServiceSessionIds {
                 merchant_transaction_id: service_details
                     .as_ref()
@@ -136,8 +136,8 @@ impl UnifiedAuthenticationService for ClickToPay {
         amount: common_utils::types::MinorUnit,
         currency: Option<common_enums::Currency>,
         service_details: Option<payments::CtpServiceDetails>,
-        merchant_details: Option<&hyperswitch_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
-        billing_address: Option<&hyperswitch_domain_models::address::Address>,
+        merchant_details: Option<&orbix_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
+        billing_address: Option<&orbix_domain_models::address::Address>,
         acquirer_bin: Option<String>,
         acquirer_merchant_id: Option<String>,
         routing_region: Option<common_enums::RoutingRegion>,
@@ -185,7 +185,7 @@ impl UnifiedAuthenticationService for ClickToPay {
         authentication_id: &common_utils::id_type::AuthenticationId,
         payment_method: common_enums::PaymentMethod,
         merchant_id: &common_utils::id_type::MerchantId,
-        _authentication: Option<&hyperswitch_domain_models::authentication::Authentication>,
+        _authentication: Option<&orbix_domain_models::authentication::Authentication>,
         routing_region: Option<common_enums::RoutingRegion>,
     ) -> RouterResult<UasPostAuthenticationRouterData> {
         let post_authentication_data = UasPostAuthenticationRequestData {
@@ -266,7 +266,7 @@ impl UnifiedAuthenticationService for ClickToPay {
                 .and_then(|details| details.merchant_transaction_id),
         };
 
-        let authentication_confirmation_router_data : hyperswitch_domain_models::types::UasAuthenticationConfirmationRouterData = utils::construct_uas_router_data(
+        let authentication_confirmation_router_data : orbix_domain_models::types::UasAuthenticationConfirmationRouterData = utils::construct_uas_router_data(
             state,
             connector_name.to_string(),
             payment_method,
@@ -298,8 +298,8 @@ impl UnifiedAuthenticationService for ExternalAuthentication {
         _service_details: Option<payments::CtpServiceDetails>,
         amount: common_utils::types::MinorUnit,
         currency: Option<common_enums::Currency>,
-        merchant_details: Option<&hyperswitch_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
-        billing_address: Option<&hyperswitch_domain_models::address::Address>,
+        merchant_details: Option<&orbix_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
+        billing_address: Option<&orbix_domain_models::address::Address>,
         acquirer_bin: Option<String>,
         acquirer_merchant_id: Option<String>,
         payment_method_type: Option<common_enums::PaymentMethodType>,
@@ -361,8 +361,8 @@ impl UnifiedAuthenticationService for ExternalAuthentication {
         amount: common_utils::types::MinorUnit,
         currency: Option<common_enums::Currency>,
         service_details: Option<payments::CtpServiceDetails>,
-        merchant_details: Option<&hyperswitch_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
-        billing_address: Option<&hyperswitch_domain_models::address::Address>,
+        merchant_details: Option<&orbix_domain_models::router_request_types::unified_authentication_service::MerchantDetails>,
+        billing_address: Option<&orbix_domain_models::address::Address>,
         acquirer_bin: Option<String>,
         acquirer_merchant_id: Option<String>,
         routing_region: Option<common_enums::RoutingRegion>,
@@ -407,7 +407,7 @@ impl UnifiedAuthenticationService for ExternalAuthentication {
         currency: Option<common_enums::Currency>,
         message_category: MessageCategory,
         device_channel: payments::DeviceChannel,
-        authentication: hyperswitch_domain_models::authentication::Authentication,
+        authentication: orbix_domain_models::authentication::Authentication,
         return_url: Option<Secret<String>>,
         sdk_information: Option<payments::SdkInformation>,
         threeds_method_comp_ind: payments::ThreeDsCompletionIndicator,
@@ -463,7 +463,7 @@ impl UnifiedAuthenticationService for ExternalAuthentication {
         currency: Option<common_enums::Currency>,
         message_category: MessageCategory,
         device_channel: payments::DeviceChannel,
-        authentication: hyperswitch_domain_models::authentication::Authentication,
+        authentication: orbix_domain_models::authentication::Authentication,
         return_url: Option<Secret<String>>,
         sdk_information: Option<payments::SdkInformation>,
         threeds_method_comp_ind: payments::ThreeDsCompletionIndicator,
@@ -514,7 +514,7 @@ impl UnifiedAuthenticationService for ExternalAuthentication {
     }
 
     fn get_post_authentication_request_data(
-        authentication: Option<hyperswitch_domain_models::authentication::Authentication>,
+        authentication: Option<orbix_domain_models::authentication::Authentication>,
         routing_region: Option<common_enums::RoutingRegion>,
     ) -> RouterResult<UasPostAuthenticationRequestData> {
         Ok(UasPostAuthenticationRequestData {
@@ -539,7 +539,7 @@ impl UnifiedAuthenticationService for ExternalAuthentication {
         authentication_id: &common_utils::id_type::AuthenticationId,
         payment_method: common_enums::PaymentMethod,
         _merchant_id: &common_utils::id_type::MerchantId,
-        authentication: Option<&hyperswitch_domain_models::authentication::Authentication>,
+        authentication: Option<&orbix_domain_models::authentication::Authentication>,
         routing_region: Option<common_enums::RoutingRegion>,
     ) -> RouterResult<UasPostAuthenticationRouterData> {
         let authentication_data =
@@ -593,7 +593,7 @@ pub async fn create_new_authentication(
     customer_details: Option<common_utils::encryption::Encryption>,
     processor: &domain::Processor,
     initiator: Option<&domain::Initiator>,
-) -> RouterResult<hyperswitch_domain_models::authentication::Authentication> {
+) -> RouterResult<orbix_domain_models::authentication::Authentication> {
     let service_details_value = service_details
         .map(serde_json::to_value)
         .transpose()
@@ -610,7 +610,7 @@ pub async fn create_new_authentication(
 
     let current_time = common_utils::date_time::now();
 
-    let new_authentication = hyperswitch_domain_models::authentication::Authentication {
+    let new_authentication = orbix_domain_models::authentication::Authentication {
         authentication_id: authentication_id.clone(),
         merchant_id,
         authentication_connector,
@@ -837,7 +837,7 @@ pub async fn authentication_create_core(
         .customer_details
         .clone()
         .async_lift(|inner| async {
-            domain::types::crypto_operation::<serde_json::Value, hyperswitch_masking::WithType>(
+            domain::types::crypto_operation::<serde_json::Value, orbix_masking::WithType>(
                 &key_manager_state,
                 common_utils::type_name!(Authentication),
                 domain::types::CryptoOperation::DecryptOptional(inner),
@@ -870,20 +870,20 @@ pub async fn authentication_create_core(
         req.customer_details.and_then(|details| details.id.clone()),
     ))?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
 
 impl
     ForeignTryFrom<(
-        hyperswitch_domain_models::authentication::Authentication,
+        orbix_domain_models::authentication::Authentication,
         common_utils::types::MinorUnit,
         common_enums::Currency,
         common_utils::id_type::ProfileId,
         Option<AcquirerDetails>,
         Option<common_utils::id_type::ProfileAcquirerId>,
-        Option<hyperswitch_domain_models::payments::payment_intent::CustomerData>,
+        Option<orbix_domain_models::payments::payment_intent::CustomerData>,
         Option<common_utils::id_type::CustomerId>,
     )> for AuthenticationResponse
 {
@@ -899,13 +899,13 @@ impl
             customer_data,
             customer_id,
         ): (
-            hyperswitch_domain_models::authentication::Authentication,
+            orbix_domain_models::authentication::Authentication,
             common_utils::types::MinorUnit,
             common_enums::Currency,
             common_utils::id_type::ProfileId,
             Option<AcquirerDetails>,
             Option<common_utils::id_type::ProfileAcquirerId>,
-            Option<hyperswitch_domain_models::payments::payment_intent::CustomerData>,
+            Option<orbix_domain_models::payments::payment_intent::CustomerData>,
             Option<common_utils::id_type::CustomerId>,
         ),
     ) -> Result<Self, Self::Error> {
@@ -960,7 +960,7 @@ impl
 #[cfg(feature = "v1")]
 impl
     ForeignTryFrom<(
-        hyperswitch_domain_models::authentication::Authentication,
+        orbix_domain_models::authentication::Authentication,
         api_models::authentication::NextAction,
         common_utils::id_type::ProfileId,
         Option<payments::Address>,
@@ -972,7 +972,7 @@ impl
     type Error = error_stack::Report<ApiErrorResponse>;
     fn foreign_try_from(
         (authentication, next_action, profile_id, billing, shipping, browser_information, email): (
-            hyperswitch_domain_models::authentication::Authentication,
+            orbix_domain_models::authentication::Authentication,
             api_models::authentication::NextAction,
             common_utils::id_type::ProfileId,
             Option<payments::Address>,
@@ -1206,7 +1206,7 @@ pub async fn authentication_eligibility_core(
             let key_manager_state_ref = &key_manager_state;
             db.update_authentication_by_processor_merchant_id_authentication_id(
                 authentication.clone(),
-                hyperswitch_domain_models::authentication::AuthenticationUpdate::AcquirerDetailsUpdate {
+                orbix_domain_models::authentication::AuthenticationUpdate::AcquirerDetailsUpdate {
                     acquirer_bin: acquirer_details.as_ref().and_then(|d| d.acquirer_bin.clone()),
                     acquirer_merchant_id: acquirer_details.as_ref().and_then(|d| d.acquirer_assigned_merchant_id.clone()),
                     acquirer_country_code: acquirer_details.as_ref().and_then(|d| d.acquirer_country_code.clone()),
@@ -1263,7 +1263,7 @@ pub async fn authentication_eligibility_core(
         .clone()
         .and_then(|metadata| metadata.merchant_category_code));
 
-    let merchant_details = Some(hyperswitch_domain_models::router_request_types::unified_authentication_service::MerchantDetails {
+    let merchant_details = Some(orbix_domain_models::router_request_types::unified_authentication_service::MerchantDetails {
         merchant_id: Some(authentication.merchant_id.get_string_repr().to_string()),
         merchant_name: merchant_name.or(metadata.clone().and_then(|metadata| metadata.merchant_name)),
         merchant_category_code: merchant_category_code.clone(),
@@ -1279,7 +1279,7 @@ pub async fn authentication_eligibility_core(
     let domain_address = req
         .billing
         .clone()
-        .map(hyperswitch_domain_models::address::Address::from);
+        .map(orbix_domain_models::address::Address::from);
     let routing_region = utils::fetch_routing_region_for_uas(&state, &dimensions).await;
 
     let pre_auth_response =
@@ -1309,11 +1309,11 @@ pub async fn authentication_eligibility_core(
     let domain_billing_address = req
         .billing
         .clone()
-        .map(hyperswitch_domain_models::address::Address::from);
+        .map(orbix_domain_models::address::Address::from);
     let domain_shipping_address = req
         .shipping
         .clone()
-        .map(hyperswitch_domain_models::address::Address::from);
+        .map(orbix_domain_models::address::Address::from);
     let updated_authentication = Box::pin(utils::external_authentication_update_trackers(
         &state,
         pre_auth_response,
@@ -1346,7 +1346,7 @@ pub async fn authentication_eligibility_core(
         updated_authentication.email,
     ))?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -1512,7 +1512,7 @@ pub async fn authentication_authenticate_core(
         authentication_details,
     ))?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -1725,7 +1725,7 @@ pub async fn authentication_eligibility_check_core(
         .run_check(StoreEligibilityCheckData)
         .await?
         .unwrap_or(AuthenticationSdkNextAction::Proceed);
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         AuthenticationEligibilityCheckResponse {
             authentication_id,
             sdk_next_action,
@@ -1767,7 +1767,7 @@ pub async fn authentication_retrieve_eligibility_check_core(
         .parse_struct("PaymentTokenData")
         .change_context(ApiErrorResponse::InternalServerError)
         .attach_printable("failed to deserialize eligibility check data")?;
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         AuthenticationRetrieveEligibilityCheckResponse {
             authentication_id: req.authentication_id,
             eligibility_check_data:
@@ -1791,7 +1791,7 @@ pub async fn authentication_retrieve_eligibility_check_core(
 
 impl
     ForeignTryFrom<(
-        &hyperswitch_domain_models::authentication::Authentication,
+        &orbix_domain_models::authentication::Authentication,
         Option<Secret<String>>,
         Option<String>,
         diesel_models::business_profile::AuthenticationConnectorDetails,
@@ -1801,7 +1801,7 @@ impl
 
     fn foreign_try_from(
         (authentication, authentication_value, eci, authentication_details): (
-            &hyperswitch_domain_models::authentication::Authentication,
+            &orbix_domain_models::authentication::Authentication,
             Option<Secret<String>>,
             Option<String>,
             diesel_models::business_profile::AuthenticationConnectorDetails,
@@ -1851,7 +1851,7 @@ impl
 /// Determines the appropriate authentication sync strategy based on current state
 #[cfg(feature = "v1")]
 fn determine_auth_sync_strategy(
-    authentication: &hyperswitch_domain_models::authentication::Authentication,
+    authentication: &orbix_domain_models::authentication::Authentication,
     should_disable_vault_tokenization: bool,
     auth_flow: AuthFlow,
 ) -> AuthSyncStrategy {
@@ -1874,7 +1874,7 @@ async fn execute_post_authentication_flow(
     state: &SessionState,
     platform: &domain::Platform,
     business_profile: &domain::Profile,
-    authentication: &hyperswitch_domain_models::authentication::Authentication,
+    authentication: &orbix_domain_models::authentication::Authentication,
     authentication_connector: &common_enums::AuthenticationConnectors,
     three_ds_connector_account: &MerchantConnectorAccountType,
     authentication_id: &common_utils::id_type::AuthenticationId,
@@ -1882,7 +1882,7 @@ async fn execute_post_authentication_flow(
     merchant_account: &domain::MerchantAccount,
     should_disable_vault_tokenization: bool,
 ) -> RouterResult<(
-    hyperswitch_domain_models::authentication::Authentication,
+    orbix_domain_models::authentication::Authentication,
     Option<api_models::authentication::AuthenticationPaymentMethodDataResponse>,
     Option<api_models::authentication::AuthenticationVaultTokenData>,
     Option<api_models::authentication::AuthenticationDetails>,
@@ -2005,11 +2005,11 @@ async fn execute_post_authentication_flow(
 async fn use_stored_authentication_value(
     state: &SessionState,
     platform: &domain::Platform,
-    authentication: &hyperswitch_domain_models::authentication::Authentication,
+    authentication: &orbix_domain_models::authentication::Authentication,
     authentication_id: &common_utils::id_type::AuthenticationId,
     should_disable_vault_tokenization: bool,
 ) -> RouterResult<(
-    hyperswitch_domain_models::authentication::Authentication,
+    orbix_domain_models::authentication::Authentication,
     Option<api_models::authentication::AuthenticationPaymentMethodDataResponse>,
     Option<api_models::authentication::AuthenticationVaultTokenData>,
     Option<api_models::authentication::AuthenticationDetails>,
@@ -2140,7 +2140,7 @@ pub async fn authentication_sync_core(
                 .cloned()
         });
 
-        let domain_service_details = hyperswitch_domain_models::router_request_types::unified_authentication_service::CtpServiceDetails {
+        let domain_service_details = orbix_domain_models::router_request_types::unified_authentication_service::CtpServiceDetails {
             service_session_ids: Some(ServiceSessionIds {
                 merchant_transaction_id: service_details
                     .as_ref()
@@ -2376,7 +2376,7 @@ pub async fn authentication_sync_core(
         eci,
         authentication_details,
     };
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -2490,7 +2490,7 @@ pub async fn authentication_post_sync_core(
         updated_authentication.amount,
     )?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::JsonForRedirection(redirect_response))
+    Ok(orbix_domain_models::api::ApplicationResponse::JsonForRedirection(redirect_response))
 }
 
 fn ensure_not_terminal_status(
@@ -2575,7 +2575,7 @@ pub async fn authentication_session_core(
         session_token: session_tokens,
     };
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -2585,7 +2585,7 @@ pub async fn get_session_token_for_click_to_pay(
     state: &SessionState,
     processor: &domain::Processor,
     authentication_product_ids: common_types::payments::AuthenticationConnectorAccountMap,
-    authentication: &hyperswitch_domain_models::authentication::Authentication,
+    authentication: &orbix_domain_models::authentication::Authentication,
 ) -> RouterResult<api_models::authentication::AuthenticationSessionToken> {
     let click_to_pay_mca_id = authentication_product_ids
         .get_click_to_pay_connector_account_id()
@@ -2606,7 +2606,7 @@ pub async fn get_session_token_for_click_to_pay(
             id: click_to_pay_mca_id.get_string_repr().to_string(),
         })?;
 
-    let click_to_pay_metadata: hyperswitch_domain_models::payments::ClickToPayMetaData =
+    let click_to_pay_metadata: orbix_domain_models::payments::ClickToPayMetaData =
         merchant_connector_account
             .metadata
             .clone()
@@ -2632,7 +2632,7 @@ pub async fn get_session_token_for_click_to_pay(
         .customer_details
         .clone()
         .async_lift(|inner| async {
-            domain::types::crypto_operation::<serde_json::Value, hyperswitch_masking::WithType>(
+            domain::types::crypto_operation::<serde_json::Value, orbix_masking::WithType>(
                 key_manager_state,
                 common_utils::type_name!(Authentication),
                 domain::types::CryptoOperation::DecryptOptional(inner),

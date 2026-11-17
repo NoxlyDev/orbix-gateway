@@ -88,7 +88,7 @@ impl ProcessTrackerWorkflow<SessionState> for PaymentsPostCaptureVoidSyncWorkflo
             None,
             services::AuthFlow::Client,
             None,
-            hyperswitch_domain_models::payments::HeaderPayload::default(),
+            orbix_domain_models::payments::HeaderPayload::default(),
             &dimensions,
             None,
         ))

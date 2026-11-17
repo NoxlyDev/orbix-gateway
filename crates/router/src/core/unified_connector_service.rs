@@ -26,10 +26,10 @@ use external_services::{
     },
     superposition,
 };
-use hyperswitch_connectors::utils::CardData;
+use orbix_connectors::utils::CardData;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails;
-use hyperswitch_domain_models::{
+use orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails;
+use orbix_domain_models::{
     merchant_connector_account::ExternalVaultConnectorMetadata,
     payment_method_data as domain_pm,
     platform::Processor,
@@ -41,8 +41,8 @@ use hyperswitch_domain_models::{
         RefundsResponseData,
     },
 };
-use hyperswitch_interfaces::{consts as interface_consts, helpers as interface_helpers};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_interfaces::{consts as interface_consts, helpers as interface_helpers};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::{instrument, logger, tracing};
 use unified_connector_service_cards::CardNumber;
 use unified_connector_service_client::payments::{
@@ -756,7 +756,7 @@ fn get_google_pay_tokenization_data(
 /// Returns Paze data from payment method token when it has decrypt data,
 /// otherwise returns data from wallet payload.
 fn get_paze_wallet_data(
-    wallet_data: &hyperswitch_domain_models::payment_method_data::PazeWalletData,
+    wallet_data: &orbix_domain_models::payment_method_data::PazeWalletData,
     payment_method_token: Option<&PaymentMethodToken>,
 ) -> CustomResult<payments_grpc::paze_wallet::PazeData, UnifiedConnectorServiceError> {
     match payment_method_token {
@@ -1527,7 +1527,7 @@ pub async fn is_ucs_execution_path_for_external_vault_proxy(
                 processor.get_account().get_id().get_string_repr(),
                 connector_name,
                 // Derived the same way the live path does, so the key shapes cannot drift.
-                &get_flow_name::<hyperswitch_domain_models::router_flow_types::Authorize>()?,
+                &get_flow_name::<orbix_domain_models::router_flow_types::Authorize>()?,
                 payment_method,
                 payment_method_type,
             );
@@ -1930,12 +1930,12 @@ pub async fn should_call_unified_connector_service_for_webhooks(
 pub fn reconstruct_payment_method_data_for_redirect_completion(
     payment_method_type: Option<PaymentMethodType>,
     email: Option<common_utils::pii::Email>,
-) -> Option<hyperswitch_domain_models::payment_method_data::PaymentMethodData> {
+) -> Option<orbix_domain_models::payment_method_data::PaymentMethodData> {
     match payment_method_type {
         Some(PaymentMethodType::Paypal) => Some(
-            hyperswitch_domain_models::payment_method_data::PaymentMethodData::Wallet(
-                hyperswitch_domain_models::payment_method_data::WalletData::PaypalRedirect(
-                    hyperswitch_domain_models::payment_method_data::PaypalRedirection {
+            orbix_domain_models::payment_method_data::PaymentMethodData::Wallet(
+                orbix_domain_models::payment_method_data::WalletData::PaypalRedirect(
+                    orbix_domain_models::payment_method_data::PaypalRedirection {
                         email,
                         payer_id: None,
                     },
@@ -1947,7 +1947,7 @@ pub fn reconstruct_payment_method_data_for_redirect_completion(
 }
 
 pub fn build_unified_connector_service_payment_method(
-    payment_method_data: hyperswitch_domain_models::payment_method_data::PaymentMethodData,
+    payment_method_data: orbix_domain_models::payment_method_data::PaymentMethodData,
     payment_method_type: Option<PaymentMethodType>,
     payment_method_token: Option<&PaymentMethodToken>,
     connector_meta_data: Option<&common_utils::pii::SecretSerdeValue>,
@@ -1956,13 +1956,13 @@ pub fn build_unified_connector_service_payment_method(
     // The token message carries the payment method it was minted from.
     if let Some(PaymentMethodToken::Token(token)) = payment_method_token {
         let token_payment_method_type = match &payment_method_data {
-            hyperswitch_domain_models::payment_method_data::PaymentMethodData::Wallet(
-                hyperswitch_domain_models::payment_method_data::WalletData::ApplePay(_),
+            orbix_domain_models::payment_method_data::PaymentMethodData::Wallet(
+                orbix_domain_models::payment_method_data::WalletData::ApplePay(_),
             ) => {
                 Some(payments_grpc::token_payment_method_type::TokenPaymentMethod::ApplePay.into())
             }
-            hyperswitch_domain_models::payment_method_data::PaymentMethodData::Wallet(
-                hyperswitch_domain_models::payment_method_data::WalletData::GooglePay(_),
+            orbix_domain_models::payment_method_data::PaymentMethodData::Wallet(
+                orbix_domain_models::payment_method_data::WalletData::GooglePay(_),
             ) => {
                 Some(payments_grpc::token_payment_method_type::TokenPaymentMethod::GooglePay.into())
             }
@@ -1978,7 +1978,7 @@ pub fn build_unified_connector_service_payment_method(
         });
     }
     match payment_method_data {
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::Card(card) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::Card(card) => {
             let card_exp_month = card
                 .get_card_expiry_month_2_digit()
                 .attach_printable("Failed to extract 2-digit expiry month from card")
@@ -2017,7 +2017,7 @@ pub fn build_unified_connector_service_payment_method(
                 payment_method: Some(PaymentMethod::Card(card_details)),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::CardWithOptionalCVC(
+        orbix_domain_models::payment_method_data::PaymentMethodData::CardWithOptionalCVC(
             card,
         ) => {
             let card_exp_month = card
@@ -2057,20 +2057,20 @@ pub fn build_unified_connector_service_payment_method(
                 payment_method: Some(PaymentMethod::CardWithNoCvc(card_details)),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::CardRedirect(
+        orbix_domain_models::payment_method_data::PaymentMethodData::CardRedirect(
             card_redirect_data,
         ) => {
             let card_redirect_type = match card_redirect_data {
-                hyperswitch_domain_models::payment_method_data::CardRedirectData::Knet {} => {
+                orbix_domain_models::payment_method_data::CardRedirectData::Knet {} => {
                     payments_grpc::card_redirect::CardRedirectType::Knet
                 }
-                hyperswitch_domain_models::payment_method_data::CardRedirectData::Benefit {} => {
+                orbix_domain_models::payment_method_data::CardRedirectData::Benefit {} => {
                     payments_grpc::card_redirect::CardRedirectType::Benefit
                 }
-                hyperswitch_domain_models::payment_method_data::CardRedirectData::MomoAtm {} => {
+                orbix_domain_models::payment_method_data::CardRedirectData::MomoAtm {} => {
                     payments_grpc::card_redirect::CardRedirectType::MomoAtm
                 }
-                hyperswitch_domain_models::payment_method_data::CardRedirectData::CardRedirect {} => {
+                orbix_domain_models::payment_method_data::CardRedirectData::CardRedirect {} => {
                     payments_grpc::card_redirect::CardRedirectType::CardRedirect
                 }
             };
@@ -2081,9 +2081,9 @@ pub fn build_unified_connector_service_payment_method(
                 })),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::Upi(upi_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::Upi(upi_data) => {
             let upi_type = match upi_data {
-                hyperswitch_domain_models::payment_method_data::UpiData::UpiCollect(
+                orbix_domain_models::payment_method_data::UpiData::UpiCollect(
                     upi_collect_data,
                 ) => {
                     let upi_details = payments_grpc::UpiCollect {
@@ -2096,7 +2096,7 @@ pub fn build_unified_connector_service_payment_method(
                     };
                     PaymentMethod::UpiCollect(upi_details)
                 }
-                hyperswitch_domain_models::payment_method_data::UpiData::UpiIntent(upi_intent_data) => {
+                orbix_domain_models::payment_method_data::UpiData::UpiIntent(upi_intent_data) => {
                     let upi_details = payments_grpc::UpiIntent {
                         app_name: upi_intent_data.app_name,
                         upi_source: upi_intent_data
@@ -2107,7 +2107,7 @@ pub fn build_unified_connector_service_payment_method(
                     };
                     PaymentMethod::UpiIntent(upi_details)
                 }
-                hyperswitch_domain_models::payment_method_data::UpiData::UpiQr(upi_qr_data) => {
+                orbix_domain_models::payment_method_data::UpiData::UpiQr(upi_qr_data) => {
                     let upi_details = payments_grpc::UpiQr {
                         upi_source: upi_qr_data
                             .upi_source
@@ -2123,10 +2123,10 @@ pub fn build_unified_connector_service_payment_method(
                 payment_method: Some(upi_type),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::BankRedirect(
+        orbix_domain_models::payment_method_data::PaymentMethodData::BankRedirect(
             bank_redirect_data,
         ) => match bank_redirect_data {
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OpenBankingUk {
+            orbix_domain_models::payment_method_data::BankRedirectData::OpenBankingUk {
                 issuer,
                 country,
             } => {
@@ -2139,7 +2139,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::OpenBankingUk(open_banking_uk)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OpenBanking {
+            orbix_domain_models::payment_method_data::BankRedirectData::OpenBanking {
                 account_number,
                 sort_code,
                 iban,
@@ -2162,7 +2162,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::OpenBanking(open_banking)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Ideal { bank_name } => {
+            orbix_domain_models::payment_method_data::BankRedirectData::Ideal { bank_name } => {
                 let ideal = payments_grpc::Ideal {
                     bank_name: bank_name.map(payments_grpc::BankNames::foreign_try_from)
                     .transpose()?
@@ -2173,7 +2173,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Ideal(ideal)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Giropay {
+            orbix_domain_models::payment_method_data::BankRedirectData::Giropay {
                 bank_account_bic,
                 bank_account_iban,
                 country,
@@ -2189,7 +2189,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Giropay(giropay)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Eps { bank_name, country } => {
+            orbix_domain_models::payment_method_data::BankRedirectData::Eps { bank_name, country } => {
                 let eps = payments_grpc::Eps {
                     bank_name: bank_name.map(payments_grpc::BankNames::foreign_try_from)
                     .transpose()?
@@ -2202,7 +2202,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Eps(eps)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Sofort { country, preferred_language } => {
+            orbix_domain_models::payment_method_data::BankRedirectData::Sofort { country, preferred_language } => {
                 let sofort = payments_grpc::Sofort {
                     country: country.and_then(|c| payments_grpc::CountryAlpha2::from_str_name(&c.to_string()))
                     .map(|country| country.into()),
@@ -2213,7 +2213,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Sofort(sofort)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Przelewy24 { bank_name } => {
+            orbix_domain_models::payment_method_data::BankRedirectData::Przelewy24 { bank_name } => {
                 let p24 = payments_grpc::Przelewy24 {
                     bank_name: bank_name.map(payments_grpc::BankNames::foreign_try_from)
                     .transpose()?
@@ -2224,7 +2224,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Przelewy24(p24)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Blik { blik_code}  => {
+            orbix_domain_models::payment_method_data::BankRedirectData::Blik { blik_code}  => {
                 let blik = payments_grpc::Blik {
                     blik_code,
                 };
@@ -2233,7 +2233,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Blik(blik)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Trustly {
+            orbix_domain_models::payment_method_data::BankRedirectData::Trustly {
                 country,
                 account_holder_name,
                 additional_details,
@@ -2262,7 +2262,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Trustly(trustly)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Interac {
+            orbix_domain_models::payment_method_data::BankRedirectData::Interac {
                 country,
                 email,
             } => {
@@ -2277,17 +2277,17 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Interac(interac)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Bizum { } => {
+            orbix_domain_models::payment_method_data::BankRedirectData::Bizum { } => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::Bizum(payments_grpc::Bizum{})),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::LocalBankRedirect { } => {
+            orbix_domain_models::payment_method_data::BankRedirectData::LocalBankRedirect { } => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::LocalBankRedirect(payments_grpc::LocalBankRedirect{})),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OnlineBankingCzechRepublic {
+            orbix_domain_models::payment_method_data::BankRedirectData::OnlineBankingCzechRepublic {
                 issuer
             } => {
                 let online_banking_czech_republic = payments_grpc::OnlineBankingCzechRepublic {
@@ -2298,7 +2298,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::OnlineBankingCzechRepublic(online_banking_czech_republic)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OnlineBankingFinland {
+            orbix_domain_models::payment_method_data::BankRedirectData::OnlineBankingFinland {
                 email
             } => {
                 let online_banking_finland = payments_grpc::OnlineBankingFinland {
@@ -2309,7 +2309,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::OnlineBankingFinland(online_banking_finland)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OnlineBankingPoland {
+            orbix_domain_models::payment_method_data::BankRedirectData::OnlineBankingPoland {
                 issuer
             } => {
                 let online_banking_poland = payments_grpc::OnlineBankingPoland {
@@ -2320,7 +2320,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::OnlineBankingPoland(online_banking_poland)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OnlineBankingSlovakia {
+            orbix_domain_models::payment_method_data::BankRedirectData::OnlineBankingSlovakia {
                 issuer
             } => {
                 let online_banking_slovakia = payments_grpc::OnlineBankingSlovakia {
@@ -2331,7 +2331,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::OnlineBankingSlovakia(online_banking_slovakia)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OnlineBankingThailand {
+            orbix_domain_models::payment_method_data::BankRedirectData::OnlineBankingThailand {
                 issuer
             } => {
                 let online_banking_thailand = payments_grpc::OnlineBankingThailand {
@@ -2342,7 +2342,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::OnlineBankingThailand(online_banking_thailand)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::Eft {
+            orbix_domain_models::payment_method_data::BankRedirectData::Eft {
                 provider,
             } => {
                 let eft_bank_redirect = payments_grpc::EftBankRedirect { provider };
@@ -2351,7 +2351,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::EftBankRedirect(eft_bank_redirect)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::BancontactCard {
+            orbix_domain_models::payment_method_data::BankRedirectData::BancontactCard {
                 card_number,
                 card_exp_month,
                 card_exp_year,
@@ -2373,7 +2373,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::BancontactCard(bancontact)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankRedirectData::OnlineBankingFpx { issuer }  => {
+            orbix_domain_models::payment_method_data::BankRedirectData::OnlineBankingFpx { issuer }  => {
                 let online_banking_fpx = payments_grpc::OnlineBankingFpx {
                     issuer: payments_grpc::BankNames::foreign_try_from(issuer)?.into(),
                 };
@@ -2383,10 +2383,10 @@ pub fn build_unified_connector_service_payment_method(
                 })
             }
         },
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::RealTimePayment(
+        orbix_domain_models::payment_method_data::PaymentMethodData::RealTimePayment(
             bank_transfer_data,
         ) => match *bank_transfer_data {
-            hyperswitch_domain_models::payment_method_data::RealTimePaymentData::DuitNow {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::RealTimePaymentData::DuitNow {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::DuitNow(
                     payments_grpc::DuitNow {  }
                 )),
@@ -2396,30 +2396,30 @@ pub fn build_unified_connector_service_payment_method(
             ))
             .into()),
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::BankTransfer(
+        orbix_domain_models::payment_method_data::PaymentMethodData::BankTransfer(
             bank_transfer_data,
         ) => match *bank_transfer_data {
-            hyperswitch_domain_models::payment_method_data::BankTransferData::AchBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::BankTransferData::AchBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::AchBankTransfer(
                     payments_grpc::AchBankTransfer {  }
                 )),
             }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::BacsBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::BankTransferData::BacsBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::BacsBankTransfer(
                     payments_grpc::BacsBankTransfer {  }
                 )),
             }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::SepaBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::BankTransferData::SepaBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::SepaBankTransfer(
                     payments_grpc::SepaBankTransfer {  }
                 )),
             }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::MultibancoBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::BankTransferData::MultibancoBankTransfer {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::MultibancoBankTransfer(
                     payments_grpc::MultibancoBankTransfer {  }
                 )),
             }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::Pix {
+            orbix_domain_models::payment_method_data::BankTransferData::Pix {
                 pix_key,
                 cpf,
                 cnpj,
@@ -2439,107 +2439,107 @@ pub fn build_unified_connector_service_payment_method(
                     }),
                 })),
             }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::PixAutomaticoPush { .. }
-            | hyperswitch_domain_models::payment_method_data::BankTransferData::PixAutomaticoQr {}
-            | hyperswitch_domain_models::payment_method_data::BankTransferData::PixEmv {}
-            | hyperswitch_domain_models::payment_method_data::BankTransferData::PixQr {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::PixAutomaticoPush { .. }
+            | orbix_domain_models::payment_method_data::BankTransferData::PixAutomaticoQr {}
+            | orbix_domain_models::payment_method_data::BankTransferData::PixEmv {}
+            | orbix_domain_models::payment_method_data::BankTransferData::PixQr {} => {
                 Err(UnifiedConnectorServiceError::NotImplemented(format!(
                     "Unimplemented payment method subtype: {payment_method_type:?}"
                 ))
                 .into())
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::PermataBankTransfer {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::PermataBankTransfer {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::PermataBankTransfer(
                         payments_grpc::PermataBankTransfer {},
                     )),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::BcaBankTransfer {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::BcaBankTransfer {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::BcaBankTransfer(
                         payments_grpc::BcaBankTransfer {},
                     )),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::BniVaBankTransfer {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::BniVaBankTransfer {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::BniVaBankTransfer(
                         payments_grpc::BniVaBankTransfer {},
                     )),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::BriVaBankTransfer {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::BriVaBankTransfer {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::BriVaBankTransfer(
                         payments_grpc::BriVaBankTransfer {},
                     )),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::CimbVaBankTransfer {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::CimbVaBankTransfer {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::CimbVaBankTransfer(
                         payments_grpc::CimbVaBankTransfer {},
                     )),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::DanamonVaBankTransfer {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::DanamonVaBankTransfer {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::DanamonVaBankTransfer(
                         payments_grpc::DanamonVaBankTransfer {},
                     )),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::MandiriVaBankTransfer {} => {
+            orbix_domain_models::payment_method_data::BankTransferData::MandiriVaBankTransfer {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::MandiriVaBankTransfer(
                         payments_grpc::MandiriVaBankTransfer {},
                     )),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankTransferData::LocalBankTransfer {bank_code} =>
+            orbix_domain_models::payment_method_data::BankTransferData::LocalBankTransfer {bank_code} =>
                 Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::LocalBankTransfer(payments_grpc::LocalBankTransfer {
                             bank_code,
                         })),
                     }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::IndonesianBankTransfer {bank_name} =>
+            orbix_domain_models::payment_method_data::BankTransferData::IndonesianBankTransfer {bank_name} =>
                 Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::IndonesianBankTransfer(payments_grpc::IndonesianBankTransfer {
                             bank_name: bank_name.map(payments_grpc::BankNames::foreign_try_from).transpose()?.map(|b| b.into()),
                         })),
                     }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::Pse {} =>
+            orbix_domain_models::payment_method_data::BankTransferData::Pse {} =>
                 Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::Pse(payments_grpc::Pse {})),
                     }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::InstantBankTransfer {} =>
+            orbix_domain_models::payment_method_data::BankTransferData::InstantBankTransfer {} =>
                 Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::InstantBankTransfer(payments_grpc::InstantBankTransfer {})),
                     }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::InstantBankTransferFinland {} =>
+            orbix_domain_models::payment_method_data::BankTransferData::InstantBankTransferFinland {} =>
                 Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::InstantBankTransferFinland(payments_grpc::InstantBankTransferFinland {})),
                     }),
-            hyperswitch_domain_models::payment_method_data::BankTransferData::InstantBankTransferPoland {} =>
+            orbix_domain_models::payment_method_data::BankTransferData::InstantBankTransferPoland {} =>
                 Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::InstantBankTransferPoland(payments_grpc::InstantBankTransferPoland {})),
                     }),
         },
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::PayLater(
+        orbix_domain_models::payment_method_data::PaymentMethodData::PayLater(
             pay_later_data,
         ) => match pay_later_data {
-            hyperswitch_domain_models::payment_method_data::PayLaterData::KlarnaRedirect {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::PayLaterData::KlarnaRedirect {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::Klarna(
                     payments_grpc::Klarna {  }
                 )),
             }),
-            hyperswitch_domain_models::payment_method_data::PayLaterData::AffirmRedirect {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::PayLaterData::AffirmRedirect {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::Affirm(
                     payments_grpc::Affirm {  }
                 )),
             }),
-            hyperswitch_domain_models::payment_method_data::PayLaterData::AfterpayClearpayRedirect {  } => Ok(payments_grpc::PaymentMethod {
+            orbix_domain_models::payment_method_data::PayLaterData::AfterpayClearpayRedirect {  } => Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::AfterpayClearpay(
                     payments_grpc::AfterpayClearpay {  }
                 )),
@@ -2549,7 +2549,7 @@ pub fn build_unified_connector_service_payment_method(
             ))
             .into()),
         },
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::Reward => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::Reward => {
             match payment_method_type {
                 Some(PaymentMethodType::ClassicReward) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::ClassicReward(ClassicReward {})),
@@ -2563,9 +2563,9 @@ pub fn build_unified_connector_service_payment_method(
                 .into()),
             }
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::Wallet(wallet_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::Wallet(wallet_data) => {
             match wallet_data {
-                hyperswitch_domain_models::payment_method_data::WalletData::Mifinity(
+                orbix_domain_models::payment_method_data::WalletData::Mifinity(
                     mifinity_data,
                 ) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::MifinityRedirect(payments_grpc::MifinityRedirectWallet {
@@ -2573,7 +2573,7 @@ pub fn build_unified_connector_service_payment_method(
                         language_preference: mifinity_data.language_preference,
                     })),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::ApplePay(
+                orbix_domain_models::payment_method_data::WalletData::ApplePay(
                     apple_pay_wallet_data
                 ) => match payment_method_token {
                     // A connector token minted by the PaymentMethodToken pre-step (e.g. a
@@ -2618,7 +2618,7 @@ pub fn build_unified_connector_service_payment_method(
                         })
                     }
                 },
-                hyperswitch_domain_models::payment_method_data::WalletData::GooglePay(
+                orbix_domain_models::payment_method_data::WalletData::GooglePay(
                     google_pay_wallet_data,
                 ) => {
                     let google_pay_tokenization_data = get_google_pay_tokenization_data(
@@ -2652,7 +2652,7 @@ pub fn build_unified_connector_service_payment_method(
                         })),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::WalletData::GooglePayThirdPartySdk(
+                orbix_domain_models::payment_method_data::WalletData::GooglePayThirdPartySdk(
                     google_pay_sdk_data,
                 ) => {
                     Ok(payments_grpc::PaymentMethod {
@@ -2663,7 +2663,7 @@ pub fn build_unified_connector_service_payment_method(
                         )),
                     })
                 },
-                hyperswitch_domain_models::payment_method_data::WalletData::ApplePayThirdPartySdk(
+                orbix_domain_models::payment_method_data::WalletData::ApplePayThirdPartySdk(
                     apple_pay_sdk_data,
                 ) => {
                     Ok(payments_grpc::PaymentMethod {
@@ -2674,7 +2674,7 @@ pub fn build_unified_connector_service_payment_method(
                         )),
                     })
                 },
-                hyperswitch_domain_models::payment_method_data::WalletData::PaypalSdk(
+                orbix_domain_models::payment_method_data::WalletData::PaypalSdk(
                     paypal_sdk_data,
                 ) => {
                     Ok(payments_grpc::PaymentMethod {
@@ -2685,47 +2685,47 @@ pub fn build_unified_connector_service_payment_method(
                         )),
                     })
                 },
-                hyperswitch_domain_models::payment_method_data::WalletData::AmazonPayRedirect(
+                orbix_domain_models::payment_method_data::WalletData::AmazonPayRedirect(
                     _,
                 ) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::AmazonPayRedirect(
                         payments_grpc::AmazonPayRedirectWallet {  }
                     )),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::CashappQr(
+                orbix_domain_models::payment_method_data::WalletData::CashappQr(
                     _,
                 ) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::CashappQr(
                         payments_grpc::CashappQrWallet {  }
                     )),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::WeChatPayQr(
+                orbix_domain_models::payment_method_data::WalletData::WeChatPayQr(
                     _,
                 ) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::WeChatPayQr(
                         payments_grpc::WeChatPayQrWallet {  }
                     )),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::AliPayRedirect(
+                orbix_domain_models::payment_method_data::WalletData::AliPayRedirect(
                     _,
                 ) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::AliPayRedirect(
                         payments_grpc::AliPayRedirectWallet {  }
                     )),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::RevolutPay(
+                orbix_domain_models::payment_method_data::WalletData::RevolutPay(
                     _,
                 ) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::RevolutPay(
                         payments_grpc::RevolutPayWallet {  }
                     )),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::BluecodeRedirect {} => Ok(payments_grpc::PaymentMethod {
+                orbix_domain_models::payment_method_data::WalletData::BluecodeRedirect {} => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::BluecodeRedirect(
                         payments_grpc::BluecodeRedirectWallet {  }
                     )),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::PaypalRedirect(
+                orbix_domain_models::payment_method_data::WalletData::PaypalRedirect(
                     paypal_redirection,
                 ) => Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::PaypalRedirect(
@@ -2734,7 +2734,7 @@ pub fn build_unified_connector_service_payment_method(
                         }
                     )),
                 }),
-                hyperswitch_domain_models::payment_method_data::WalletData::Paze(paze_data) => {
+                orbix_domain_models::payment_method_data::WalletData::Paze(paze_data) => {
                     let paze_wallet_data = get_paze_wallet_data(&paze_data, payment_method_token)?;
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::PazeSdk(payments_grpc::PazeWallet {
@@ -2742,28 +2742,28 @@ pub fn build_unified_connector_service_payment_method(
                         })),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::WalletData::GcashRedirect(_) => {
+                orbix_domain_models::payment_method_data::WalletData::GcashRedirect(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::GcashRedirect(
                             payments_grpc::GcashRedirectWallet {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::WalletData::Skrill(_) => {
+                orbix_domain_models::payment_method_data::WalletData::Skrill(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::SkrillRedirect(
                             payments_grpc::SkrillRedirectWallet {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::WalletData::Neteller(_) => {
+                orbix_domain_models::payment_method_data::WalletData::Neteller(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::NetellerRedirect(
                             payments_grpc::NetellerRedirectWallet {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::WalletData::WeroRedirect {} => {
+                orbix_domain_models::payment_method_data::WalletData::WeroRedirect {} => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::WeroRedirect(
                             payments_grpc::WeroRedirectWallet {},
@@ -2776,7 +2776,7 @@ pub fn build_unified_connector_service_payment_method(
                 .into()),
             }
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::Crypto(crypto_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::Crypto(crypto_data) => {
             Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::Crypto(CryptoCurrency {
                     pay_currency: crypto_data.pay_currency.clone(),
@@ -2784,7 +2784,7 @@ pub fn build_unified_connector_service_payment_method(
                 })),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::CardDetailsForNetworkTransactionId(card_nti_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::CardDetailsForNetworkTransactionId(card_nti_data) => {
             let card_details_for_nti = payments_grpc::CardDetailsForNetworkTransactionId::foreign_try_from(card_nti_data)?;
 
             Ok(payments_grpc::PaymentMethod {
@@ -2794,31 +2794,31 @@ pub fn build_unified_connector_service_payment_method(
         // v1 only: the conversion it delegates to is v1-gated, matching the flow that produces
         // this variant.
         #[cfg(feature = "v1")]
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::NetworkTokenDetailsForNetworkTransactionId(token_nti_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::NetworkTokenDetailsForNetworkTransactionId(token_nti_data) => {
             let network_token = payments_grpc::NetworkTokenData::foreign_try_from(token_nti_data)?;
 
             Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::NetworkToken(network_token)),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::NetworkToken(network_token_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::NetworkToken(network_token_data) => {
             let network_token = payments_grpc::NetworkTokenData::foreign_try_from(network_token_data)?;
 
             Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::NetworkToken(network_token)),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::DecryptedWalletTokenDetailsForNetworkTransactionId(wallet_token_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::DecryptedWalletTokenDetailsForNetworkTransactionId(wallet_token_data) => {
             let decrypted_wallet_token_details = payments_grpc::DecryptedWalletTokenDetailsForNetworkTransactionId::foreign_try_from(wallet_token_data)?;
 
             Ok(payments_grpc::PaymentMethod {
                 payment_method: Some(PaymentMethod::DecryptedWalletTokenDetailsForNetworkTransactionId(decrypted_wallet_token_details)),
             })
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::BankDebit(
+        orbix_domain_models::payment_method_data::PaymentMethodData::BankDebit(
             bank_debit_data,
         ) => match bank_debit_data {
-            hyperswitch_domain_models::payment_method_data::BankDebitData::AchBankDebit {
+            orbix_domain_models::payment_method_data::BankDebitData::AchBankDebit {
                 account_number,
                 routing_number,
                 bank_account_holder_name,
@@ -2851,7 +2851,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Ach(ach)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankDebitData::SepaBankDebit {
+            orbix_domain_models::payment_method_data::BankDebitData::SepaBankDebit {
                 iban,
                 bank_account_holder_name,
             } => {
@@ -2865,7 +2865,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Sepa(sepa)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankDebitData::BecsBankDebit {
+            orbix_domain_models::payment_method_data::BankDebitData::BecsBankDebit {
                 account_number,
                 bsb_number,
                 bank_account_holder_name,
@@ -2881,7 +2881,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Becs(becs)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankDebitData::BacsBankDebit {
+            orbix_domain_models::payment_method_data::BankDebitData::BacsBankDebit {
                 account_number,
                 sort_code,
                 bank_account_holder_name,
@@ -2897,7 +2897,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::Bacs(bacs)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankDebitData::SepaGuarenteedBankDebit {
+            orbix_domain_models::payment_method_data::BankDebitData::SepaGuarenteedBankDebit {
                 iban,
                 bank_account_holder_name,
             } => {
@@ -2911,7 +2911,7 @@ pub fn build_unified_connector_service_payment_method(
                     payment_method: Some(PaymentMethod::SepaGuaranteedDebit(sepa_guaranteed_debit)),
                 })
             }
-            hyperswitch_domain_models::payment_method_data::BankDebitData::EftDebitOrder {
+            orbix_domain_models::payment_method_data::BankDebitData::EftDebitOrder {
                 account_number,
                 branch_code,
                 bank_account_holder_name,
@@ -2939,9 +2939,9 @@ pub fn build_unified_connector_service_payment_method(
                 })
             }
         },
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::Voucher(voucher_data) => {
+        orbix_domain_models::payment_method_data::PaymentMethodData::Voucher(voucher_data) => {
             match voucher_data {
-                hyperswitch_domain_models::payment_method_data::VoucherData::Boleto(boleto_data) => {
+                orbix_domain_models::payment_method_data::VoucherData::Boleto(boleto_data) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::Boleto(
                             payments_grpc::Boleto {
@@ -2953,63 +2953,63 @@ pub fn build_unified_connector_service_payment_method(
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::Alfamart(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::Alfamart(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::Alfamart(
                             payments_grpc::Alfamart {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::Indomaret(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::Indomaret(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::Indomaret(
                             payments_grpc::Indomaret {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::Oxxo => {
+                orbix_domain_models::payment_method_data::VoucherData::Oxxo => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::Oxxo(
                             payments_grpc::Oxxo {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::SevenEleven(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::SevenEleven(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::SevenEleven(
                             payments_grpc::SevenEleven {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::Lawson(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::Lawson(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::Lawson(
                             payments_grpc::Lawson {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::MiniStop(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::MiniStop(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::MiniStop(
                             payments_grpc::MiniStop {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::FamilyMart(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::FamilyMart(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::FamilyMart(
                             payments_grpc::FamilyMart {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::Seicomart(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::Seicomart(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::Seicomart(
                             payments_grpc::Seicomart {},
                         )),
                     })
                 }
-                hyperswitch_domain_models::payment_method_data::VoucherData::PayEasy(_) => {
+                orbix_domain_models::payment_method_data::VoucherData::PayEasy(_) => {
                     Ok(payments_grpc::PaymentMethod {
                         payment_method: Some(PaymentMethod::PayEasy(
                             payments_grpc::PayEasy {},
@@ -3022,10 +3022,10 @@ pub fn build_unified_connector_service_payment_method(
             .into()),
             }
         }
-        hyperswitch_domain_models::payment_method_data::PaymentMethodData::GiftCard(
+        orbix_domain_models::payment_method_data::PaymentMethodData::GiftCard(
             gift_card_data,
         ) => match *gift_card_data {
-            hyperswitch_domain_models::payment_method_data::GiftCardData::PaySafeCard {} => {
+            orbix_domain_models::payment_method_data::GiftCardData::PaySafeCard {} => {
                 Ok(payments_grpc::PaymentMethod {
                     payment_method: Some(PaymentMethod::PaySafeCard(
                         payments_grpc::PaySafeCard {},
@@ -3049,11 +3049,11 @@ pub fn build_unified_connector_service_payment_method(
 /// Emits `ProxyCardDetailsForNetworkTransactionId` rather than `CardProxy`, so UCS substitutes the
 /// alias on its recurring charge flow. No CVC: an MIT has no cardholder present.
 pub fn build_unified_connector_service_payment_method_for_external_proxy_mit(
-    payment_method_data: hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+    payment_method_data: orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
     payment_method_type: Option<PaymentMethodType>,
 ) -> CustomResult<payments_grpc::PaymentMethod, UnifiedConnectorServiceError> {
     match payment_method_data {
-        hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
+        orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
             external_vault_card,
         ) => Ok(payments_grpc::PaymentMethod {
             payment_method: Some(PaymentMethod::ProxyCardDetailsForNetworkTransactionId(
@@ -3062,7 +3062,7 @@ pub fn build_unified_connector_service_payment_method_for_external_proxy_mit(
                 ),
             )),
         }),
-        hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::VaultToken(_) => {
+        orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::VaultToken(_) => {
             Err(UnifiedConnectorServiceError::NotImplemented(format!(
                 "Unimplemented payment method subtype: {payment_method_type:?}"
             ))
@@ -3072,11 +3072,11 @@ pub fn build_unified_connector_service_payment_method_for_external_proxy_mit(
 }
 
 pub fn build_unified_connector_service_payment_method_for_external_proxy(
-    payment_method_data: hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+    payment_method_data: orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
     payment_method_type: Option<PaymentMethodType>,
 ) -> CustomResult<payments_grpc::PaymentMethod, UnifiedConnectorServiceError> {
     match payment_method_data {
-        hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
+        orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(
             external_vault_card,
         ) => {
             let card_network = external_vault_card
@@ -3100,7 +3100,7 @@ pub fn build_unified_connector_service_payment_method_for_external_proxy(
                 payment_method: Some(PaymentMethod::CardProxy(card_details)),
             })
         }
-        hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::VaultToken(_) => {
+        orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::VaultToken(_) => {
             Err(UnifiedConnectorServiceError::NotImplemented(format!(
                         "Unimplemented payment method subtype: {payment_method_type:?}"
             ))
@@ -3393,8 +3393,8 @@ pub fn parse_merchant_payout_reference_id(id: &str) -> Option<id_type::PayoutRef
 #[cfg(feature = "v1")]
 pub fn build_unified_connector_service_external_vault_proxy_metadata_v1(
     external_vault_merchant_connector_account: MerchantConnectorAccountType,
-    connectors: &hyperswitch_domain_models::connector_endpoints::Connectors,
-    proxy: &hyperswitch_interfaces::types::Proxy,
+    connectors: &orbix_domain_models::connector_endpoints::Connectors,
+    proxy: &orbix_interfaces::types::Proxy,
 ) -> CustomResult<String, UnifiedConnectorServiceError> {
     let connector_name = external_vault_merchant_connector_account
         .get_connector_name()
@@ -3433,19 +3433,19 @@ pub fn build_unified_connector_service_external_vault_proxy_metadata_v1(
                 ),
             }
         }
-        api_enums::VaultConnectors::HyperswitchVault => {
-            let base = &connectors.hyperswitch_vault.base_url;
+        api_enums::VaultConnectors::OrbixVault => {
+            let base = &connectors.orbix_vault.base_url;
             let vault_endpoint_url = format!("{}/proxy", base)
                 .parse::<url::Url>()
                 .map(common_utils::types::Url::wrap)
                 .change_context(UnifiedConnectorServiceError::ParsingFailed)
-                .attach_printable("Failed to parse hyperswitch_vault endpoint URL")?;
+                .attach_printable("Failed to parse orbix_vault endpoint URL")?;
 
             let auth_type: ConnectorAuthType = external_vault_merchant_connector_account
                 .get_connector_account_details()
                 .parse_value("ConnectorAuthType")
                 .change_context(UnifiedConnectorServiceError::FailedToObtainAuthType)
-                .attach_printable("Failed to obtain ConnectorAuthType for HyperswitchVault")?;
+                .attach_printable("Failed to obtain ConnectorAuthType for OrbixVault")?;
 
             let (api_key, profile_id) = match &auth_type {
                 ConnectorAuthType::SignatureKey {
@@ -3457,11 +3457,11 @@ pub fn build_unified_connector_service_external_vault_proxy_metadata_v1(
                     return Err(error_stack::report!(
                         UnifiedConnectorServiceError::FailedToObtainAuthType
                     )
-                    .attach_printable("HyperswitchVault requires SignatureKey auth type"))
+                    .attach_printable("OrbixVault requires SignatureKey auth type"))
                 }
             };
 
-            // HyperswitchVault's egress proxy is a deployment-wide concern (reaching the
+            // OrbixVault's egress proxy is a deployment-wide concern (reaching the
             // SaaS vault from a network with no direct internet access), not a per-merchant
             // one like VGS's MITM proxy — so it's sourced from the router's own [proxy]
             // config rather than per-MCA metadata.
@@ -3480,9 +3480,9 @@ pub fn build_unified_connector_service_external_vault_proxy_metadata_v1(
             external_services::grpc_client::unified_connector_service::ExternalVaultProxyConfig {
                 vault_connector_type:
                     external_services::grpc_client::unified_connector_service::VaultConnectorType::Transformation,
-                vault_connector_id: Some("hyperswitch_vault".to_string()),
-                metadata: external_services::grpc_client::unified_connector_service::ExternalVaultProxyMetadata::HyperswitchVaultMetadata(
-                    external_services::grpc_client::unified_connector_service::HyperswitchVaultMetadata {
+                vault_connector_id: Some("orbix_vault".to_string()),
+                metadata: external_services::grpc_client::unified_connector_service::ExternalVaultProxyMetadata::OrbixVaultMetadata(
+                    external_services::grpc_client::unified_connector_service::OrbixVaultMetadata {
                         vault_endpoint: vault_endpoint_url,
                         vault_auth_data: external_services::grpc_client::unified_connector_service::VaultConnectorAuth {
                             api_key,
@@ -3512,8 +3512,8 @@ pub fn build_unified_connector_service_external_vault_proxy_metadata_v1(
 #[cfg(feature = "v2")]
 pub fn build_unified_connector_service_external_vault_proxy_metadata(
     external_vault_merchant_connector_account: MerchantConnectorAccountTypeDetails,
-    connectors: &hyperswitch_domain_models::connector_endpoints::Connectors,
-    proxy: &hyperswitch_interfaces::types::Proxy,
+    connectors: &orbix_domain_models::connector_endpoints::Connectors,
+    proxy: &orbix_interfaces::types::Proxy,
 ) -> CustomResult<String, UnifiedConnectorServiceError> {
     let connector = external_vault_merchant_connector_account.get_connector_name();
 
@@ -3549,18 +3549,18 @@ pub fn build_unified_connector_service_external_vault_proxy_metadata(
                 ),
             }
         }
-        api_enums::VaultConnectors::HyperswitchVault => {
-            let base = &connectors.hyperswitch_vault.base_url;
+        api_enums::VaultConnectors::OrbixVault => {
+            let base = &connectors.orbix_vault.base_url;
             let vault_endpoint_url = format!("{}/proxy", base)
                 .parse::<url::Url>()
                 .map(common_utils::types::Url::wrap)
                 .change_context(UnifiedConnectorServiceError::ParsingFailed)
-                .attach_printable("Failed to parse hyperswitch_vault endpoint URL")?;
+                .attach_printable("Failed to parse orbix_vault endpoint URL")?;
 
             let auth_type: ConnectorAuthType = external_vault_merchant_connector_account
                 .get_connector_account_details()
                 .change_context(UnifiedConnectorServiceError::FailedToObtainAuthType)
-                .attach_printable("Failed to obtain ConnectorAuthType for HyperswitchVault")?;
+                .attach_printable("Failed to obtain ConnectorAuthType for OrbixVault")?;
 
             let (api_key, profile_id) = match &auth_type {
                 ConnectorAuthType::SignatureKey {
@@ -3572,11 +3572,11 @@ pub fn build_unified_connector_service_external_vault_proxy_metadata(
                     return Err(error_stack::report!(
                         UnifiedConnectorServiceError::FailedToObtainAuthType
                     )
-                    .attach_printable("HyperswitchVault requires SignatureKey auth type"))
+                    .attach_printable("OrbixVault requires SignatureKey auth type"))
                 }
             };
 
-            // HyperswitchVault's egress proxy is a deployment-wide concern (reaching the
+            // OrbixVault's egress proxy is a deployment-wide concern (reaching the
             // SaaS vault from a network with no direct internet access), not a per-merchant
             // one like VGS's MITM proxy — so it's sourced from the router's own [proxy]
             // config rather than per-MCA metadata.
@@ -3595,9 +3595,9 @@ pub fn build_unified_connector_service_external_vault_proxy_metadata(
             external_services::grpc_client::unified_connector_service::ExternalVaultProxyConfig {
                 vault_connector_type:
                     external_services::grpc_client::unified_connector_service::VaultConnectorType::Transformation,
-                vault_connector_id: Some("hyperswitch_vault".to_string()),
-                metadata: external_services::grpc_client::unified_connector_service::ExternalVaultProxyMetadata::HyperswitchVaultMetadata(
-                    external_services::grpc_client::unified_connector_service::HyperswitchVaultMetadata {
+                vault_connector_id: Some("orbix_vault".to_string()),
+                metadata: external_services::grpc_client::unified_connector_service::ExternalVaultProxyMetadata::OrbixVaultMetadata(
+                    external_services::grpc_client::unified_connector_service::OrbixVaultMetadata {
                         vault_endpoint: vault_endpoint_url,
                         vault_auth_data: external_services::grpc_client::unified_connector_service::VaultConnectorAuth {
                             api_key,
@@ -3661,7 +3661,7 @@ pub fn handle_unified_connector_service_response_for_create_connector_customer(
     Ok((connector_customer_result, status_code))
 }
 
-/// Convert the UCS pre-risk-check response into Hyperswitch's FRM response shape.
+/// Convert the UCS pre-risk-check response into Orbix Gateway's FRM response shape.
 ///
 /// Same shape as every other UCS handler: a populated `error` becomes
 /// `Err(ErrorResponse)` so the gateway surfaces a real connector error rather
@@ -3917,9 +3917,9 @@ pub fn extract_connector_customer_id_from_ucs_state(
 /// Extracts connector_response from UCS response
 pub fn extract_connector_response_from_ucs(
     connector_response: Option<&payments_grpc::ConnectorResponseData>,
-) -> Option<hyperswitch_domain_models::router_data::ConnectorResponseData> {
+) -> Option<orbix_domain_models::router_data::ConnectorResponseData> {
     connector_response.and_then(|data| {
-        <hyperswitch_domain_models::router_data::ConnectorResponseData as hyperswitch_interfaces::helpers::ForeignTryFrom<payments_grpc::ConnectorResponseData>>::foreign_try_from(data.clone())
+        <orbix_domain_models::router_data::ConnectorResponseData as orbix_interfaces::helpers::ForeignTryFrom<payments_grpc::ConnectorResponseData>>::foreign_try_from(data.clone())
             .map_err(|e| {
                 logger::warn!(
                     error=?e,
@@ -4317,7 +4317,7 @@ pub fn build_webhook_secrets_from_merchant_connector_account(
     }
 }
 
-/// Emit the connector event for a Hyperswitch -> UCS gRPC call, tagged
+/// Emit the connector event for a Orbix Gateway -> UCS gRPC call, tagged
 /// `destination = unified_connector_service` (same `connector_events` stream as a direct call).
 #[allow(clippy::too_many_arguments)]
 fn emit_ucs_connector_event(
@@ -4414,7 +4414,7 @@ where
     let router_data_clone = router_data.clone();
     let grpc_header = grpc_header_builder.build();
     // Log the actual gRPC request with masking
-    let grpc_request_body = hyperswitch_masking::masked_serialize(&grpc_request)
+    let grpc_request_body = orbix_masking::masked_serialize(&grpc_request)
         .unwrap_or_else(|_| serde_json::json!({"error": "failed_to_serialize_grpc_request"}));
 
     // Update connector call count metrics for UCS operations
@@ -4468,7 +4468,7 @@ where
             }
 
             // Log the actual gRPC response with masking
-            let grpc_response_body = hyperswitch_masking::masked_serialize(&grpc_response)
+            let grpc_response_body = orbix_masking::masked_serialize(&grpc_response)
                 .unwrap_or_else(
                     |_| serde_json::json!({"error": "failed_to_serialize_grpc_response"}),
                 );
@@ -4651,7 +4651,7 @@ where
     let payment_method_type = router_data.payment_method_type;
     let grpc_header = grpc_header_builder.build();
     // Log the actual gRPC request with masking
-    let grpc_request_body = hyperswitch_masking::masked_serialize(&grpc_request)
+    let grpc_request_body = orbix_masking::masked_serialize(&grpc_request)
         .unwrap_or_else(|_| serde_json::json!({"error": "failed_to_serialize_grpc_request"}));
 
     // Update connector call count metrics for UCS operations
@@ -4709,7 +4709,7 @@ where
             }
 
             // Log the actual gRPC response
-            let grpc_response_body = hyperswitch_masking::masked_serialize(&grpc_response)
+            let grpc_response_body = orbix_masking::masked_serialize(&grpc_response)
                 .unwrap_or_else(
                     |_| serde_json::json!({"error": "failed_to_serialize_grpc_response"}),
                 );
@@ -4872,7 +4872,7 @@ where
 
     let grpc_header = grpc_header_builder.build();
     let grpc_request_body =
-        hyperswitch_masking::masked_serialize(&grpc_request).unwrap_or_else(|error| {
+        orbix_masking::masked_serialize(&grpc_request).unwrap_or_else(|error| {
             logger::warn!(
                 ?error,
                 "Failed to mask-serialize UCS webhook gRPC request for logging"
@@ -4891,7 +4891,7 @@ where
 
     match result {
         Ok(grpc_response) => {
-            let grpc_response_body = hyperswitch_masking::masked_serialize(&grpc_response)
+            let grpc_response_body = orbix_masking::masked_serialize(&grpc_response)
                 .unwrap_or_else(|error| {
                     logger::warn!(
                         ?error,
@@ -5224,13 +5224,13 @@ pub async fn call_unified_connector_service_for_surcharge_calculate(
     state: &SessionState,
     processor: &Processor,
     #[cfg(feature = "v1")] merchant_connector_account: MerchantConnectorAccountType,
-    payments_surcharge_calculate_data: hyperswitch_domain_models::router_request_types::PaymentsSurchargeCalculationData,
+    payments_surcharge_calculate_data: orbix_domain_models::router_request_types::PaymentsSurchargeCalculationData,
     payment_id: &id_type::PaymentId,
     profile_id: &id_type::ProfileId,
     connector_name: String,
 ) -> RouterResult<
     Result<
-        hyperswitch_domain_models::router_response_types::SurchargeCalculationResponseData,
+        orbix_domain_models::router_response_types::SurchargeCalculationResponseData,
         ErrorResponse,
     >,
 > {
@@ -5298,7 +5298,7 @@ pub async fn call_unified_connector_service_for_surcharge_calculate(
     match response {
         Ok(response) => {
             let surcharge_response = Result::<
-                hyperswitch_domain_models::router_response_types::SurchargeCalculationResponseData,
+                orbix_domain_models::router_response_types::SurchargeCalculationResponseData,
                 ErrorResponse,
             >::foreign_try_from(response.into_inner())
             .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -5412,7 +5412,7 @@ pub async fn call_unified_connector_service_for_notify_connector(
     merchant_id: &id_type::MerchantId,
     profile_id: &id_type::ProfileId,
 ) -> CustomResult<
-    hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData,
+    orbix_domain_models::router_response_types::NotifyConnectorResponseData,
     errors::ApiClientError,
 > {
     let lineage_ids = LineageIds::new(merchant_id.clone(), profile_id.clone());
@@ -5448,7 +5448,7 @@ pub async fn call_unified_connector_service_for_notify_connector(
         .attach_printable("UCS notify_connector gRPC call failed")?;
 
     let notify_connector_response_data =
-        hyperswitch_domain_models::router_response_types::NotifyConnectorResponseData::foreign_try_from(
+        orbix_domain_models::router_response_types::NotifyConnectorResponseData::foreign_try_from(
             response.into_inner(),
         )
         .change_context(errors::ApiClientError::ResponseDecodingFailed)
@@ -5464,7 +5464,7 @@ pub async fn call_unified_connector_service_for_surcharge_refund_init(
     processor: &Processor,
     account: MerchantConnectorAccountType,
     profile_id: &id_type::ProfileId,
-    data: hyperswitch_domain_models::router_request_types::PaymentsSurchargeRefundInitData,
+    data: orbix_domain_models::router_request_types::PaymentsSurchargeRefundInitData,
 ) -> RouterResult<payments_grpc::SurchargeServiceSurchargeRefundInitResponse> {
     let auth = build_unified_connector_service_auth_metadata(
         account,
@@ -5502,7 +5502,7 @@ pub async fn call_unified_connector_service_for_surcharge_refund_complete(
     merchant_id: &id_type::MerchantId,
     account: MerchantConnectorAccountType,
     profile_id: &id_type::ProfileId,
-    data: hyperswitch_domain_models::router_request_types::PaymentsSurchargeRefundCompleteData,
+    data: orbix_domain_models::router_request_types::PaymentsSurchargeRefundCompleteData,
 ) -> RouterResult<payments_grpc::SurchargeServiceSurchargeRefundCompleteResponse> {
     let auth = build_unified_connector_service_auth_metadata(
         account,

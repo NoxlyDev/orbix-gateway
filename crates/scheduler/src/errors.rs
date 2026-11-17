@@ -1,7 +1,7 @@
 pub use common_utils::errors::{ParsingError, ValidationError};
 #[cfg(feature = "email")]
 use external_services::email::EmailError;
-use hyperswitch_domain_models::errors::api_error_response::ApiErrorResponse;
+use orbix_domain_models::errors::api_error_response::ApiErrorResponse;
 pub use redis_interface::errors::RedisError;
 pub use storage_impl::errors::ApplicationError;
 use storage_impl::errors::{RecoveryError, StorageError};

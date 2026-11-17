@@ -16,7 +16,7 @@ use crate::{admin::MerchantConnectorInfo, enums};
 #[cfg(feature = "v1")]
 #[derive(Default, Debug, ToSchema, Clone, Deserialize, Serialize, SmithyModel)]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RefundRequest {
     /// The payment id against which refund is to be initiated
     #[schema(
@@ -208,7 +208,7 @@ pub struct RefundsRetrieveRequest {
 
 #[derive(Default, Debug, ToSchema, Clone, Deserialize, Serialize, SmithyModel)]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RefundUpdateRequest {
     #[serde(skip)]
     pub refund_id: String,
@@ -226,7 +226,7 @@ pub struct RefundUpdateRequest {
 #[cfg(feature = "v1")]
 #[derive(Default, Debug, ToSchema, Clone, Deserialize, Serialize, SmithyModel)]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RefundReverseRequest {
     #[serde(skip)]
     pub refund_id: String,
@@ -284,7 +284,7 @@ pub struct RefundManualUpdateRequest {
     SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum RefundType {
     Scheduled,
     #[default]
@@ -305,7 +305,7 @@ pub enum RefundType {
 
 #[cfg(feature = "v1")]
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RefundResponse {
     /// Unique Identifier for the refund
     #[smithy(value_type = "String")]
@@ -383,7 +383,7 @@ pub struct RefundResponse {
     pub issuer_error_message: Option<String>,
     /// Contains whole connector response
     #[schema(value_type = Option<String>)]
-    pub raw_connector_response: Option<hyperswitch_masking::Secret<String>>,
+    pub raw_connector_response: Option<orbix_masking::Secret<String>>,
     /// A unique identifier for a payment provided by the connector
     #[smithy(value_type = "Option<String>")]
     pub connector_refund_id: Option<String>,
@@ -451,7 +451,7 @@ pub struct RefundResponse {
     pub connector_refund_reference_id: Option<String>,
     /// Contains raw connector response
     #[schema(value_type = Option<String>)]
-    pub raw_connector_response: Option<hyperswitch_masking::Secret<String>>,
+    pub raw_connector_response: Option<orbix_masking::Secret<String>>,
     /// Feature metadata persisted for this operation.
     #[schema(value_type = Option<RefundFeatureMetadata>)]
     #[cfg_attr(feature = "v1", smithy(value_type = "Option<RefundFeatureMetadata>"))]
@@ -474,7 +474,7 @@ pub struct RefundErrorDetails {
 
 #[cfg(feature = "v1")]
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RefundListRequest {
     /// The identifier for the payment
     #[schema(value_type = Option<String>)]
@@ -550,7 +550,7 @@ pub struct RefundListRequest {
     pub refund_status: Option<Vec<enums::RefundStatus>>,
 }
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RefundListResponse {
     /// The number of refunds included in the list
     #[smithy(value_type = "usize")]
@@ -713,7 +713,7 @@ pub struct RefundAggregateResponse {
     SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum RefundStatus {
     Succeeded,
     Failed,

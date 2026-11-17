@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Description: One click install for hyperswitch router
+# Description: One click install for orbix router
 #
 #
 # Global config
@@ -10,7 +10,7 @@ if [[ "${TRACE-0}" == "1" ]]; then
 fi
 
 RUST_MSRV="1.92.0"
-_DB_NAME="hyperswitch_db"
+_DB_NAME="orbix_db"
 _DB_USER="db_user"
 _DB_PASS="db_password"
 

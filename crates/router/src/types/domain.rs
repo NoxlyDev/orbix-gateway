@@ -1,47 +1,47 @@
 pub mod behaviour {
-    pub use hyperswitch_domain_models::behaviour::{Conversion, ReverseConversion};
+    pub use orbix_domain_models::behaviour::{Conversion, ReverseConversion};
 }
 
 mod payment_attempt {
-    pub use hyperswitch_domain_models::payments::payment_attempt::*;
+    pub use orbix_domain_models::payments::payment_attempt::*;
 }
 
 mod merchant_account {
-    pub use hyperswitch_domain_models::merchant_account::*;
+    pub use orbix_domain_models::merchant_account::*;
 }
 
 #[cfg(feature = "v2")]
 mod business_profile {
-    pub use hyperswitch_domain_models::business_profile::{
+    pub use orbix_domain_models::business_profile::{
         Profile, ProfileGeneralUpdate, ProfileSetter, ProfileUpdate,
     };
 }
 
 #[cfg(feature = "v1")]
 mod business_profile {
-    pub use hyperswitch_domain_models::business_profile::{
+    pub use orbix_domain_models::business_profile::{
         ExternalVaultDetails, Profile, ProfileGeneralUpdate, ProfileSetter, ProfileUpdate,
     };
 }
 
 mod platform {
-    pub use hyperswitch_domain_models::platform::{
+    pub use orbix_domain_models::platform::{
         Initiator, Platform, Processor, ProcessorKeyStore, ProcessorMerchantAccount,
         ProcessorMerchantId, ProcessorStorageScheme, Provider, ProviderKeyStore,
         ProviderMerchantAccount, ProviderMerchantId, ProviderStorageScheme,
     };
 }
 mod customers {
-    pub use hyperswitch_domain_models::customer::*;
+    pub use orbix_domain_models::customer::*;
 }
 
 pub mod callback_mapper {
-    pub use hyperswitch_domain_models::callback_mapper::CallbackMapper;
+    pub use orbix_domain_models::callback_mapper::CallbackMapper;
 }
 
 #[cfg(feature = "v2")]
 mod split_payments {
-    pub use hyperswitch_domain_models::payments::split_payments::*;
+    pub use orbix_domain_models::payments::split_payments::*;
 }
 
 pub use customers::*;
@@ -51,44 +51,44 @@ mod address;
 mod event;
 mod merchant_connector_account;
 mod merchant_key_store {
-    pub use hyperswitch_domain_models::merchant_key_store::MerchantKeyStore;
+    pub use orbix_domain_models::merchant_key_store::MerchantKeyStore;
 }
 mod hierarchical_resource {
-    pub use hyperswitch_domain_models::hierarchical_resource::{
+    pub use orbix_domain_models::hierarchical_resource::{
         HierarchicalResource, HierarchicalResourceDataUpdate,
     };
 }
-pub use hyperswitch_domain_models::bulk_tokenization::*;
+pub use orbix_domain_models::bulk_tokenization::*;
 pub mod payment_methods {
-    pub use hyperswitch_domain_models::payment_methods::*;
+    pub use orbix_domain_models::payment_methods::*;
 }
 pub mod consts {
-    pub use hyperswitch_domain_models::consts::*;
+    pub use orbix_domain_models::consts::*;
 }
 pub mod payment_method_data {
-    pub use hyperswitch_domain_models::payment_method_data::*;
+    pub use orbix_domain_models::payment_method_data::*;
 }
 
 pub mod authentication {
-    pub use hyperswitch_domain_models::router_request_types::authentication::*;
+    pub use orbix_domain_models::router_request_types::authentication::*;
 }
 
 pub mod merchant_connector_webhook_management {
-    pub use hyperswitch_domain_models::router_request_types::merchant_connector_webhook_management::*;
+    pub use orbix_domain_models::router_request_types::merchant_connector_webhook_management::*;
 }
 
 #[cfg(feature = "v2")]
 pub mod vault {
-    pub use hyperswitch_domain_models::vault::*;
+    pub use orbix_domain_models::vault::*;
 }
 
 #[cfg(feature = "v2")]
 pub mod tokenization {
-    pub use hyperswitch_domain_models::tokenization::*;
+    pub use orbix_domain_models::tokenization::*;
 }
 
 mod routing {
-    pub use hyperswitch_domain_models::routing::*;
+    pub use orbix_domain_models::routing::*;
 }
 
 pub mod payments;

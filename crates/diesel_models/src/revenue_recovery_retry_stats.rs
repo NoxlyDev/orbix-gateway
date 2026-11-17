@@ -1,5 +1,5 @@
 use diesel::{Identifiable, Queryable, Selectable};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use crate::schema_v2::revenue_recovery_retry_stats;
 

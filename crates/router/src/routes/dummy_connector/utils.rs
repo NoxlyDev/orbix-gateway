@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use common_utils::ext_traits::AsyncExt;
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use maud::html;
 use tokio::time as tokio;
 
@@ -114,7 +114,7 @@ pub fn get_authorize_page(
         }
         body {
             div.heading {
-                img.logo src="https://app.hyperswitch.io/assets/Dark/hyperswitchLogoIconWithText.svg" alt="Hyperswitch Logo" {}
+                img.logo src="https://app.orbix.example/assets/Dark/orbixLogoIconWithText.svg" alt="Orbix Gateway Logo" {}
                 h1 { "Test Payment Page" }
             }
             div.container {
@@ -152,15 +152,15 @@ pub fn get_authorize_page(
                 }
                 div.contact {
                     div.contact_item.hover_cursor onclick=(dummy_connector_conf.slack_invite_url) {
-                        img src="https://hyperswitch.io/logos/logo_slack.svg" alt="Slack Logo" {}
+                        img src="https://orbix.example/logos/logo_slack.svg" alt="Slack Logo" {}
                     }
                     div.contact_item.hover_cursor onclick=(dummy_connector_conf.discord_invite_url) {
-                        img src="https://hyperswitch.io/logos/logo_discord.svg" alt="Discord Logo" {}
+                        img src="https://orbix.example/logos/logo_discord.svg" alt="Discord Logo" {}
                     }
                     div.border_vertical {}
                     div.contact_item.email {
                         p { "Or email us at" }
-                        a href="mailto:support.global@juspay.io" { "support.global@juspay.io" }
+                        a href="mailto:support.global@orbix.example" { "support.global@orbix.example" }
                     }
                 }
             }
@@ -174,11 +174,11 @@ pub fn get_expired_page(dummy_connector_conf: &settings::DummyConnector) -> Stri
         head {
             title { "Authorize Payment" }
             style { (consts::THREE_DS_CSS) }
-            link rel="icon" href="https://app.hyperswitch.io/HyperswitchFavicon.png" {}
+            link rel="icon" href="https://app.orbix.example/OrbixFavicon.png" {}
         }
         body {
             div.heading {
-                img.logo src="https://app.hyperswitch.io/assets/Dark/hyperswitchLogoIconWithText.svg" alt="Hyperswitch Logo" {}
+                img.logo src="https://app.orbix.example/assets/Dark/orbixLogoIconWithText.svg" alt="Orbix Gateway Logo" {}
                 h1 { "Test Payment Page" }
             }
             div.container {
@@ -191,15 +191,15 @@ pub fn get_expired_page(dummy_connector_conf: &settings::DummyConnector) -> Stri
                 }
                 div.contact {
                     div.contact_item.hover_cursor onclick=(dummy_connector_conf.slack_invite_url) {
-                        img src="https://hyperswitch.io/logos/logo_slack.svg" alt="Slack Logo" {}
+                        img src="https://orbix.example/logos/logo_slack.svg" alt="Slack Logo" {}
                     }
                     div.contact_item.hover_cursor onclick=(dummy_connector_conf.discord_invite_url) {
-                        img src="https://hyperswitch.io/logos/logo_discord.svg" alt="Discord Logo" {}
+                        img src="https://orbix.example/logos/logo_discord.svg" alt="Discord Logo" {}
                     }
                     div.border_vertical {}
                     div.contact_item.email {
                         p { "Or email us at" }
-                        a href="mailto:support.global@juspay.io" { "support.global@juspay.io" }
+                        a href="mailto:support.global@orbix.example" { "support.global@orbix.example" }
                     }
                 }
             }

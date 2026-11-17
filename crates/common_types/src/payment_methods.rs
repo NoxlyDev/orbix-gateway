@@ -116,7 +116,7 @@ impl PaymentMethodsEnabled {
 )]
 #[serde(rename_all = "snake_case")]
 pub enum PayViaSingleUseToken {
-    /// Hyperswitch decides whether to make the payment via a single-use token, based on the connector's default requirement
+    /// Orbix Gateway decides whether to make the payment via a single-use token, based on the connector's default requirement
     #[default]
     Default,
     /// Create a single-use token for subsequent authorization or mandate setup.

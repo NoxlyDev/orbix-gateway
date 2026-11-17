@@ -12,20 +12,20 @@ sources:
     bootstrap_servers: kafka0:29092
     group_id: sessionizer
     topics:
-      - hyperswitch-payment-attempt-events
-      - hyperswitch-payment-intent-events
-      - hyperswitch-refund-events
-      - hyperswitch-dispute-events
-      - hyperswitch-payout-events
+      - orbix-payment-attempt-events
+      - orbix-payment-intent-events
+      - orbix-refund-events
+      - orbix-dispute-events
+      - orbix-payout-events
     decoding:
       codec: json
   
   revenue_events:
     type: kafka
     bootstrap_servers: kafka0:29092
-    group_id: hyperswitch_revenue_recovery
+    group_id: orbix_revenue_recovery
     topics:
-      - hyperswitch-revenue-recovery-events
+      - orbix-revenue-recovery-events
     decoding:
       codec: json
 
@@ -74,7 +74,7 @@ transforms:
     type: filter
     inputs:
       - app_logs
-    condition: '.labels."com.docker.compose.service" == "hyperswitch-server"'
+    condition: '.labels."com.docker.compose.service" == "orbix-server"'
 
   parsed_hs_server_logs:
     type: remap

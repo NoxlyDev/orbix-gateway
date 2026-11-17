@@ -1,10 +1,10 @@
 use common_utils::{errors::CustomResult, ext_traits::AsyncExt};
-use hyperswitch_interfaces::secrets_interface::{
+use orbix_interfaces::secrets_interface::{
     secret_handler::SecretsHandler,
     secret_state::{RawSecret, SecretStateContainer, SecuredSecret},
     SecretManagementInterface, SecretsManagementError,
 };
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 
 use crate::settings::{self, Settings};
 
@@ -436,7 +436,7 @@ impl SecretsHandler for settings::OidcSettings {
     }
 }
 
-impl settings::JuspayAccountUpdaterConfig {
+impl settings::OrbixAccountUpdaterConfig {
     async fn convert_to_raw_secret(
         self,
         secret_management_client: &dyn SecretManagementInterface,
@@ -462,13 +462,13 @@ impl SecretsHandler for settings::AccountUpdaterConfig {
         value: SecretStateContainer<Self, SecuredSecret>,
         secret_management_client: &dyn SecretManagementInterface,
     ) -> CustomResult<SecretStateContainer<Self, RawSecret>, SecretsManagementError> {
-        let Self::Juspay(juspay) = value.get_inner().clone();
+        let Self::Orbix(orbix) = value.get_inner().clone();
 
-        let juspay = juspay
+        let orbix = orbix
             .convert_to_raw_secret(secret_management_client)
             .await?;
 
-        Ok(value.transition_state(|_| Self::Juspay(juspay)))
+        Ok(value.transition_state(|_| Self::Orbix(orbix)))
     }
 }
 

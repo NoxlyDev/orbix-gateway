@@ -4,10 +4,10 @@ use diesel_models::customers;
 use diesel_models::errors::DatabaseError;
 use error_stack::ResultExt;
 use futures::future::try_join_all;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     customer as domain, merchant_key_store::MerchantKeyStore, type_encryption::AsyncLift,
 };
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use router_env::instrument;
 
 use crate::{
@@ -1489,8 +1489,8 @@ use common_utils::{
         CreatedBy,
     },
 };
-use hyperswitch_domain_models::type_encryption;
-use hyperswitch_masking::{Secret, SwitchStrategy};
+use orbix_domain_models::type_encryption;
+use orbix_masking::{Secret, SwitchStrategy};
 
 #[cfg(feature = "v1")]
 #[async_trait::async_trait]

@@ -496,7 +496,7 @@ console.log("    - celero-api-key-456");
 console.log("    - api-celero-test");
 console.log("    - alpha-test-api-key-123");
 console.log(
-  "\n💡 Note: Celero mock server is designed to work with the Hyperswitch Celero connector"
+  "\n💡 Note: Celero mock server is designed to work with the Orbix Gateway Celero connector"
 );
 
 export default router;

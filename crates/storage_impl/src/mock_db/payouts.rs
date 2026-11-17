@@ -1,6 +1,6 @@
 use common_utils::errors::CustomResult;
 use diesel_models::enums as storage_enums;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     merchant_key_store::MerchantKeyStore,
     payouts::{
         payout_attempt::PayoutAttempt,
@@ -61,7 +61,7 @@ impl PayoutsInterface for MockDb {
     async fn filter_payouts_by_constraints(
         &self,
         _merchant_id: &common_utils::id_type::MerchantId,
-        _filters: &hyperswitch_domain_models::payouts::PayoutFetchConstraints,
+        _filters: &orbix_domain_models::payouts::PayoutFetchConstraints,
         _merchant_key_store: &MerchantKeyStore,
         _storage_scheme: storage_enums::MerchantStorageScheme,
     ) -> CustomResult<Vec<Payouts>, StorageError> {
@@ -73,7 +73,7 @@ impl PayoutsInterface for MockDb {
     async fn filter_payouts_and_attempts(
         &self,
         _merchant_id: &common_utils::id_type::MerchantId,
-        _filters: &hyperswitch_domain_models::payouts::PayoutFetchConstraints,
+        _filters: &orbix_domain_models::payouts::PayoutFetchConstraints,
         _merchant_key_store: &MerchantKeyStore,
         _storage_scheme: storage_enums::MerchantStorageScheme,
     ) -> CustomResult<
@@ -120,7 +120,7 @@ impl PayoutsInterface for MockDb {
     async fn filter_active_payout_ids_by_constraints(
         &self,
         _merchant_id: &common_utils::id_type::MerchantId,
-        _constraints: &hyperswitch_domain_models::payouts::PayoutFetchConstraints,
+        _constraints: &orbix_domain_models::payouts::PayoutFetchConstraints,
     ) -> CustomResult<Vec<common_utils::id_type::PayoutId>, StorageError> {
         // TODO: Implement function for `MockDb`
         Err(StorageError::MockDbError)?

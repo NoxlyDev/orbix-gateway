@@ -4,7 +4,7 @@ use actix_web::http::header::HeaderMap;
 use common_enums::connector_enums::Connector;
 use common_utils::errors::ErrorSwitch;
 use error_stack::{report, ResultExt};
-use hyperswitch_interfaces::api::{ConnectorCommon, ConnectorSpecifications};
+use orbix_interfaces::api::{ConnectorCommon, ConnectorSpecifications};
 use router_env::logger;
 
 use super::ip_verification::validate_source_ip_against_allowed_ip_ranges;

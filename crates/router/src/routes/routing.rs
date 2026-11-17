@@ -32,7 +32,7 @@ pub async fn routing_entry(
         state,
         &req,
         (),
-        // The user is carried alongside so the handoff can be scoped to what their Hyperswitch role
+        // The user is carried alongside so the handoff can be scoped to what their Orbix Gateway role
         // actually reaches.
         move |state, (auth, user): auth::AuthenticationDataWithUser, _, _| {
             let platform = auth.platform;

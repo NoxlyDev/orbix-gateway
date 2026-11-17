@@ -168,13 +168,13 @@
       "locked": {
         "lastModified": 1751562414,
         "narHash": "sha256-0ohW9/OWtkRHFteFdbhWJPGNHD00UWHjVA/qOTeuNfM=",
-        "owner": "juspay",
+        "owner": "orbix",
         "repo": "rust-flake",
         "rev": "a1c9995285b1288b3249a6ee1ac19443535bbb94",
         "type": "github"
       },
       "original": {
-        "owner": "juspay",
+        "owner": "orbix",
         "repo": "rust-flake",
         "type": "github"
       }
@@ -204,13 +204,13 @@
       "locked": {
         "lastModified": 1751536468,
         "narHash": "sha256-lgzxvPlpx2uxkMznGBB0ID0byZBlMvcSadotcfnKIbM=",
-        "owner": "juspay",
+        "owner": "orbix",
         "repo": "services-flake",
         "rev": "a4c8b34362dc86a2d417aff1d0b87fbfef17a3c7",
         "type": "github"
       },
       "original": {
-        "owner": "juspay",
+        "owner": "orbix",
         "repo": "services-flake",
         "type": "github"
       }

@@ -1,11 +1,11 @@
 use common_utils::types::MinorUnit;
 use diesel_models::refund as diesel_refund;
 use error_stack::report;
-use hyperswitch_domain_models::refunds::RefundAmountDetails;
+use orbix_domain_models::refunds::RefundAmountDetails;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::router_response_types::SupportedPaymentMethodsExt;
+use orbix_domain_models::router_response_types::SupportedPaymentMethodsExt;
 #[cfg(feature = "v1")]
-use hyperswitch_interfaces::{self, api::ConnectorSpecifications};
+use orbix_interfaces::{self, api::ConnectorSpecifications};
 use router_env::instrument;
 use time::PrimitiveDateTime;
 
@@ -111,8 +111,8 @@ pub fn validate_refund_list(limit: Option<i64>) -> CustomResult<i64, errors::Api
 
 #[cfg(feature = "v1")]
 pub fn validate_for_valid_refunds(
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
-    connector_enum: hyperswitch_interfaces::connector_integration_interface::ConnectorEnum,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
+    connector_enum: orbix_interfaces::connector_integration_interface::ConnectorEnum,
     connector: api_models::enums::Connector,
 ) -> RouterResult<()> {
     let payment_method = payment_attempt
@@ -142,7 +142,7 @@ pub fn validate_for_valid_refunds(
 
 #[cfg(feature = "v2")]
 pub fn validate_for_valid_refunds(
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
     connector: api_models::enums::Connector,
 ) -> RouterResult<()> {
     let payment_method_type = payment_attempt.payment_method_type;

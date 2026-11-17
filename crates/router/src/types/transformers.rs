@@ -18,8 +18,8 @@ use common_utils::{
 };
 use diesel_models::enums as storage_enums;
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{mandates, payments::payment_intent::CustomerData};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_domain_models::{mandates, payments::payment_intent::CustomerData};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 
 use super::domain;
 #[cfg(feature = "olap")]
@@ -574,7 +574,7 @@ impl ForeignFrom<&api_types::ConfigUpdate> for storage::ConfigUpdate {
     }
 }
 
-impl From<&domain::Address> for hyperswitch_domain_models::address::Address {
+impl From<&domain::Address> for orbix_domain_models::address::Address {
     fn from(address: &domain::Address) -> Self {
         // If all the fields of address are none, then pass the address as None
         let address_details = if address.city.is_none()
@@ -589,7 +589,7 @@ impl From<&domain::Address> for hyperswitch_domain_models::address::Address {
         {
             None
         } else {
-            Some(hyperswitch_domain_models::address::AddressDetails {
+            Some(orbix_domain_models::address::AddressDetails {
                 city: address.city.clone(),
                 country: address.country,
                 line1: address.line1.clone().map(Encryptable::into_inner),
@@ -607,7 +607,7 @@ impl From<&domain::Address> for hyperswitch_domain_models::address::Address {
         let phone_details = if address.phone_number.is_none() && address.country_code.is_none() {
             None
         } else {
-            Some(hyperswitch_domain_models::address::PhoneDetails {
+            Some(orbix_domain_models::address::PhoneDetails {
                 number: address.phone_number.clone().map(Encryptable::into_inner),
                 country_code: address.country_code.clone(),
             })
@@ -668,8 +668,8 @@ impl ForeignFrom<domain::Address> for api_types::Address {
     }
 }
 
-impl ForeignFrom<hyperswitch_domain_models::address::Address> for payments::Address {
-    fn foreign_from(address: hyperswitch_domain_models::address::Address) -> Self {
+impl ForeignFrom<orbix_domain_models::address::Address> for payments::Address {
+    fn foreign_from(address: orbix_domain_models::address::Address) -> Self {
         address.into()
     }
 }
@@ -686,7 +686,7 @@ impl
             crate::core::api_keys::PlaintextApiKey,
         ),
     ) -> Self {
-        use hyperswitch_masking::StrongSecret;
+        use orbix_masking::StrongSecret;
 
         let (api_key, plaintext_api_key) = item;
         Self {
@@ -837,11 +837,11 @@ impl ForeignFrom<storage::Authorization> for payments::IncrementalAuthorizationR
 
 impl
     ForeignFrom<
-        &hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore,
+        &orbix_domain_models::router_request_types::authentication::AuthenticationStore,
     > for payments::ExternalAuthenticationDetailsResponse
 {
     fn foreign_from(
-        authn_store: &hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore,
+        authn_store: &orbix_domain_models::router_request_types::authentication::AuthenticationStore,
     ) -> Self {
         let authn_data = &authn_store.authentication;
         let version = authn_data
@@ -937,11 +937,11 @@ impl ForeignFrom<diesel_models::cards_info::CardInfo> for api_models::cards_info
 }
 
 #[cfg(feature = "v1")]
-impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::UnifiedErrorDetails>
+impl ForeignFrom<orbix_domain_models::payments::payment_attempt::UnifiedErrorDetails>
     for payments::ApiUnifiedErrorDetails
 {
     fn foreign_from(
-        unified: hyperswitch_domain_models::payments::payment_attempt::UnifiedErrorDetails,
+        unified: orbix_domain_models::payments::payment_attempt::UnifiedErrorDetails,
     ) -> Self {
         Self {
             category: unified.category,
@@ -955,11 +955,11 @@ impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::UnifiedEr
 }
 
 #[cfg(feature = "v1")]
-impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::NetworkErrorDetails>
+impl ForeignFrom<orbix_domain_models::payments::payment_attempt::NetworkErrorDetails>
     for payments::ApiNetworkErrorDetails
 {
     fn foreign_from(
-        network: hyperswitch_domain_models::payments::payment_attempt::NetworkErrorDetails,
+        network: orbix_domain_models::payments::payment_attempt::NetworkErrorDetails,
     ) -> Self {
         Self {
             name: network.name,
@@ -970,11 +970,11 @@ impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::NetworkEr
 }
 
 #[cfg(feature = "v1")]
-impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::IssuerErrorDetails>
+impl ForeignFrom<orbix_domain_models::payments::payment_attempt::IssuerErrorDetails>
     for payments::ApiIssuerErrorDetails
 {
     fn foreign_from(
-        issuer: hyperswitch_domain_models::payments::payment_attempt::IssuerErrorDetails,
+        issuer: orbix_domain_models::payments::payment_attempt::IssuerErrorDetails,
     ) -> Self {
         Self {
             code: issuer.code,
@@ -987,11 +987,11 @@ impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::IssuerErr
 }
 
 #[cfg(feature = "v1")]
-impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::ConnectorErrorDetails>
+impl ForeignFrom<orbix_domain_models::payments::payment_attempt::ConnectorErrorDetails>
     for payments::ApiConnectorErrorDetails
 {
     fn foreign_from(
-        connector: hyperswitch_domain_models::payments::payment_attempt::ConnectorErrorDetails,
+        connector: orbix_domain_models::payments::payment_attempt::ConnectorErrorDetails,
     ) -> Self {
         Self {
             code: connector.code,
@@ -1002,11 +1002,11 @@ impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::Connector
 }
 
 #[cfg(feature = "v1")]
-impl ForeignFrom<hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptErrorDetails>
+impl ForeignFrom<orbix_domain_models::payments::payment_attempt::PaymentAttemptErrorDetails>
     for payments::PaymentErrorDetails
 {
     fn foreign_from(
-        details: hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptErrorDetails,
+        details: orbix_domain_models::payments::payment_attempt::PaymentAttemptErrorDetails,
     ) -> Self {
         Self {
             unified_details: details
@@ -1207,7 +1207,7 @@ impl ForeignTryFrom<domain::MerchantConnectorAccount>
             None => None,
         };
         // parse the connector_account_details into ConnectorAuthType
-        let connector_account_details: hyperswitch_domain_models::router_data::ConnectorAuthType =
+        let connector_account_details: orbix_domain_models::router_data::ConnectorAuthType =
             item.connector_account_details
                 .clone()
                 .into_inner()
@@ -1395,7 +1395,7 @@ impl ForeignTryFrom<domain::MerchantConnectorAccount>
         };
 
         // parse the connector_account_details into ConnectorAuthType
-        let connector_account_details: hyperswitch_domain_models::router_data::ConnectorAuthType =
+        let connector_account_details: orbix_domain_models::router_data::ConnectorAuthType =
             item.connector_account_details
                 .clone()
                 .into_inner()
@@ -1674,7 +1674,7 @@ impl ForeignTryFrom<api_enums::PaymentMethod> for api_models::enums::PayoutType 
 }
 
 #[cfg(feature = "v1")]
-impl ForeignTryFrom<&HeaderMap> for hyperswitch_domain_models::payments::HeaderPayload {
+impl ForeignTryFrom<&HeaderMap> for orbix_domain_models::payments::HeaderPayload {
     type Error = error_stack::Report<errors::ApiErrorResponse>;
     fn foreign_try_from(headers: &HeaderMap) -> Result<Self, Self::Error> {
         let payment_confirm_source: Option<api_enums::PaymentSource> =
@@ -1761,7 +1761,7 @@ impl ForeignTryFrom<&HeaderMap> for hyperswitch_domain_models::payments::HeaderP
 }
 
 #[cfg(feature = "v2")]
-impl ForeignTryFrom<&HeaderMap> for hyperswitch_domain_models::payments::HeaderPayload {
+impl ForeignTryFrom<&HeaderMap> for orbix_domain_models::payments::HeaderPayload {
     type Error = error_stack::Report<errors::ApiErrorResponse>;
     fn foreign_try_from(headers: &HeaderMap) -> Result<Self, Self::Error> {
         use std::str::FromStr;
@@ -1893,7 +1893,7 @@ impl
             })?;
 
         let mut billing_address = billing
-            .map(hyperswitch_domain_models::address::Address::from)
+            .map(orbix_domain_models::address::Address::from)
             .map(api_types::Address::from);
 
         // This change is to fix a merchant integration
@@ -1931,7 +1931,7 @@ impl
         Ok(Self {
             currency: payment_attempt.map(|pa| pa.currency.unwrap_or_default()),
             shipping: shipping
-                .map(hyperswitch_domain_models::address::Address::from)
+                .map(orbix_domain_models::address::Address::from)
                 .map(api_types::Address::from),
             billing: billing_address,
             amount: payment_attempt
@@ -2053,7 +2053,7 @@ impl ForeignFrom<api_models::organization::OrganizationCreateRequest>
 }
 
 impl ForeignFrom<gsm_api_types::GsmCreateRequest>
-    for hyperswitch_domain_models::gsm::GatewayStatusMap
+    for orbix_domain_models::gsm::GatewayStatusMap
 {
     fn foreign_from(value: gsm_api_types::GsmCreateRequest) -> Self {
         let inferred_feature_data = common_types::domain::GsmFeatureData::foreign_from(&value);
@@ -2099,13 +2099,13 @@ impl ForeignFrom<&gsm_api_types::GsmCreateRequest> for common_types::domain::Gsm
 impl
     ForeignFrom<(
         &gsm_api_types::GsmUpdateRequest,
-        hyperswitch_domain_models::gsm::GatewayStatusMap,
+        orbix_domain_models::gsm::GatewayStatusMap,
     )> for (api_enums::GsmFeature, common_types::domain::GsmFeatureData)
 {
     fn foreign_from(
         (gsm_update_request, gsm_db_record): (
             &gsm_api_types::GsmUpdateRequest,
-            hyperswitch_domain_models::gsm::GatewayStatusMap,
+            orbix_domain_models::gsm::GatewayStatusMap,
         ),
     ) -> Self {
         let gsm_db_record_inferred_feature = match gsm_db_record.feature_data.get_decision() {
@@ -2152,8 +2152,8 @@ impl
     }
 }
 
-impl ForeignFrom<hyperswitch_domain_models::gsm::GatewayStatusMap> for gsm_api_types::GsmResponse {
-    fn foreign_from(value: hyperswitch_domain_models::gsm::GatewayStatusMap) -> Self {
+impl ForeignFrom<orbix_domain_models::gsm::GatewayStatusMap> for gsm_api_types::GsmResponse {
+    fn foreign_from(value: orbix_domain_models::gsm::GatewayStatusMap) -> Self {
         Self {
             connector: value.connector.to_string(),
             flow: value.flow,

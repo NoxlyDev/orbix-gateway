@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use common_enums;
-use hyperswitch_domain_models::payments as domain_payments;
+use orbix_domain_models::payments as domain_payments;
 
 use super::{ConstructFlowSpecificData, Feature};
 use crate::{
@@ -62,7 +62,7 @@ impl ConstructFlowSpecificData<api::PSync, types::PaymentsSyncData, types::Payme
 #[cfg(feature = "v2")]
 #[async_trait]
 impl ConstructFlowSpecificData<api::PSync, types::PaymentsSyncData, types::PaymentsResponseData>
-    for hyperswitch_domain_models::payments::PaymentStatusData<api::PSync>
+    for orbix_domain_models::payments::PaymentStatusData<api::PSync>
 {
     async fn construct_router_data<'a>(
         &self,
@@ -182,7 +182,7 @@ impl Feature<api::PSync, types::PaymentsSyncData>
         creds_identifier: Option<&str>,
         gateway_context: &gateway::context::RouterGatewayContext,
     ) -> RouterResult<types::AddAccessTokenResult> {
-        let current_flow = Some(hyperswitch_interfaces::api::CurrentFlowInfo::Psync {
+        let current_flow = Some(orbix_interfaces::api::CurrentFlowInfo::Psync {
             request_data: Box::new(self.request.clone()),
         });
         Box::pin(access_token::add_access_token(
@@ -292,7 +292,7 @@ impl RouterDataPSync
             // in trigger, call connector for every capture_id
             for connector_capture_id in pending_connector_capture_id_list {
                 // TEMPORARY FIX: remove the clone on router data after removing this function as an impl on trait RouterDataPSync
-                // TRACKING ISSUE: https://github.com/juspay/hyperswitch/issues/4644
+                // TRACKING ISSUE: https://github.com/orbix/orbix/issues/4644
                 let mut cloned_router_data = self.clone();
                 cloned_router_data.request.connector_transaction_id =
                     types::ResponseId::ConnectorTransactionId(connector_capture_id.clone());

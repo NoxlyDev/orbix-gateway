@@ -8,7 +8,7 @@
 //! because Rust does not allow splitting a struct definition across files.
 
 use common_utils::errors::CustomResult;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 
 use crate::errors;
 
@@ -56,7 +56,7 @@ pub struct RedisSettings {
     /// platform's trusted CA roots. Only applicable when `tls_enabled` is
     /// `true`.
     ///
-    /// Example: `"/etc/hyperswitch/redis_ca.pem"` — an absolute path to a
+    /// Example: `"/etc/orbix/redis_ca.pem"` — an absolute path to a
     /// file holding one or more `-----BEGIN CERTIFICATE-----` blocks, such
     /// as the `redis_ca.pem` bundle downloaded from the Redis Cloud console.
     pub tls_ca_certificate_path: Option<String>,

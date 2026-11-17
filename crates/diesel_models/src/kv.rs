@@ -18,7 +18,7 @@ use diesel::{
     Insertable,
 };
 use error_stack::ResultExt;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router_env::logger;
 
 use crate::errors;
@@ -115,7 +115,7 @@ impl SerializableQuery {
     }
 
     fn to_collected_query(&self) -> CollectedQuery<RawBytesBindCollector<Pg>> {
-        use hyperswitch_masking::ExposeInterface;
+        use orbix_masking::ExposeInterface;
 
         let mut bind_collector = RawBytesBindCollector::<Pg>::new();
         bind_collector.binds = self

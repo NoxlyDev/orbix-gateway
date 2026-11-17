@@ -62,7 +62,7 @@ CREATE TABLE authentication_queue (
     `exemption_requested` Nullable(Bool),
     `exemption_accepted` Nullable(Bool)
 ) ENGINE = Kafka SETTINGS kafka_broker_list = 'kafka0:29092',
-kafka_topic_list = 'hyperswitch-authentication-events',
+kafka_topic_list = 'orbix-authentication-events',
 kafka_group_name = 'hyper',
 kafka_format = 'JSONEachRow',
 kafka_handle_error_mode = 'stream';

@@ -7,8 +7,8 @@ rust-version.workspace = true
 readme = "README.md"
 license.workspace = true
 
-# Deliberately free of Hyperswitch crates (no `common_utils`, `router_env` or `error-stack`),
-# so services outside this workspace can depend on it without pulling in Hyperswitch.
+# Deliberately free of Orbix Gateway crates (no `common_utils`, `router_env` or `error-stack`),
+# so services outside this workspace can depend on it without pulling in Orbix Gateway.
 [dependencies]
 base64 = "0.22.1"
 rand = "0.8.5"

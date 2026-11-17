@@ -27,7 +27,7 @@ common_default = [
     "external_services/superposition",
 ]
 olap = [
-    "hyperswitch_domain_models/olap",
+    "orbix_domain_models/olap",
     "storage_impl/olap",
     "scheduler/olap",
     "api_models/olap",
@@ -40,7 +40,7 @@ keymanager_create = []
 keymanager_mtls = ["reqwest/rustls", "common_utils/keymanager_mtls"]
 encryption_service = [
     "keymanager_create",
-    "hyperswitch_domain_models/encryption_service",
+    "orbix_domain_models/encryption_service",
     "common_utils/encryption_service",
     "subscriptions/encryption_service",
     "payment_methods/encryption_service",
@@ -49,13 +49,13 @@ km_forward_x_request_id = ["common_utils/km_forward_x_request_id"]
 # Emits structured latency logs for downstream calls and propagates request IDs for correlation.
 ext_services_latency = [
     "common_utils/ext_services_latency",
-    "hyperswitch_interfaces/ext_services_latency",
+    "orbix_interfaces/ext_services_latency",
 ]
 frm = [
     "api_models/frm",
-    "hyperswitch_domain_models/frm",
-    "hyperswitch_connectors/frm",
-    "hyperswitch_interfaces/frm",
+    "orbix_domain_models/frm",
+    "orbix_connectors/frm",
+    "orbix_interfaces/frm",
 ]
 stripe = []
 gcp_kms = ["external_services/gcp_kms"]
@@ -88,18 +88,18 @@ vergen = ["router_env/vergen"]
 dummy_connector = [
     "api_models/dummy_connector",
     "euclid/dummy_connector",
-    "hyperswitch_interfaces/dummy_connector",
+    "orbix_interfaces/dummy_connector",
     "kgraph_utils/dummy_connector",
     "payment_methods/dummy_connector",
-    "hyperswitch_domain_models/dummy_connector",
-    "hyperswitch_connectors/dummy_connector",
+    "orbix_domain_models/dummy_connector",
+    "orbix_connectors/dummy_connector",
 ]
 external_access_dc = ["dummy_connector"]
 payouts = [
     "api_models/payouts",
     "common_enums/payouts",
-    "hyperswitch_connectors/payouts",
-    "hyperswitch_domain_models/payouts",
+    "orbix_connectors/payouts",
+    "orbix_domain_models/payouts",
     "storage_impl/payouts",
     "payment_methods/payouts",
 ]
@@ -109,12 +109,12 @@ v2 = [
     "common_default",
     "api_models/v2",
     "diesel_models/v2",
-    "hyperswitch_domain_models/v2",
+    "orbix_domain_models/v2",
     "storage_impl/v2",
     "kgraph_utils/v2",
     "common_utils/v2",
-    "hyperswitch_connectors/v2",
-    "hyperswitch_interfaces/v2",
+    "orbix_connectors/v2",
+    "orbix_interfaces/v2",
     "common_types/v2",
     "revenue_recovery",
     "scheduler/v2",
@@ -127,12 +127,12 @@ v1 = [
     "common_default",
     "api_models/v1",
     "diesel_models/v1",
-    "hyperswitch_domain_models/v1",
+    "orbix_domain_models/v1",
     "storage_impl/v1",
-    "hyperswitch_interfaces/v1",
+    "orbix_interfaces/v1",
     "kgraph_utils/v1",
     "common_utils/v1",
-    "hyperswitch_connectors/v1",
+    "orbix_connectors/v1",
     "common_types/v1",
     "scheduler/v1",
     "payment_link/v1",
@@ -147,16 +147,16 @@ dynamic_routing = [
 ]
 revenue_recovery = [
     "api_models/revenue_recovery",
-    "hyperswitch_interfaces/revenue_recovery",
-    "hyperswitch_domain_models/revenue_recovery",
-    "hyperswitch_connectors/revenue_recovery",
+    "orbix_interfaces/revenue_recovery",
+    "orbix_domain_models/revenue_recovery",
+    "orbix_connectors/revenue_recovery",
     "external_services/revenue_recovery",
     "dep:prost-types",
 ]
 tokenization_v2 = [
     "api_models/tokenization_v2",
     "diesel_models/tokenization_v2",
-    "hyperswitch_domain_models/tokenization_v2",
+    "orbix_domain_models/tokenization_v2",
     "storage_impl/tokenization_v2",
 ]
 deja = [
@@ -167,7 +167,7 @@ deja = [
     "external_services/deja",
     "diesel_models/deja",
     "redis_interface/deja",
-    "hyperswitch_domain_models/deja",
+    "orbix_domain_models/deja",
     "storage_impl/deja",
     # analytics is an optional dependency, but `release` and `v1` each enable it
     # through several of their features, so this seam is present in every
@@ -328,13 +328,13 @@ diesel_models = { version = "0.1.0", path = "../diesel_models", features = [
 euclid = { version = "0.1.0", path = "../euclid", features = ["valued_jit"] }
 events = { version = "0.1.0", path = "../events" }
 external_services = { version = "0.1.0", path = "../external_services" }
-hyperswitch_connectors = { version = "0.1.0", path = "../hyperswitch_connectors", default-features = false }
-hyperswitch_constraint_graph = { version = "0.1.0", path = "../hyperswitch_constraint_graph" }
-hyperswitch_domain_models = { version = "0.1.0", path = "../hyperswitch_domain_models", default-features = false }
-hyperswitch_interfaces = { version = "0.1.0", path = "../hyperswitch_interfaces", default-features = false }
+orbix_connectors = { version = "0.1.0", path = "../orbix_connectors", default-features = false }
+orbix_constraint_graph = { version = "0.1.0", path = "../orbix_constraint_graph" }
+orbix_domain_models = { version = "0.1.0", path = "../orbix_domain_models", default-features = false }
+orbix_interfaces = { version = "0.1.0", path = "../orbix_interfaces", default-features = false }
 injector = { version = "0.1.0", path = "../injector", optional = true }
 kgraph_utils = { version = "0.1.0", path = "../kgraph_utils" }
-hyperswitch_masking = "0.0.1"
+orbix_masking = { path = "../../vendor/orbix_framework/crates/orbix_masking" }
 pm_auth = { version = "0.1.0", path = "../pm_auth", package = "pm_auth" }
 redis_interface = { version = "0.1.0", path = "../redis_interface", default-features = false }
 router_derive = { version = "0.1.0", path = "../router_derive" }

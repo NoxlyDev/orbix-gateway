@@ -6,7 +6,7 @@
 use std::{fmt, path::PathBuf};
 
 use chrono::{DateTime, Utc};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use serde_json::{Map, Value};
 use superposition_core::experiment::ExperimentConfig;
 use superposition_provider::{
@@ -30,7 +30,7 @@ use crate::fp_utils::when;
 /// captured on record and substituted on replay ("recording threw ⇒ replay throws"),
 /// so the error must round-trip through tape JSON. Every variant carries only a
 /// `String`, which keeps that trivial; the derive is feature-gated so the release
-/// build stays dependency-lean. Same shape as hyperswitch's `SuperpositionError`.
+/// build stays dependency-lean. Same shape as orbix's `SuperpositionError`.
 #[derive(Debug, thiserror::Error)]
 #[cfg_attr(feature = "deja", derive(serde::Serialize, serde::Deserialize))]
 pub enum SuperpositionConfigError {
@@ -47,7 +47,7 @@ pub enum SuperpositionConfigError {
 /// `source = "file"` (the default) keeps today's behaviour — the baked
 /// `config/superposition.toml`, watched for changes. `source = "remote"` points the
 /// same provider at a remote workspace (polled), with the baked file as the fallback
-/// the provider consults if the remote source cannot initialise. Mirrors hyperswitch's
+/// the provider consults if the remote source cannot initialise. Mirrors orbix's
 /// `SuperpositionClientConfig` field for field; `source` is the one addition, because
 /// prism must boot file-first wherever no workspace exists yet.
 ///
@@ -94,7 +94,7 @@ impl Default for SuperpositionClientConfig {
 
 impl SuperpositionClientConfig {
     /// Do the settings describe a workspace at all (endpoint, token, org, workspace)?
-    /// hyperswitch's check, field for field. Only meaningful for a remote source. Prism's
+    /// orbix's check, field for field. Only meaningful for a remote source. Prism's
     /// loader treats a failure as "remote source off" — reported, then served from the
     /// baked file — never as a reason to refuse boot: Superposition being unreachable
     /// or misdescribed must not block payments.
@@ -266,7 +266,7 @@ impl SuperpositionConfig {
     ///
     /// `source = "remote"` → the workspace as primary with the backup file (default: the
     /// baked file at `baked_path`) as the provider's init-time fallback, polled every
-    /// `polling_interval_milliseconds` — hyperswitch's `SuperpositionClient::new` shape. If
+    /// `polling_interval_milliseconds` — orbix's `SuperpositionClient::new` shape. If
     /// even that cannot initialise (remote unreachable AND fallback unreadable), boot
     /// continues on the baked file alone, loudly: prism's contract is fail-open.
     ///
@@ -290,7 +290,7 @@ impl SuperpositionConfig {
                 settings.workspace_id.clone(),
             ));
             // A missing fallback file only warns: the remote source may still
-            // initialise on its own, exactly as hyperswitch treats it. A present one is
+            // initialise on its own, exactly as orbix treats it. A present one is
             // wrapped so an unreachable workspace still initialises (see `FileFallback`).
             let fallback: Option<Box<dyn SuperpositionDataSource>> = match FileDataSource::new(
                 fallback_path.clone(),
@@ -459,7 +459,7 @@ impl SuperpositionConfig {
     }
 }
 
-/// The déjà read boundary around Superposition resolution — hyperswitch's
+/// The déjà read boundary around Superposition resolution — orbix's
 /// `external_services::superposition::deja_boundary`, ported.
 ///
 /// Each read is CAPTURED on record and SUBSTITUTED from the tape on replay: in replay
@@ -467,7 +467,7 @@ impl SuperpositionConfig {
 /// recording saw. The WHOLE `Result<_, SuperpositionConfigError>` round-trips
 /// ("recording threw ⇒ replay throws"). Identity is rank-2 span-path + occurrence — no
 /// call-site id — so a read matches by where in the request it happened plus its args
-/// image, exactly like the db/redis/superposition boundaries in hyperswitch.
+/// image, exactly like the db/redis/superposition boundaries in orbix.
 ///
 /// A genuine tape MISS (a novel config read) is SYNTHESIZED as a recoverable
 /// `Err(ResolutionError)` from the reconstruct closure's miss arm
@@ -715,7 +715,7 @@ mod tests {
             source: SuperpositionSource::Remote,
             endpoint: "http://superposition:8080".to_string(),
             token: Secret::new("sp_token".to_string()),
-            org_id: "hyperswitch".to_string(),
+            org_id: "orbix".to_string(),
             workspace_id: "prism".to_string(),
             ..SuperpositionClientConfig::default()
         }
@@ -723,14 +723,14 @@ mod tests {
 
     /// The default table is the file-only posture: nothing to validate.
     #[test]
-    fn settings_default_is_the_file_source_with_hyperswitch_polling_interval() {
+    fn settings_default_is_the_file_source_with_orbix_polling_interval() {
         let settings = SuperpositionClientConfig::default();
         assert_eq!(settings.source, SuperpositionSource::File);
         assert_eq!(settings.polling_interval_milliseconds, 15_000);
         assert!(settings.backup_file_path.is_none());
     }
 
-    /// Mirrors hyperswitch's `SuperpositionClientConfig::validate`: every field a
+    /// Mirrors orbix's `SuperpositionClientConfig::validate`: every field a
     /// remote source needs is checked, and each failure names its field.
     #[test]
     fn settings_validate_rejects_each_missing_remote_field() {

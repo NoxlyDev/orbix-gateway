@@ -16,11 +16,11 @@ The Quick Start below pulls prebuilt images from GHCR, so you do **not** need Ru
 - **The repository cloned locally** — the compose command reads `docker-compose.yaml`, so run it from the repo root:
 
   ```bash
-  git clone https://github.com/juspay/decision-engine.git
+  git clone https://github.com/orbix/decision-engine.git
   cd decision-engine
   ```
 
-- Network access to pull `ghcr.io/juspay/...` images and a few GB of free disk (the first run pulls the app, PostgreSQL, Redis, Kafka, ClickHouse, and Mailpit).
+- Network access to pull `ghcr.io/orbix/...` images and a few GB of free disk (the first run pulls the app, PostgreSQL, Redis, Kafka, ClickHouse, and Mailpit).
 
 ## Quick Start
 

@@ -70,7 +70,7 @@ pub struct KafkaAuthentication<'a> {
 
 impl<'a> KafkaAuthentication<'a> {
     pub fn from_storage(
-        authentication: &'a hyperswitch_domain_models::authentication::Authentication,
+        authentication: &'a orbix_domain_models::authentication::Authentication,
     ) -> Self {
         Self {
             created_at: authentication.created_at.assume_utc(),

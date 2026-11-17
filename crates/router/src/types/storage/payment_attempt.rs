@@ -1,7 +1,7 @@
 use common_utils::types::MinorUnit;
 use diesel_models::{capture::CaptureNew, enums};
 use error_stack::ResultExt;
-pub use hyperswitch_domain_models::payments::payment_attempt::{
+pub use orbix_domain_models::payments::payment_attempt::{
     PaymentAttempt, PaymentAttemptUpdate,
 };
 
@@ -132,7 +132,7 @@ impl AttemptStatusExt for enums::AttemptStatus {
     feature = "dummy_connector"
 ))]
 mod tests {
-    use hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt;
+    use orbix_domain_models::payments::payment_attempt::PaymentAttempt;
     use tokio::sync::oneshot;
 
     use crate::{

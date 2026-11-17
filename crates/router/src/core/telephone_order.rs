@@ -3,7 +3,7 @@ pub mod twilio;
 use std::collections::HashMap;
 
 use common_utils::events::ApiEventMetric;
-use hyperswitch_domain_models::payments::HeaderPayload;
+use orbix_domain_models::payments::HeaderPayload;
 use router_env::logger;
 
 use crate::{
@@ -125,7 +125,7 @@ pub enum TelephoneOrderProvider {
     Twilio,
 }
 
-/// One provider's translation to and from Hyperswitch. An adapter implements the translation
+/// One provider's translation to and from Orbix Gateway. An adapter implements the translation
 /// methods and nothing else; [`charge`](TelephoneOrderAdapter::charge) is the same for all of them.
 #[async_trait::async_trait]
 pub trait TelephoneOrderAdapter {
@@ -165,7 +165,7 @@ pub trait TelephoneOrderAdapter {
 
     fn failure_response(failure: Failure) -> Self::Response;
 
-    /// The credential check these requests go through; HTTP Basic carrying a Hyperswitch API key
+    /// The credential check these requests go through; HTTP Basic carrying a Orbix Gateway API key
     /// by default. Auth never sees the body, so `parameters.profile_id` is read here and handed in.
     fn authenticator(
         merchant_id: common_utils::id_type::MerchantId,
@@ -369,7 +369,7 @@ fn resolve_profile_id(
         .map(|profile| profile.get_id().clone()))
 }
 
-/// Reads one Hyperswitch id out of the parameters. An unusable value is rejected, not ignored.
+/// Reads one Orbix Gateway id out of the parameters. An unusable value is rejected, not ignored.
 fn extract_id<I>(parameters: Option<&Parameters>, key: &str) -> Result<Option<I>, Failure>
 where
     I: TryFrom<std::borrow::Cow<'static, str>>,
@@ -559,7 +559,7 @@ fn invalid_request(transaction_reference: &str, message: String) -> Failure {
 }
 
 /// How a finished payment reads to the caller. Matched exhaustively on purpose: a wildcard would
-/// drop every `IntentStatus` Hyperswitch grows next into whichever bucket happens to be last.
+/// drop every `IntentStatus` Orbix Gateway grows next into whichever bucket happens to be last.
 fn payment_outcome(payment: &api_models::payments::PaymentsResponse) -> Outcome {
     use common_enums::IntentStatus as Status;
 

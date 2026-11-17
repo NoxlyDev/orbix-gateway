@@ -1,7 +1,7 @@
 use api_models::payment_methods::{CardDetailFromLocker, NetworkTokenResponse};
 use common_enums::{PaymentMethod, PaymentMethodType};
 use common_utils::{id_type, pii};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
@@ -108,7 +108,7 @@ pub struct ModularPMRetrieveResponse {
     pub storage_type: Option<common_enums::StorageType>,
     pub card_cvc_token_storage: Option<CardCVCTokenStorageDetails>,
     pub raw_payment_method_data: Option<RawPaymentMethodData>,
-    pub billing: Option<hyperswitch_domain_models::address::Address>,
+    pub billing: Option<orbix_domain_models::address::Address>,
     pub network_transaction_id: Option<String>,
 }
 /// V2 RawPaymentMethodData enum
@@ -247,13 +247,13 @@ pub struct AltIdCardData {
 
 impl
     From<(
-        &hyperswitch_domain_models::payment_method_data::CardDetail,
+        &orbix_domain_models::payment_method_data::CardDetail,
         Option<Secret<String>>,
     )> for AltIdCardData
 {
     fn from(
         (card, optional_cvc): (
-            &hyperswitch_domain_models::payment_method_data::CardDetail,
+            &orbix_domain_models::payment_method_data::CardDetail,
             Option<Secret<String>>,
         ),
     ) -> Self {
@@ -349,7 +349,7 @@ impl From<(AltIdResponsePayloadRaw, AltIdDetails)> for AltIdResponsePayload {
 
 #[cfg(feature = "v1")]
 impl From<AltIdResponsePayload>
-    for hyperswitch_domain_models::payment_method_data::NetworkTokenData
+    for orbix_domain_models::payment_method_data::NetworkTokenData
 {
     fn from(payload: AltIdResponsePayload) -> Self {
         Self {

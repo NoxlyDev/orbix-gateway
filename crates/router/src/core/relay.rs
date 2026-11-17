@@ -9,13 +9,13 @@ use common_utils::{
     id_type::{self, GenerateId},
 };
 use error_stack::ResultExt;
-use hyperswitch_connectors::connector_relay::RelayConnectors;
-use hyperswitch_domain_models::relay;
-use hyperswitch_interfaces::{
+use orbix_connectors::connector_relay::RelayConnectors;
+use orbix_domain_models::relay;
+use orbix_interfaces::{
     api_client::call_connector_api,
     relay::{ConnectorRelayIntegration, UnreferencedRefundRouterData},
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router_env::tracing::instrument;
 
 use super::{
@@ -205,8 +205,8 @@ impl RelayInterface for RelayRefund {
 
         let connector_integration: services::BoxedRefundConnectorIntegrationInterface<
             api::Execute,
-            hyperswitch_domain_models::router_request_types::RefundsData,
-            hyperswitch_domain_models::router_response_types::RefundsResponseData,
+            orbix_domain_models::router_request_types::RefundsData,
+            orbix_domain_models::router_response_types::RefundsResponseData,
         > = connector_data.connector.get_connector_integration();
 
         let router_data = utils::construct_relay_refund_router_data(
@@ -336,8 +336,8 @@ impl RelayInterface for RelayCapture {
         )?;
         let connector_integration: services::BoxedPaymentConnectorIntegrationInterface<
             api::Capture,
-            hyperswitch_domain_models::router_request_types::PaymentsCaptureData,
-            hyperswitch_domain_models::router_response_types::PaymentsResponseData,
+            orbix_domain_models::router_request_types::PaymentsCaptureData,
+            orbix_domain_models::router_response_types::PaymentsResponseData,
         > = connector_data.connector.get_connector_integration();
 
         let router_data = utils::construct_relay_capture_router_data(
@@ -475,8 +475,8 @@ impl RelayInterface for RelayIncrementalAuthorization {
         )?;
         let connector_integration: services::BoxedPaymentConnectorIntegrationInterface<
             api::IncrementalAuthorization,
-            hyperswitch_domain_models::router_request_types::PaymentsIncrementalAuthorizationData,
-            hyperswitch_domain_models::router_response_types::PaymentsResponseData,
+            orbix_domain_models::router_request_types::PaymentsIncrementalAuthorizationData,
+            orbix_domain_models::router_response_types::PaymentsResponseData,
         > = connector_data.connector.get_connector_integration();
 
         let router_data = utils::construct_relay_incremental_authorization_router_data(
@@ -608,8 +608,8 @@ impl RelayInterface for RelayVoid {
         )?;
         let connector_integration: services::BoxedPaymentConnectorIntegrationInterface<
             api::Void,
-            hyperswitch_domain_models::router_request_types::PaymentsCancelData,
-            hyperswitch_domain_models::router_response_types::PaymentsResponseData,
+            orbix_domain_models::router_request_types::PaymentsCancelData,
+            orbix_domain_models::router_response_types::PaymentsResponseData,
         > = connector_data.connector.get_connector_integration();
 
         let router_data = utils::construct_relay_void_router_data(
@@ -716,7 +716,7 @@ pub async fn relay_flow_decider(
                 &unreferenced_refund_request,
             )
             .await?;
-            Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+            Ok(orbix_domain_models::api::ApplicationResponse::Json(
                 relay_api_models::RelayResponse::from(updated_relay),
             ))
         }
@@ -811,7 +811,7 @@ pub async fn relay<T: RelayInterface>(
     let response = T::generate_response(relay_update_record)
         .attach_printable("Failed to generate relay response")?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -932,7 +932,7 @@ pub async fn relay_retrieve(
 
     let response = relay_api_models::RelayResponse::from(relay_response);
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -978,8 +978,8 @@ pub async fn sync_relay_refund_with_gateway(
 
     let connector_integration: services::BoxedRefundConnectorIntegrationInterface<
         api::RSync,
-        hyperswitch_domain_models::router_request_types::RefundsData,
-        hyperswitch_domain_models::router_response_types::RefundsResponseData,
+        orbix_domain_models::router_request_types::RefundsData,
+        orbix_domain_models::router_response_types::RefundsResponseData,
     > = connector_data.connector.get_connector_integration();
 
     let router_data_res = services::execute_connector_processing_step(
@@ -1150,8 +1150,8 @@ async fn process_unreferenced_refund(
         Err(err) => {
             let (error_code, error_message) = if err.current_context().is_upstream_timeout() {
                 (
-                    hyperswitch_interfaces::consts::REQUEST_TIMEOUT_ERROR_CODE.to_string(),
-                    hyperswitch_interfaces::consts::REQUEST_TIMEOUT_ERROR_MESSAGE.to_string(),
+                    orbix_interfaces::consts::REQUEST_TIMEOUT_ERROR_CODE.to_string(),
+                    orbix_interfaces::consts::REQUEST_TIMEOUT_ERROR_MESSAGE.to_string(),
                 )
             } else {
                 ("CONNECTOR_UNREACHABLE".to_string(), err.to_string())
@@ -1271,7 +1271,7 @@ pub async fn relay_unreferenced_refund(
         raw_connector_response,
     };
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -1298,8 +1298,8 @@ pub async fn sync_relay_capture_with_gateway(
 
     let connector_integration: services::BoxedPaymentConnectorIntegrationInterface<
         api::PSync,
-        hyperswitch_domain_models::router_request_types::PaymentsSyncData,
-        hyperswitch_domain_models::router_response_types::PaymentsResponseData,
+        orbix_domain_models::router_request_types::PaymentsSyncData,
+        orbix_domain_models::router_response_types::PaymentsResponseData,
     > = connector_data.connector.get_connector_integration();
 
     let capture_method_type = connector_integration

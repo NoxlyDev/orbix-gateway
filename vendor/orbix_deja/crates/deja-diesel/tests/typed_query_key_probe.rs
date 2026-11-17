@@ -1,4 +1,4 @@
-//! A TYPED diesel query (what hyperswitch actually issues) must come back
+//! A TYPED diesel query (what orbix actually issues) must come back
 //! paired with its own wire rows. This test began life probing the old
 //! statement-text join key (whether `debug_query` on the caller's query and on
 //! diesel's `as_query()` elaboration agreed — they happened to, which is the
@@ -86,7 +86,7 @@ async fn a_typed_query_comes_back_paired_with_its_capture() {
 
     let wire = wire.expect(
         "a TYPED query must come back paired with its capture — this is what \
-         every hyperswitch db read is",
+         every orbix db read is",
     );
     assert_eq!(wire.len(), 1);
     let names: Vec<&str> = wire[0]

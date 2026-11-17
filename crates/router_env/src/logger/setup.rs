@@ -387,7 +387,7 @@ fn setup_metrics_pipeline(config: &config::LogTelemetry) {
         .with_resource(opentelemetry_sdk::Resource::new([
             opentelemetry::KeyValue::new(
                 "pod",
-                std::env::var("POD_NAME").unwrap_or(String::from("hyperswitch-server-default")),
+                std::env::var("POD_NAME").unwrap_or(String::from("orbix-server-default")),
             ),
         ]))
         .build();

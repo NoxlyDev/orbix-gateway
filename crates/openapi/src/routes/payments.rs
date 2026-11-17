@@ -204,7 +204,7 @@
                       }
                   },
                   "authentication_type": "no_three_ds",
-                  "return_url": "https://hyperswitch.io",
+                  "return_url": "https://orbix.example",
                   "name": "John Doe",
                   "phone": "999999999",
                   "phone_country_code": "+65",
@@ -583,7 +583,7 @@
                         "client_secret": "pay_mbabizu24mvu3mela5njyhpit4_secret_el9ksDkiB8hi6j9N78yo",
                         "session_token": [],
                         "vault_details": {
-                            "vault_type": "hyperswitch",
+                            "vault_type": "orbix",
                             "vault_data": {
                                 "sdk_authorization": "cHJvZmlsZV9pZD1wcm9mXzEyMyxwdWJsaXNoYWJsZV9rZXk9cGtfbGl2ZV8xMjM="
                             }
@@ -774,7 +774,7 @@ pub fn payments_retrieve() {}
                             "client_secret": "pay_mbabizu24mvu3mela5njyhpit4_secret_el9ksDkiB8hi6j9N78yo",
                             "session_token": [],
                             "vault_details": {
-                                "vault_type": "hyperswitch",
+                                "vault_type": "orbix",
                                 "vault_data": {
                                     "sdk_authorization": "cHJvZmlsZV9pZD1wcm9mXzEyMyxwdWJsaXNoYWJsZV9rZXk9cGtfbGl2ZV8xMjM="
                                 }
@@ -941,7 +941,7 @@ pub fn payments_capture() {}
 #[cfg(feature = "v1")]
 /// Payments - Session token
 ///
-/// Creates a session object or a session token for wallets like Apple Pay, Google Pay, etc. These tokens are used by Hyperswitch's SDK to initiate these wallets' SDK.
+/// Creates a session object or a session token for wallets like Apple Pay, Google Pay, etc. These tokens are used by Orbix Gateway's SDK to initiate these wallets' SDK.
 #[utoipa::path(
   post,
   path = "/payments/session_tokens",
@@ -959,7 +959,7 @@ pub fn payments_connector_session() {}
 #[cfg(feature = "v2")]
 /// Payments - Session token
 ///
-/// Creates a session object or a session token for wallets like Apple Pay, Google Pay, etc. These tokens are used by Hyperswitch's SDK to initiate these wallets' SDK.
+/// Creates a session object or a session token for wallets like Apple Pay, Google Pay, etc. These tokens are used by Orbix Gateway's SDK to initiate these wallets' SDK.
 #[utoipa::path(
     post,
     path = "/v2/payments/{payment_id}/create-external-sdk-tokens",
@@ -1353,7 +1353,7 @@ pub fn payments_submit_eligibility() {}
 ///
 /// **Creates a payment intent object when amount_details are passed.**
 ///
-/// You will require the 'API - Key' from the Hyperswitch dashboard to make the first call, and use the 'client secret' returned in this API along with your 'publishable key' to make subsequent API calls from your client.
+/// You will require the 'API - Key' from the Orbix Gateway dashboard to make the first call, and use the 'client secret' returned in this API along with your 'publishable key' to make subsequent API calls from your client.
 #[utoipa::path(
   post,
   path = "/v2/payments/create-intent",
@@ -1382,7 +1382,7 @@ pub fn payments_create_intent() {}
 ///
 /// **Get a payment intent object when id is passed in path**
 ///
-/// You will require the 'API - Key' from the Hyperswitch dashboard to make the call.
+/// You will require the 'API - Key' from the Orbix Gateway dashboard to make the call.
 #[utoipa::path(
   get,
   path = "/v2/payments/{id}/get-intent",
@@ -1402,7 +1402,7 @@ pub fn payments_get_intent() {}
 ///
 /// **Update a payment intent object**
 ///
-/// You will require the 'API - Key' from the Hyperswitch dashboard to make the call.
+/// You will require the 'API - Key' from the Orbix Gateway dashboard to make the call.
 #[utoipa::path(
   put,
   path = "/v2/payments/{id}/update-intent",
@@ -1507,7 +1507,7 @@ pub fn payment_status() {}
 ///
 /// **Creates and confirms a payment intent object when the amount and payment method information are passed.**
 ///
-/// You will require the 'API - Key' from the Hyperswitch dashboard to make the call.
+/// You will require the 'API - Key' from the Orbix Gateway dashboard to make the call.
 #[utoipa::path(
   post,
   path = "/v2/payments",

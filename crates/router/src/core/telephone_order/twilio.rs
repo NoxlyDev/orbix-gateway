@@ -18,9 +18,9 @@ mod error_codes {
 
 struct TwilioCardDetails {
     card_number: cards::CardNumber,
-    card_exp_month: hyperswitch_masking::Secret<String>,
-    card_exp_year: hyperswitch_masking::Secret<String>,
-    card_cvc: hyperswitch_masking::Secret<String>,
+    card_exp_month: orbix_masking::Secret<String>,
+    card_exp_year: orbix_masking::Secret<String>,
+    card_cvc: orbix_masking::Secret<String>,
 }
 
 /// Twilio's Generic Pay Connector. All but the request and response shapes is shared.

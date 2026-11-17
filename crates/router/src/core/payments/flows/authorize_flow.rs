@@ -8,21 +8,21 @@ use common_utils::types::MinorUnit;
 use common_utils::{errors, ext_traits::ValueExt, fp_utils, id_type, ucs_types};
 use error_stack::ResultExt;
 use external_services::grpc_client;
-use hyperswitch_connectors::constants as connector_consts;
+use orbix_connectors::constants as connector_consts;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::PaymentConfirmData;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payments::PaymentConfirmData;
+use orbix_domain_models::{
     errors::api_error_response::ApiErrorResponse,
     mandates, payments as domain_payments, router_data,
     router_data_v2::{flow_common_types, PaymentFlowData},
     router_flow_types, router_request_types, router_response_types,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::{self as api_interface, ConnectorSpecifications},
     consts as interface_consts, errors as interface_errors,
     unified_connector_service::transformers as ucs_transformers,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_masking::{ExposeInterface, PeekInterface};
 use payment_methods::single_use_token;
 use unified_connector_service_client::payments as payments_grpc;
 
@@ -126,7 +126,7 @@ impl
             types::PaymentsAuthorizeData,
             types::PaymentsResponseData,
         >,
-        guest_customer: &Option<hyperswitch_domain_models::payments::GuestCustomer>,
+        guest_customer: &Option<orbix_domain_models::payments::GuestCustomer>,
     ) -> RouterResult<()> {
         if let Some(guest_customer_data) = guest_customer {
             router_data.request.guest_customer = Some(guest_customer_data.clone());
@@ -589,15 +589,15 @@ impl Feature<api::Authorize, types::PaymentsAuthorizeData> for types::PaymentsAu
                     }) => {
                         let has_ucs_redirection = redirection_data.is_some();
 
-                        let has_hyperswitch_three_ds_invoke_data: bool =
+                        let has_orbix_three_ds_invoke_data: bool =
                             connector_metadata.clone().and_then(|metadata| {
                                 metadata
                                     .parse_value::<api_models::payments::PaymentsConnectorThreeDsInvokeData>("PaymentsConnectorThreeDsInvokeData")
                                     .ok()
                             }).is_some();
 
-                        // Continue only if neither UCS nor hyperswitch indicates a redirect is needed
-                        !has_ucs_redirection && !has_hyperswitch_three_ds_invoke_data
+                        // Continue only if neither UCS nor orbix indicates a redirect is needed
+                        !has_ucs_redirection && !has_orbix_three_ds_invoke_data
                     }
                     _ => false,
                 },
@@ -761,10 +761,10 @@ impl Feature<api::Authorize, types::PaymentsAuthorizeData> for types::PaymentsAu
                 }) => match connector.connector_name {
                     api_models::enums::Connector::Redsys => {
                         // For UCS Redsys: if redirection_data is present (3DS challenge), don't continue
-                        // For hyperswitch native: check connector_metadata for PaymentsConnectorThreeDsInvokeData
+                        // For orbix native: check connector_metadata for PaymentsConnectorThreeDsInvokeData
                         let has_ucs_redirection = redirection_data.is_some();
 
-                        let has_hyperswitch_three_ds_invoke_data: bool =
+                        let has_orbix_three_ds_invoke_data: bool =
                             connector_metadata.clone().and_then(|metadata| {
                                 metadata
                                     .parse_value::<api_models::payments::PaymentsConnectorThreeDsInvokeData>("PaymentsConnectorThreeDsInvokeData")
@@ -782,7 +782,7 @@ impl Feature<api::Authorize, types::PaymentsAuthorizeData> for types::PaymentsAu
 
                         // On the direct gateway the Authenticate leg already sent the authorization, so never continue.
                         !has_ucs_redirection
-                            && !has_hyperswitch_three_ds_invoke_data
+                            && !has_orbix_three_ds_invoke_data
                             && payment_status
                             && !gateway_context.execution_path.is_direct_gateway()
                     }
@@ -1252,8 +1252,8 @@ pub trait RouterDataAuthorize {
 
 impl RouterDataAuthorize for types::PaymentsAuthorizeRouterData {
     fn decide_authentication_type(&mut self) {
-        if let hyperswitch_domain_models::payment_method_data::PaymentMethodData::Wallet(
-            hyperswitch_domain_models::payment_method_data::WalletData::GooglePay(google_pay_data),
+        if let orbix_domain_models::payment_method_data::PaymentMethodData::Wallet(
+            orbix_domain_models::payment_method_data::WalletData::GooglePay(google_pay_data),
         ) = &self.request.payment_method_data
         {
             if let Some(assurance_details) = google_pay_data.info.assurance_details.as_ref() {
@@ -1574,7 +1574,7 @@ fn transform_response_for_pre_authenticate_flow(
         //   -> Keep redirection_data as-is, connector_metadata remains None
         //
         // A permanent solution requires redesigning how UCS passes 3DS invoke data back to
-        // Hyperswitch, potentially through dedicated fields in the gRPC response or a unified
+        // Orbix Gateway, potentially through dedicated fields in the gRPC response or a unified
         // authentication data structure that covers all 3DS scenarios.
         (
             enums::connector_enums::Connector::Redsys,

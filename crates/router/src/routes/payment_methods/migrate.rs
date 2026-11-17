@@ -11,7 +11,7 @@ use common_enums::{enums, ApiVersion};
 use common_utils::id_type;
 use error_stack::{report, ResultExt};
 use futures::future;
-use hyperswitch_domain_models::platform;
+use orbix_domain_models::platform;
 use router_env::{instrument, logger, Flow};
 
 use crate::{
@@ -572,10 +572,10 @@ struct MigrationRow<State> {
     row_number: usize,
     merchant_id: id_type::MerchantId,
     payment_method_id: PaymentMethodId,
-    payment_method: Option<hyperswitch_domain_models::payment_methods::PaymentMethod>,
+    payment_method: Option<orbix_domain_models::payment_methods::PaymentMethod>,
     customer_id: Option<id_type::CustomerId>,
-    vault_id: Option<hyperswitch_domain_models::payment_methods::VaultId>,
-    vaulting_data: Option<hyperswitch_domain_models::vault::PaymentMethodVaultingData>,
+    vault_id: Option<orbix_domain_models::payment_methods::VaultId>,
+    vaulting_data: Option<orbix_domain_models::vault::PaymentMethodVaultingData>,
     old_fingerprint_id: Option<String>,
     is_v2_pm: bool,
     state: PhantomData<State>,
@@ -607,7 +607,7 @@ impl MigrationRow<MerchantsHydrated> {
         self,
         payment_method_map: &HashMap<
             String,
-            hyperswitch_domain_models::payment_methods::PaymentMethod,
+            orbix_domain_models::payment_methods::PaymentMethod,
         >,
     ) -> MigrationStepResult<MigrationRow<PaymentMethodsFetched>> {
         match payment_method_map.get(&self.payment_method_id.payment_method_id) {
@@ -620,7 +620,7 @@ impl MigrationRow<MerchantsHydrated> {
 
     fn attach_payment_method(
         self,
-        payment_method: hyperswitch_domain_models::payment_methods::PaymentMethod,
+        payment_method: orbix_domain_models::payment_methods::PaymentMethod,
     ) -> MigrationStepResult<MigrationRow<PaymentMethodsFetched>> {
         let mut next = self.transition::<PaymentMethodsFetched>();
         next.old_fingerprint_id = payment_method.locker_fingerprint_id.clone();
@@ -651,7 +651,7 @@ impl MigrationRow<PaymentMethodsFetched> {
         let mut next = self.transition::<ReadyForVaultRetrieve>();
         next.customer_id = Some(customer_id);
         next.vault_id =
-            Some(hyperswitch_domain_models::payment_methods::VaultId::generate(locker_id));
+            Some(orbix_domain_models::payment_methods::VaultId::generate(locker_id));
         next.old_fingerprint_id = Some(old_fingerprint_id);
         Ok(next)
     }
@@ -731,15 +731,15 @@ impl MigrationRow<VaultRetrieved> {
 
         let is_bank_debit = matches!(
             vaulting_data,
-            hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankDebit(_)
+            orbix_domain_models::vault::PaymentMethodVaultingData::BankDebit(_)
         );
         let is_wallet = matches!(
             vaulting_data,
-            hyperswitch_domain_models::vault::PaymentMethodVaultingData::Wallet(_)
+            orbix_domain_models::vault::PaymentMethodVaultingData::Wallet(_)
         );
         let is_card = matches!(
             vaulting_data,
-            hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(_)
+            orbix_domain_models::vault::PaymentMethodVaultingData::Card(_)
         );
 
         match payment_method.version {

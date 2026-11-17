@@ -21,7 +21,7 @@ CREATE TABLE routing_events_queue
     `routing_approach` Nullable(String)
 )
 ENGINE = Kafka
-SETTINGS kafka_broker_list = 'kafka0:29092', kafka_topic_list = 'hyperswitch-routing-api-events', kafka_group_name = 'hyper', kafka_format = 'JSONEachRow', kafka_handle_error_mode = 'stream';
+SETTINGS kafka_broker_list = 'kafka0:29092', kafka_topic_list = 'orbix-routing-api-events', kafka_group_name = 'hyper', kafka_format = 'JSONEachRow', kafka_handle_error_mode = 'stream';
 
 CREATE MATERIALIZED VIEW routing_events_parse_errors (
     `topic` String,

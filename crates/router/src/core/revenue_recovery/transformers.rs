@@ -1,5 +1,5 @@
 use common_enums::IntentStatus;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 
 use crate::{
     core::revenue_recovery::types::RevenueRecoveryPaymentIntentStatus,
@@ -45,7 +45,7 @@ impl From<RevenueRecoveryPaymentIntentStatus> for common_enums::EventType {
 }
 
 impl ForeignFrom<api_models::payments::RecoveryPaymentsCreate>
-    for hyperswitch_domain_models::revenue_recovery::RevenueRecoveryInvoiceData
+    for orbix_domain_models::revenue_recovery::RevenueRecoveryInvoiceData
 {
     fn foreign_from(data: api_models::payments::RecoveryPaymentsCreate) -> Self {
         Self {
@@ -76,7 +76,7 @@ impl ForeignFrom<api_models::payments::RecoveryPaymentsCreate>
 }
 
 impl ForeignFrom<&api_models::payments::RecoveryPaymentsCreate>
-    for hyperswitch_domain_models::revenue_recovery::RevenueRecoveryAttemptData
+    for orbix_domain_models::revenue_recovery::RevenueRecoveryAttemptData
 {
     fn foreign_from(data: &api_models::payments::RecoveryPaymentsCreate) -> Self {
         Self {

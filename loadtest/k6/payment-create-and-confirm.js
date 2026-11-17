@@ -37,7 +37,7 @@ export default function(data) {
         "return_url": "http://example.com/payments",
         "authentication_type": "three_ds",
         "payment_method": "card",
-        "statement_descriptor_name": "Juspay",
+        "statement_descriptor_name": "Orbix",
         "statement_descriptor_suffix": "Router"
     };
     let create_payment_res = http.post("http://router-server:8080/payments", JSON.stringify(create_payment_payload), {

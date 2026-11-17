@@ -4,16 +4,16 @@ use async_trait::async_trait;
 use common_enums::{CallConnectorAction, ExecutionPath};
 use common_utils::{errors::CustomResult, id_type, request::Request, ucs_types};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_data::RouterData, router_flow_types as domain,
     router_request_types::AuthoriseIntegrityObject,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::gateway as payment_gateway,
     connector_integration_interface::{BoxedConnectorIntegrationInterface, RouterDataConversion},
     errors::ConnectorError,
 };
-use hyperswitch_masking::ExposeInterface as UcsMaskingExposeInterface;
+use orbix_masking::ExposeInterface as UcsMaskingExposeInterface;
 use unified_connector_service_client::payments as payments_grpc;
 
 use crate::{
@@ -85,7 +85,7 @@ where
         let is_mit_payment = router_data.request.mandate_id.is_some()
             || matches!(
                 router_data.request.payment_method_data,
-                hyperswitch_domain_models::payment_method_data::PaymentMethodData::MandatePayment
+                orbix_domain_models::payment_method_data::PaymentMethodData::MandatePayment
             );
 
         let connector_auth_metadata =

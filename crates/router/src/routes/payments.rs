@@ -26,10 +26,10 @@ pub mod callback_tokens;
 pub mod helpers;
 use actix_web::{web, Responder};
 use error_stack::report;
-use hyperswitch_domain_models::{ext_traits::OptionExt, payments::HeaderPayload};
+use orbix_domain_models::{ext_traits::OptionExt, payments::HeaderPayload};
 #[cfg(feature = "v1")]
-use hyperswitch_interfaces::api::ConnectorSpecifications;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_interfaces::api::ConnectorSpecifications;
+use orbix_masking::{PeekInterface, Secret};
 use router_env::{env, instrument, logger, tracing, types, Flow};
 
 use super::app::ReqState;
@@ -361,7 +361,7 @@ pub async fn payments_create_intent(
     req: actix_web::HttpRequest,
     json_payload: web::Json<payment_types::PaymentsCreateIntentRequest>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentIntentData;
+    use orbix_domain_models::payments::PaymentIntentData;
 
     let flow = Flow::PaymentsCreateIntent;
     let header_payload = match HeaderPayload::foreign_try_from(req.headers()) {
@@ -427,7 +427,7 @@ pub async fn payments_get_intent(
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
     use api_models::payments::PaymentsGetIntentRequest;
-    use hyperswitch_domain_models::payments::PaymentIntentData;
+    use orbix_domain_models::payments::PaymentIntentData;
 
     let flow = Flow::PaymentsGetIntent;
     let header_payload = match HeaderPayload::foreign_try_from(req.headers()) {
@@ -494,7 +494,7 @@ pub async fn revenue_recovery_get_intent(
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
     use api_models::payments::PaymentsGetIntentRequest;
-    use hyperswitch_domain_models::payments::PaymentIntentData;
+    use orbix_domain_models::payments::PaymentIntentData;
 
     let flow = Flow::PaymentsGetIntent;
     let header_payload = match HeaderPayload::foreign_try_from(req.headers()) {
@@ -578,7 +578,7 @@ pub async fn list_payment_attempts(
                 api_models::payments::PaymentAttemptListResponse,
                 api_models::payments::PaymentAttemptListRequest,
                 payments::operations::payment_attempt_list::PaymentGetListAttempts,
-                hyperswitch_domain_models::payments::PaymentAttemptListData<
+                orbix_domain_models::payments::PaymentAttemptListData<
                     payments::operations::PaymentGetListAttempts,
                 >,
             >(
@@ -676,7 +676,7 @@ pub async fn payments_update_intent(
     json_payload: web::Json<payment_types::PaymentsUpdateIntentRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentIntentData;
+    use orbix_domain_models::payments::PaymentIntentData;
 
     let flow = Flow::PaymentsUpdateIntent;
     let header_payload = match HeaderPayload::foreign_try_from(req.headers()) {
@@ -1533,7 +1533,7 @@ pub async fn payments_connector_session(
     json_payload: web::Json<payment_types::PaymentsSessionRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentIntentData;
+    use orbix_domain_models::payments::PaymentIntentData;
     let flow = Flow::PaymentsSessionToken;
 
     let global_payment_id = path.into_inner();
@@ -2071,7 +2071,7 @@ pub async fn payments_cancel(
                         )
                         .map(|connector_data| {
                             connector_data.connector.is_pre_authorize_cancel_supported(
-                                hyperswitch_interfaces::api::CurrentFlowInfo::PreAuthorizeVoid {
+                                orbix_interfaces::api::CurrentFlowInfo::PreAuthorizeVoid {
                                     payment_method_type: payment_pre_fetched_info
                                         .payment_attempt
                                         .payment_method_type,
@@ -2192,13 +2192,13 @@ pub async fn payments_cancel(
             let operation = payments::operations::payment_cancel_v2::PaymentsCancel;
 
             Box::pin(payments::payments_core::<
-                hyperswitch_domain_models::router_flow_types::Void,
+                orbix_domain_models::router_flow_types::Void,
                 api_models::payments::PaymentsCancelResponse,
                 _,
                 _,
                 _,
-                hyperswitch_domain_models::payments::PaymentCancelData<
-                    hyperswitch_domain_models::router_flow_types::Void,
+                orbix_domain_models::payments::PaymentCancelData<
+                    orbix_domain_models::router_flow_types::Void,
                 >,
             >(
                 state,
@@ -3395,7 +3395,7 @@ pub async fn payments_external_authentication(
             }
 
             payments::payment_external_authentication::<
-                hyperswitch_domain_models::router_flow_types::Authenticate,
+                orbix_domain_models::router_flow_types::Authenticate,
             >(state, auth.platform, req)
         },
         &*auth,
@@ -4293,7 +4293,7 @@ pub async fn payment_confirm_intent(
     json_payload: web::Json<api_models::payments::PaymentsConfirmIntentRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentConfirmData;
+    use orbix_domain_models::payments::PaymentConfirmData;
 
     let flow = Flow::PaymentsConfirmIntent;
 
@@ -4416,7 +4416,7 @@ pub async fn proxy_confirm_intent(
     json_payload: web::Json<api_models::payments::ProxyPaymentsRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentConfirmData;
+    use orbix_domain_models::payments::PaymentConfirmData;
 
     let flow = Flow::ProxyConfirmIntent;
 
@@ -4491,7 +4491,7 @@ pub async fn confirm_intent_with_external_vault_proxy(
     json_payload: web::Json<api_models::payments::ExternalVaultProxyPaymentsRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentConfirmData;
+    use orbix_domain_models::payments::PaymentConfirmData;
 
     let flow = Flow::ProxyConfirmIntent;
 
@@ -4571,7 +4571,7 @@ pub async fn payment_status(
     payload: web::Query<api_models::payments::PaymentsStatusRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentStatusData;
+    use orbix_domain_models::payments::PaymentStatusData;
 
     let flow = match payload.force_sync {
         true => Flow::PaymentsRetrieveForceSync,
@@ -4659,7 +4659,7 @@ pub async fn payments_status_with_gateway_creds(
     payload: web::Json<api_models::payments::PaymentsRetrieveRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentStatusData;
+    use orbix_domain_models::payments::PaymentStatusData;
 
     let flow = match payload.force_sync {
         true => Flow::PaymentsRetrieveForceSync,
@@ -4851,7 +4851,7 @@ pub async fn payments_capture(
     payload: web::Json<api_models::payments::PaymentsCaptureRequest>,
     path: web::Path<common_utils::id_type::GlobalPaymentId>,
 ) -> impl Responder {
-    use hyperswitch_domain_models::payments::PaymentCaptureData;
+    use orbix_domain_models::payments::PaymentCaptureData;
     let flow = Flow::PaymentsCapture;
 
     let global_payment_id = path.into_inner();

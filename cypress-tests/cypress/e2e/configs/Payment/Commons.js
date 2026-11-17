@@ -1478,7 +1478,7 @@ export const connectorDetails = {
             przelewy24: {
               bank_name: "citi",
               billing_details: {
-                email: "guest@juspay.in",
+                email: "guest@orbix.example",
               },
             },
           },
@@ -1905,13 +1905,13 @@ export const connectorDetails = {
         payment_method_data: {
           pay_later: {
             klarna_redirect: {
-              billing_email: "guest@juspay.in",
+              billing_email: "guest@orbix.example",
               billing_country: "DE",
             },
           },
         },
         billing: {
-          email: "guest@juspay.in",
+          email: "guest@orbix.example",
           address: {
             line1: "1467",
             line2: "Harrison Street",
@@ -1944,7 +1944,7 @@ export const connectorDetails = {
           },
         },
         billing: {
-          email: "guest@juspay.in",
+          email: "guest@orbix.example",
           address: {
             line1: "1467",
             line2: "Harrison Street",
@@ -1998,13 +1998,13 @@ export const connectorDetails = {
         payment_method_data: {
           pay_later: {
             affirm_redirect: {
-              billing_email: "guest@juspay.in",
+              billing_email: "guest@orbix.example",
               billing_country: "US",
             },
           },
         },
         billing: {
-          email: "guest@juspay.in",
+          email: "guest@orbix.example",
           address: {
             line1: "1467",
             line2: "Harrison Street",
@@ -3674,7 +3674,7 @@ export const connectorDetails = {
             country_code: "+91",
           },
         },
-        email: "hyperswitch.example@gmail.com",
+        email: "orbix.example@gmail.com",
       },
       Response: {
         status: 200,
@@ -3709,7 +3709,7 @@ export const connectorDetails = {
       Request: {
         currency: "USD",
         setup_future_usage: "on_session",
-        email: "hyperswitch_sdk_demo_id1@gmail.com",
+        email: "orbix_sdk_demo_id1@gmail.com",
         billing: {
           address: {
             first_name: "joseph",
@@ -3719,7 +3719,7 @@ export const connectorDetails = {
             number: "9111222333",
             country_code: "+91",
           },
-          email: "hyperswitch.example@gmail.com",
+          email: "orbix.example@gmail.com",
         },
       },
       Response: {

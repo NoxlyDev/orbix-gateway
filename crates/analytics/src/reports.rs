@@ -27,7 +27,7 @@ pub struct ReportDefinition {
     /// The report, as the email's body names it: "the `refund` report".
     pub noun: &'static str,
     /// The rows, as the email's body describes them: "an overview of `refunds made by your
-    /// customers` via Hyperswitch".
+    /// customers` via Orbix Gateway".
     pub covers: &'static str,
     /// The `FROM` clause, joins included.
     from: &'static str,

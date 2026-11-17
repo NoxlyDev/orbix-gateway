@@ -9,7 +9,7 @@ use common_utils::{
 };
 use diesel_models::{address::AddressUpdateInternal, enums};
 use error_stack::ResultExt;
-use hyperswitch_masking::{PeekInterface, Secret, SwitchStrategy};
+use orbix_masking::{PeekInterface, Secret, SwitchStrategy};
 use rustc_hash::FxHashMap;
 use time::PrimitiveDateTime;
 

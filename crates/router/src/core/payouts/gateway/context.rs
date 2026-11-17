@@ -3,8 +3,8 @@
 use common_enums::{ExecutionMode, ExecutionPath, GatewaySystem};
 use common_utils::errors::CustomResult;
 use external_services::grpc_client::LineageIds;
-use hyperswitch_domain_models::{payments::HeaderPayload, platform::Processor};
-use hyperswitch_interfaces::{api::gateway::GatewayContext, errors::ConnectorError};
+use orbix_domain_models::{payments::HeaderPayload, platform::Processor};
+use orbix_interfaces::{api::gateway::GatewayContext, errors::ConnectorError};
 
 use crate::{
     core::{self, unified_connector_service::kill_switch::RolloutSettings},
@@ -21,7 +21,7 @@ pub struct RouterGatewayContext {
     pub merchant_connector_account: core::payments::helpers::MerchantConnectorAccountType,
     #[cfg(feature = "v2")]
     pub merchant_connector_account:
-        hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
+        orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails,
     pub execution_path: ExecutionPath,
     pub execution_mode: ExecutionMode,
     /// Normal-payout rollout only; proxy payouts disable fallback.

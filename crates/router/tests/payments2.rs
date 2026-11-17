@@ -47,7 +47,7 @@ async fn payments_create_core() {
     ))
     .await;
 
-    let merchant_id = id_type::MerchantId::try_from(Cow::from("juspay_merchant")).unwrap();
+    let merchant_id = id_type::MerchantId::try_from(Cow::from("orbix_merchant")).unwrap();
 
     let state = Arc::new(app_state)
         .get_session_state(
@@ -71,7 +71,7 @@ async fn payments_create_core() {
         .await
         .unwrap();
 
-    let platform = hyperswitch_domain_models::platform::Platform::new(
+    let platform = orbix_domain_models::platform::Platform::new(
         merchant_account.clone(),
         key_store.clone(),
         merchant_account.clone(),
@@ -102,7 +102,7 @@ async fn payments_create_core() {
                 card_number: "4242424242424242".to_string().try_into().unwrap(),
                 card_exp_month: "10".to_string().into(),
                 card_exp_year: "35".to_string().into(),
-                card_holder_name: Some(hyperswitch_masking::Secret::new("Arun Raj".to_string())),
+                card_holder_name: Some(orbix_masking::Secret::new("Arun Raj".to_string())),
                 card_cvc: "123".to_string().into(),
                 card_issuer: None,
                 card_network: None,
@@ -113,7 +113,7 @@ async fn payments_create_core() {
                 card_issuing_country: None,
                 card_issuing_country_code: None,
                 bank_code: None,
-                nick_name: Some(hyperswitch_masking::Secret::new("nick_name".into())),
+                nick_name: Some(orbix_masking::Secret::new("nick_name".into())),
             })),
             billing: None,
         }),
@@ -128,8 +128,8 @@ async fn payments_create_core() {
             phone: None,
             email: None,
         }),
-        statement_descriptor_name: Some("Hyperswitch".to_string()),
-        statement_descriptor_suffix: Some("Hyperswitch".to_string()),
+        statement_descriptor_name: Some("Orbix".to_string()),
+        statement_descriptor_suffix: Some("Orbix".to_string()),
         three_ds_data: None,
         ..<_>::default()
     };
@@ -282,7 +282,7 @@ async fn payments_create_core() {
         payments::CallConnectorAction::Trigger,
         None,
         None,
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
         None,
     ))
     .await
@@ -383,7 +383,7 @@ async fn payments_create_core_adyen_no_redirect() {
         .unwrap();
 
     let customer_id = format!("cust_{}", common_utils::generate_uuid_v4());
-    let merchant_id = id_type::MerchantId::try_from(Cow::from("juspay_merchant")).unwrap();
+    let merchant_id = id_type::MerchantId::try_from(Cow::from("orbix_merchant")).unwrap();
     let payment_id =
         id_type::PaymentId::try_from(Cow::Borrowed("pay_mbabizu24mvu3mela5njyhpit10")).unwrap();
 
@@ -402,7 +402,7 @@ async fn payments_create_core_adyen_no_redirect() {
         .await
         .unwrap();
 
-    let platform = hyperswitch_domain_models::platform::Platform::new(
+    let platform = orbix_domain_models::platform::Platform::new(
         merchant_account.clone(),
         key_store.clone(),
         merchant_account.clone(),
@@ -429,7 +429,7 @@ async fn payments_create_core_adyen_no_redirect() {
                 card_number: "5555 3412 4444 1115".to_string().try_into().unwrap(),
                 card_exp_month: "03".to_string().into(),
                 card_exp_year: "2030".to_string().into(),
-                card_holder_name: Some(hyperswitch_masking::Secret::new("JohnDoe".to_string())),
+                card_holder_name: Some(orbix_masking::Secret::new("JohnDoe".to_string())),
                 card_cvc: "737".to_string().into(),
                 bank_code: None,
                 card_issuer: None,
@@ -440,7 +440,7 @@ async fn payments_create_core_adyen_no_redirect() {
                 funding_source: None,
                 card_issuing_country: None,
                 card_issuing_country_code: None,
-                nick_name: Some(hyperswitch_masking::Secret::new("nick_name".into())),
+                nick_name: Some(orbix_masking::Secret::new("nick_name".into())),
             })),
             billing: None,
         }),
@@ -456,7 +456,7 @@ async fn payments_create_core_adyen_no_redirect() {
             phone: None,
             email: None,
         }),
-        statement_descriptor_name: Some("Juspay".to_string()),
+        statement_descriptor_name: Some("Orbix".to_string()),
         statement_descriptor_suffix: Some("Router".to_string()),
         three_ds_data: None,
         ..Default::default()
@@ -610,7 +610,7 @@ async fn payments_create_core_adyen_no_redirect() {
         payments::CallConnectorAction::Trigger,
         None,
         None,
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
         None,
     ))
     .await

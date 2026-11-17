@@ -4,8 +4,8 @@ use api_models::revenue_recovery_data_backfill::{self, AccountUpdateHistoryRecor
 use common_enums::enums::CardNetwork;
 use common_utils::{date_time, errors::CustomResult, id_type};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::mandates;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_domain_models::mandates;
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use redis_interface::{DelReply, SetnxReply};
 use router_env::{instrument, logger, tracing};
 use serde::{Deserialize, Deserializer, Serialize};

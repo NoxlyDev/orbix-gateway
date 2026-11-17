@@ -2,7 +2,7 @@ use common_utils::new_type::{
     MaskedBankAccount, MaskedBranchCode, MaskedIban, MaskedRoutingNumber, MaskedSortCode,
     MaskedUpiVpaId,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use smithy::SmithyModel;
 use utoipa::ToSchema;
 
@@ -12,7 +12,7 @@ use crate::{enums as api_enums, payments};
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankDebitAdditionalData {
     #[smithy(value_type = "AchBankDebitAdditionalData")]
     Ach(Box<AchBankDebitAdditionalData>),
@@ -30,7 +30,7 @@ pub enum BankDebitAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AchBankDebitAdditionalData {
     /// Partially masked account number for ach bank debit payment
     #[schema(value_type = String, example = "0001****3456")]
@@ -66,7 +66,7 @@ pub struct AchBankDebitAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BacsBankDebitAdditionalData {
     /// Partially masked account number for Bacs payment method
     #[schema(value_type = String, example = "0001****3456")]
@@ -87,7 +87,7 @@ pub struct BacsBankDebitAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BecsBankDebitAdditionalData {
     /// Partially masked account number for Becs payment method
     #[schema(value_type = String, example = "0001****3456")]
@@ -108,7 +108,7 @@ pub struct BecsBankDebitAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SepaBankDebitAdditionalData {
     /// Partially masked international bank account number (iban) for SEPA
     #[schema(value_type = String, example = "DE8937******013000")]
@@ -124,7 +124,7 @@ pub struct SepaBankDebitAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct EftDebitOrderAdditionalData {
     /// Partially masked account number for eft bank debit payment
     #[schema(value_type = String, example = "0001****3456")]
@@ -155,7 +155,7 @@ pub struct EftDebitOrderAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankRedirectDetails {
     #[smithy(value_type = "BancontactBankRedirectAdditionalData")]
     BancontactCard(Box<BancontactBankRedirectAdditionalData>),
@@ -168,7 +168,7 @@ pub enum BankRedirectDetails {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BancontactBankRedirectAdditionalData {
     /// Last 4 digits of the card number
     #[schema(value_type = Option<String>, example = "4242")]
@@ -194,7 +194,7 @@ pub struct BancontactBankRedirectAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BlikBankRedirectAdditionalData {
     #[schema(value_type = Option<String>, example = "3GD9MO")]
     #[smithy(value_type = "Option<String>")]
@@ -204,7 +204,7 @@ pub struct BlikBankRedirectAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GiropayBankRedirectAdditionalData {
     #[schema(value_type = Option<String>)]
     #[smithy(value_type = "Option<String>")]
@@ -225,7 +225,7 @@ pub struct GiropayBankRedirectAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SepaBankTransferPaymentAdditionalData {
     ///   debitor IBAN
     #[schema(value_type = Option<String>, example =  "DE89370400440532013000")]
@@ -251,7 +251,7 @@ pub struct SepaBankTransferPaymentAdditionalData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankTransferAdditionalData {
     #[smithy(nested_value_type)]
     Ach {},
@@ -306,7 +306,7 @@ pub enum BankTransferAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PixAutomaticoPushAdditionalData {
     /// Account number for Pix Automatico Push payment method
     #[schema(value_type = Option<String>, example = "550689")]
@@ -327,7 +327,7 @@ pub struct PixAutomaticoPushAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PixBankTransferAdditionalData {
     /// Partially masked unique key for pix transfer
     #[schema(value_type = Option<String>, example = "a1f4102e ****** 6fa48899c1d1")]
@@ -364,7 +364,7 @@ pub struct PixBankTransferAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct LocalBankTransferAdditionalData {
     /// Partially masked bank code
     #[schema(value_type = Option<String>, example = "**** OA2312")]
@@ -376,7 +376,7 @@ pub struct LocalBankTransferAdditionalData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum GiftCardAdditionalData {
     #[smithy(value_type = "String")]
     Givex(Box<GivexGiftCardAdditionalData>),
@@ -389,7 +389,7 @@ pub enum GiftCardAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GivexGiftCardAdditionalData {
     /// Last 4 digits of the gift card number
     #[schema(value_type = String, example = "4242")]
@@ -400,7 +400,7 @@ pub struct GivexGiftCardAdditionalData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CardTokenAdditionalData {
     /// The card holder's name
     #[schema(value_type = String, example = "John Test")]
@@ -412,7 +412,7 @@ pub struct CardTokenAdditionalData {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum UpiAdditionalData {
     #[smithy(value_type = "UpiCollectAdditionalData")]
     UpiCollect(Box<UpiCollectAdditionalData>),
@@ -426,7 +426,7 @@ pub enum UpiAdditionalData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaypalWalletAdditionalData {
     /// Email address associated with the payer's PayPal account
     #[schema(value_type = Option<String>, example = "johntest@test.com")]
@@ -440,7 +440,7 @@ pub struct PaypalWalletAdditionalData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct UpiCollectAdditionalData {
     /// Masked VPA ID
     #[schema(value_type = Option<String>, example = "ab********@okhdfcbank")]
@@ -454,7 +454,7 @@ pub struct UpiCollectAdditionalData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct WalletAdditionalDataForCard {
     /// The type of payment method
     #[serde(rename = "type")]

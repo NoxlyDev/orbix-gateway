@@ -2,7 +2,7 @@ use api_models::subscription::{self as subscription_types, SubscriptionResponse}
 use common_enums::connector_enums;
 use common_utils::id_type::GenerateId;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     api::ApplicationResponse, invoice::InvoiceUpdateRequest, platform::Platform,
     subscription::SubscriptionUpdate,
 };

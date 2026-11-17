@@ -21,8 +21,8 @@ run_id = ""
 
 [deja.recording.kafka]
 brokers = ["localhost:9092"]
-topic = "hyperswitch-deja-recording-events"
-client_id = "hyperswitch-deja-router-dev"
+topic = "orbix-deja-recording-events"
+client_id = "orbix-deja-router-dev"
 acks = "all"
 idempotence = true
 linger = 5
@@ -62,7 +62,7 @@ username = "db_user"
 password = "db_pass"
 host = "localhost"
 port = 5432
-dbname = "hyperswitch_db"
+dbname = "orbix_db"
 max_pool_size = 5
 min_idle_pool_size = 2
 connection_timeout = 10
@@ -74,7 +74,7 @@ username = "db_user"
 password = "db_pass"
 host = "localhost"
 port = 5432
-dbname = "hyperswitch_db"
+dbname = "orbix_db"
 max_pool_size = 5
 min_idle_pool_size = 2
 connection_timeout = 10
@@ -86,7 +86,7 @@ username = "db_user"
 password = "db_pass"
 host = "localhost"
 port = 5432
-dbname = "hyperswitch_db"
+dbname = "orbix_db"
 max_pool_size = 5
 min_idle_pool_size = 2
 connection_timeout = 10
@@ -98,7 +98,7 @@ username = "db_user"
 password = "db_pass"
 host = "localhost"
 port = 5432
-dbname = "hyperswitch_db"
+dbname = "orbix_db"
 max_pool_size = 5
 min_idle_pool_size = 2
 connection_timeout = 10
@@ -142,7 +142,7 @@ max_feed_count = 200
 # with when this section is absent — so uncomment only what you want to change.
 #
 # [cache]
-# invalidation_channel = "hyperswitch_invalidate" # Redis pub/sub channel used to invalidate in-memory cache entries across instances; must be identical on every instance of a deployment
+# invalidation_channel = "orbix_invalidate" # Redis pub/sub channel used to invalidate in-memory cache entries across instances; must be identical on every instance of a deployment
 #
 # Each of the caches below accepts the same keys:
 #   ttl_in_secs        # Seconds an entry is retained after it was inserted (default: 1800)
@@ -264,12 +264,12 @@ cards = [
     "gpayments",
     "helcim",
     "hipay",
-    "hyperswitch_vault",
+    "orbix_vault",
     "iatapay",
     "inespay",
     "itaubank",
     "jpmorgan",
-    "juspaythreedsserver",
+    "orbixthreedsserver",
     "mollie",
     "moneris",
     "multisafepay",
@@ -424,7 +424,7 @@ gpayments.base_url = "https://{{merchant_endpoint_prefix}}-test.api.as1.gpayment
 helcim.base_url = "https://api.helcim.com/"
 hipay.base_url = "https://stage-secure-gateway.hipay-tpp.com/rest/"
 hyperpg.base_url = "https://sandbox.hyperpg.in"
-hyperswitch_vault.base_url = "https://app.hyperswitch.io/api/v1"
+orbix_vault.base_url = "https://app.orbix.example/api/v1"
 hyperwallet.base_url = "https://uat-api.paylution.com"
 hipay.secondary_base_url = "https://stage-secure2-vault.hipay-tpp.com/rest/"
 hipay.third_base_url = "https://stage-api-gateway.hipay.com/"
@@ -435,7 +435,7 @@ inespay.base_url = "https://apiflow.inespay.com/san/v21"
 interpayments.base_url = "https://api-test.interpayments.com/v1"
 itaubank.base_url = "https://sandbox.devportal.itau.com.br/"
 jpmorgan.base_url = "https://api-mock.payments.jpmorgan.com/api/v2"
-juspaythreedsserver.base_url = "http://localhost:8000"
+orbixthreedsserver.base_url = "http://localhost:8000"
 katapult.base_url = "https://sandbox.katapult.com/api/v3"
 jpmorgan.secondary_base_url = "https://id.payments.jpmorgan.com"
 # JP Morgan Orbital (Chase Paymentech Orbital Gateway JSON API v4). Distinct from the
@@ -577,7 +577,7 @@ sts_role_session_name = ""
 [user]
 password_validity_in_days = 90
 two_factor_auth_expiry_in_secs = 300
-totp_issuer_name = "Hyperswitch Dev"
+totp_issuer_name = "Orbix Gateway Dev"
 base_url = "http://localhost:8080"
 force_two_factor_auth = false
 force_cookies = false
@@ -1339,9 +1339,9 @@ refund_tolerance = 100
 refund_retrieve_duration = 500
 refund_retrieve_tolerance = 100
 authorize_ttl = 36000
-assets_base_url = "https://app.hyperswitch.io/assets/TestProcessor/"
-default_return_url = "https://app.hyperswitch.io/"
-slack_invite_url = "https://join.slack.com/t/hyperswitch-io/shared_invite/zt-2awm23agh-p_G5xNpziv6yAiedTkkqLg"
+assets_base_url = "https://app.orbix.example/assets/TestProcessor/"
+default_return_url = "https://app.orbix.example/"
+slack_invite_url = "https://join.slack.com/t/orbix-io/shared_invite/zt-2awm23agh-p_G5xNpziv6yAiedTkkqLg"
 discord_invite_url = "https://discord.gg/wJZ7DVW8mm"
 
 [delayed_session_response]
@@ -1463,7 +1463,7 @@ paze_private_key_passphrase = "PAZE_PRIVATE_KEY_PASSPHRASE"
 
 [google_pay_decrypt_keys]
 google_pay_root_signing_keys = "GOOGLE_PAY_ROOT_SIGNING_KEYS" # Base 64 Encoded Root Signing Keys provided by Google Pay (https://developers.google.com/pay/api/web/guides/resources/payment-data-cryptography)
-google_pay_private_key = "GOOGLE_PAY_PRIVATE_KEY"             # Base 64 Encoded PKCS#8 private key of the Hyperswitch registered Google Pay gateway, used by the INTERNAL_GATEWAY tokenization flow
+google_pay_private_key = "GOOGLE_PAY_PRIVATE_KEY"             # Base 64 Encoded PKCS#8 private key of the Orbix Gateway registered Google Pay gateway, used by the INTERNAL_GATEWAY tokenization flow
 google_pay_common_merchant_id = "GOOGLE_PAY_COMMON_MERCHANT_ID" # Google Pay Business Console merchant id used when an INTERNAL_GATEWAY merchant does not supply one of its own. Not a secret, it is sent to the SDK
 google_pay_gateway_id = "GOOGLE_PAY_GATEWAY_ID"               # Gateway identifier registered with Google, also used to derive the `gateway:<id>` recipient. google_pay_private_key, google_pay_gateway_id and google_pay_common_merchant_id must either all be set or all be unset
 
@@ -1473,8 +1473,8 @@ sdk_url = "http://localhost:9050/HyperLoader.js"
 expiry = 900
 [generic_link.payment_method_collect.ui_config]
 theme = "#4285F4"
-logo = "https://app.hyperswitch.io/HyperswitchFavicon.png"
-merchant_name = "HyperSwitch"
+logo = "https://app.orbix.example/OrbixFavicon.png"
+merchant_name = "Orbix"
 [generic_link.payment_method_collect.enabled_payment_methods]
 card = "credit,debit"
 bank_transfer = "ach,bacs,sepa"
@@ -1485,8 +1485,8 @@ sdk_url = "http://localhost:9050/HyperLoader.js"
 expiry = 900
 [generic_link.payout_link.ui_config]
 theme = "#4285F4"
-logo = "https://app.hyperswitch.io/HyperswitchFavicon.png"
-merchant_name = "HyperSwitch"
+logo = "https://app.orbix.example/OrbixFavicon.png"
+merchant_name = "Orbix"
 [generic_link.payout_link.enabled_payment_methods]
 card = "credit,debit"
 
@@ -1537,22 +1537,22 @@ emit_external_service_call_events = false
 
 [events.kafka]
 brokers = ["localhost:9092"]
-fraud_check_analytics_topic = "hyperswitch-fraud-check-events"
-intent_analytics_topic = "hyperswitch-payment-intent-events"
-attempt_analytics_topic = "hyperswitch-payment-attempt-events"
-refund_analytics_topic = "hyperswitch-refund-events"
-api_logs_topic = "hyperswitch-api-log-events"
-connector_logs_topic = "hyperswitch-outgoing-connector-events"
-outgoing_webhook_logs_topic = "hyperswitch-outgoing-webhook-events"
-dispute_analytics_topic = "hyperswitch-dispute-events"
-audit_events_topic = "hyperswitch-audit-events"
-payout_analytics_topic = "hyperswitch-payout-events"
-consolidated_events_topic = "hyperswitch-consolidated-events"
-authentication_analytics_topic = "hyperswitch-authentication-events"
-routing_logs_topic = "hyperswitch-routing-api-events"
-revenue_recovery_topic = "hyperswitch-revenue-recovery-events"
-external_service_call_topic = "hyperswitch-external-service-call-events"
-account_updater_topic = "hyperswitch-account-updater-events"
+fraud_check_analytics_topic = "orbix-fraud-check-events"
+intent_analytics_topic = "orbix-payment-intent-events"
+attempt_analytics_topic = "orbix-payment-attempt-events"
+refund_analytics_topic = "orbix-refund-events"
+api_logs_topic = "orbix-api-log-events"
+connector_logs_topic = "orbix-outgoing-connector-events"
+outgoing_webhook_logs_topic = "orbix-outgoing-webhook-events"
+dispute_analytics_topic = "orbix-dispute-events"
+audit_events_topic = "orbix-audit-events"
+payout_analytics_topic = "orbix-payout-events"
+consolidated_events_topic = "orbix-consolidated-events"
+authentication_analytics_topic = "orbix-authentication-events"
+routing_logs_topic = "orbix-routing-api-events"
+revenue_recovery_topic = "orbix-revenue-recovery-events"
+external_service_call_topic = "orbix-external-service-call-events"
+account_updater_topic = "orbix-account-updater-events"
 
 [debit_routing_config]
 supported_currencies = "USD"
@@ -1576,7 +1576,7 @@ username = "db_user"
 password = "db_pass"
 host = "localhost"
 port = 5432
-dbname = "hyperswitch_db"
+dbname = "orbix_db"
 max_pool_size = 5
 min_idle_pool_size = 2
 connection_timeout = 10
@@ -1607,11 +1607,11 @@ primary_password = "0penS3arc#"
 region = "eu-central-1"
 
 [opensearch.indexes]
-payment_attempts = "hyperswitch-payment-attempt-events"
-payment_intents = "hyperswitch-payment-intent-events"
-refunds = "hyperswitch-refund-events"
-disputes = "hyperswitch-dispute-events"
-payouts = "hyperswitch-payout-events"
+payment_attempts = "orbix-payment-attempt-events"
+payment_intents = "orbix-payment-intent-events"
+refunds = "orbix-refund-events"
+disputes = "orbix-dispute-events"
+payouts = "orbix-payout-events"
 sessionizer_payment_attempts = "sessionizer-payment-attempt-events"
 sessionizer_payment_intents = "sessionizer-payment-intent-events"
 sessionizer_refunds = "sessionizer-refund-events"
@@ -1669,8 +1669,8 @@ base_url = "http://127.0.0.1:8080" #Base URL
 file_storage_backend = "file_system" # Theme storage backend to be used
 
 [theme.email_config]
-entity_name = "Hyperswitch"                                                      # Display name in emails
-entity_logo_url = "https://app.hyperswitch.io/email-assets/HyperswitchLogo.png"  # Logo URL for emails
+entity_name = "Orbix"                                                      # Display name in emails
+entity_logo_url = "https://app.orbix.example/email-assets/OrbixLogo.png"  # Logo URL for emails
 foreground_color = "#111326"                                                     # Text color
 primary_color = "#006DF9"                                                        # Primary color
 background_color = "#FFFFFF"                                                     # Email background color
@@ -1683,7 +1683,7 @@ allow_connected_merchants = true
 click_to_pay = {connector_list = "adyen, cybersource, trustpay"}
 
 [authentication_service_enabled_connectors]
-connector_list = "juspaythreedsserver, ctp_mastercard, ctp_visa"
+connector_list = "orbixthreedsserver, ctp_mastercard, ctp_visa"
 
 [open_router]
 dynamic_routing_enabled = false

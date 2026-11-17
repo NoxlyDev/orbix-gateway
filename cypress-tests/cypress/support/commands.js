@@ -2990,7 +2990,7 @@ Cypress.Commands.add(
         Accept: "application/json",
         "Content-Type": "application/json",
         "api-key": globalState.get("publishableKey"),
-        "x-merchant-domain": "hyperswitch - demo - store.netlify.app",
+        "x-merchant-domain": "orbix - demo - store.netlify.app",
         "x-client-platform": "web",
       },
       body: sessionTokenBody,
@@ -3417,7 +3417,7 @@ Cypress.Commands.add("deletePaymentMethodTest", (globalState) => {
         expect(response.body.payment_method_id).to.equal(paymentMethodId);
         expect(response.body.deleted).to.be.true;
       } else if (response.status === 500 && baseUrl.includes("localhost")) {
-        // delete payment method api endpoint requires tartarus (hyperswitch card vault) to be set up since it makes a call to the locker service to delete the payment method
+        // delete payment method api endpoint requires tartarus (orbix card vault) to be set up since it makes a call to the locker service to delete the payment method
         expect(response.body.error.code).to.include("HE_00");
         expect(response.body.error.message).to.include("Something went wrong");
       } else {
@@ -9452,7 +9452,7 @@ Cypress.Commands.add("setMerchantOfferEngineConfig", (globalState) => {
         merchant_id: merchantId,
         offer_engine_config: {
           api_key: offerEngineApiKey,
-          // Offer Engine's own merchant id (distinct from the Hyperswitch
+          // Offer Engine's own merchant id (distinct from the Orbix Gateway
           // merchant id above) — a pre-provisioned Offer Engine account, not
           // something a fresh Cypress-created merchant has a counterpart for.
           merchant_id: "qaoffers",
@@ -13483,9 +13483,9 @@ Cypress.Commands.add(
     const superpositionBaseUrl = globalState.get("superpositionBaseUrl");
     const superpositionSecret = globalState.get("superpositionSecret");
     const superpositionAuthToken = globalState.get("superpositionAuthToken");
-    const orgId = globalState.get("superpositionOrgId") || "hyperswitch";
+    const orgId = globalState.get("superpositionOrgId") || "orbix";
     const workspaceId =
-      globalState.get("superpositionWorkspaceId") || "hyperswitch";
+      globalState.get("superpositionWorkspaceId") || "orbix";
 
     if (
       !superpositionBaseUrl ||
@@ -13556,9 +13556,9 @@ Cypress.Commands.add("deleteSuperpositionContext", (globalState, context) => {
   const superpositionBaseUrl = globalState.get("superpositionBaseUrl");
   const superpositionSecret = globalState.get("superpositionSecret");
   const superpositionAuthToken = globalState.get("superpositionAuthToken");
-  const orgId = globalState.get("superpositionOrgId") || "hyperswitch";
+  const orgId = globalState.get("superpositionOrgId") || "orbix";
   const workspaceId =
-    globalState.get("superpositionWorkspaceId") || "hyperswitch";
+    globalState.get("superpositionWorkspaceId") || "orbix";
 
   if (
     !superpositionBaseUrl ||

@@ -2,11 +2,11 @@
 
 use common_utils::errors::CustomResult;
 use error_stack::ResultExt;
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     encryption_interface::{EncryptionError, EncryptionManagementInterface},
     secrets_interface::{SecretManagementInterface, SecretsManagementError},
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 
 use crate::gcp_kms::core::GcpKmsClient;
 

@@ -10,7 +10,7 @@ use std::{path::PathBuf, sync::Arc};
 use crate::{
     configs::settings::{DejaMode, DejaReplaySettings, DejaSettings},
     services::kafka::deja_record_sink::{
-        HyperswitchKafkaRecordSink, HyperswitchKafkaRecordSinkConfig,
+        OrbixKafkaRecordSink, OrbixKafkaRecordSinkConfig,
     },
 };
 
@@ -245,7 +245,7 @@ fn install_record(settings: &DejaSettings, inherited_brokers: Option<&[String]>)
     }
 
     let run_id = configured_run_id(settings);
-    let sink = match HyperswitchKafkaRecordSink::new(HyperswitchKafkaRecordSinkConfig {
+    let sink = match OrbixKafkaRecordSink::new(OrbixKafkaRecordSinkConfig {
         brokers,
         topic,
         recording_run_id: &run_id,

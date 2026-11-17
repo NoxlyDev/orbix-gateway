@@ -1,6 +1,6 @@
 use common_enums::ExecutionPath;
-use hyperswitch_domain_models::router_flow_types as domain;
-use hyperswitch_interfaces::{
+use orbix_domain_models::router_flow_types as domain;
+use orbix_interfaces::{
     api::gateway as payment_gateway, connector_integration_interface::RouterDataConversion,
 };
 

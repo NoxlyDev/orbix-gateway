@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use hyperswitch_interfaces::api::ConnectorSpecifications;
+use orbix_interfaces::api::ConnectorSpecifications;
 
 use super::ConstructFlowSpecificData;
 use crate::{
@@ -32,7 +32,7 @@ impl
         _business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         _merchant_recipient_data: Option<types::MerchantRecipientData>,
-        _header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        _header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _payment_method: Option<common_enums::PaymentMethod>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         connector_callback_urls: &mut ConnectorCallbackUrls,
@@ -59,7 +59,7 @@ impl
         customer: &Option<domain::Customer>,
         merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
     ) -> RouterResult<types::PaymentsUpdatePostConfirmRouterData> {
         todo!()
@@ -81,7 +81,7 @@ impl Feature<api::UpdatePostConfirm, types::PaymentsUpdatePostConfirmData>
         call_connector_action: payments::CallConnectorAction,
         connector_request: Option<services::Request>,
         _business_profile: &domain::Profile,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         return_raw_connector_response: Option<bool>,
         _gateway_context: payments::gateway::context::RouterGatewayContext,
     ) -> RouterResult<Self> {
@@ -124,7 +124,7 @@ impl Feature<api::UpdatePostConfirm, types::PaymentsUpdatePostConfirmData>
         gateway_context: &payments::gateway::context::RouterGatewayContext,
     ) -> RouterResult<types::AddAccessTokenResult> {
         let current_flow = Some(
-            hyperswitch_interfaces::api::CurrentFlowInfo::UpdatePostConfirm {
+            orbix_interfaces::api::CurrentFlowInfo::UpdatePostConfirm {
                 request_data: Box::new(self.request.clone()),
             },
         );

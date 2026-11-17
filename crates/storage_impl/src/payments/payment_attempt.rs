@@ -20,14 +20,14 @@ use error_stack::ResultExt;
 #[cfg(all(feature = "v1", feature = "olap"))]
 use futures::future::{try_join_all, FutureExt};
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::payment_attempt::ConfirmIntentResponseUpdate;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payments::payment_attempt::ConfirmIntentResponseUpdate;
+use orbix_domain_models::{
     mandates::{MandateAmountData, MandateDataType, MandateDetails},
     payments::payment_attempt::{PaymentAttempt, PaymentAttemptInterface, PaymentAttemptUpdate},
     platform::{ProcessorKeyStore, ProcessorMerchantId, ProcessorStorageScheme},
 };
 #[cfg(all(feature = "v1", feature = "olap"))]
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments::payment_attempt::PaymentListFilters, payments::PaymentIntent,
 };
 #[cfg(feature = "v2")]
@@ -408,7 +408,7 @@ impl<T: DatabaseStore> PaymentAttemptInterface for RouterStore<T> {
     ) -> CustomResult<PaymentListFilters, errors::StorageError> {
         let conn = pg_connection_read(self).await?;
         let intents = try_join_all(pi.iter().map(|pi| async {
-            hyperswitch_domain_models::behaviour::Conversion::convert(pi.clone())
+            orbix_domain_models::behaviour::Conversion::convert(pi.clone())
                 .await
                 .change_context(errors::StorageError::EncryptionError)
         }))
@@ -2001,16 +2001,16 @@ use common_utils::{
     types::{keymanager, keymanager::ToEncryptable, ConnectorTransactionIdTrait, CreatedBy},
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::payment_attempt::AttemptAmountDetailsSetter;
+use orbix_domain_models::payments::payment_attempt::AttemptAmountDetailsSetter;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::payment_attempt::ErrorDetails;
+use orbix_domain_models::payments::payment_attempt::ErrorDetails;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::payments::payment_attempt::NetAmount;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payments::payment_attempt::NetAmount;
+use orbix_domain_models::{
     payments::payment_attempt::EncryptedPaymentAttempt,
     type_encryption::{crypto_operation, CryptoOperation},
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 
 #[cfg(feature = "v2")]
 use crate::behaviour::ForeignFrom;

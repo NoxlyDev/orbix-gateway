@@ -16,10 +16,10 @@ use diesel_models::payment_method;
 use diesel_models::{business_profile::CardTestingGuardConfig, organization::OrganizationBridge};
 use error_stack::{report, FutureExt, ResultExt};
 use external_services::http_client::{client, outbound_destination};
-use hyperswitch_domain_models::merchant_connector_account::{
+use orbix_domain_models::merchant_connector_account::{
     FromRequestEncryptableMerchantConnectorAccount, UpdateEncryptableMerchantConnectorAccount,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use pm_auth::types as pm_auth_types;
 use storage_impl::behaviour;
 #[cfg(feature = "olap")]
@@ -354,7 +354,7 @@ pub async fn create_merchant_account(
         key_manager_state,
         EncryptionTransferRequest {
             identifier: identifier.clone(),
-            key: hyperswitch_masking::StrongSecret::new(consts::BASE64_ENGINE.encode(key)),
+            key: orbix_masking::StrongSecret::new(consts::BASE64_ENGINE.encode(key)),
         },
     )
     .await
@@ -1956,7 +1956,7 @@ struct DefaultFallbackRoutingConfigUpdate<'a> {
     merchant_connector_id: &'a id_type::MerchantConnectorAccountId,
     store: &'a dyn StorageInterface,
     business_profile: domain::Profile,
-    key_store: hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+    key_store: orbix_domain_models::merchant_key_store::MerchantKeyStore,
     key_manager_state: &'a KeyManagerState,
 }
 #[cfg(feature = "v2")]
@@ -4656,7 +4656,7 @@ pub async fn update_profile(
     merchant_id: id_type::MerchantId,
     key_store: domain::MerchantKeyStore,
     request: api::ProfileUpdate,
-    provider_merchant_id: Option<hyperswitch_domain_models::platform::ProviderMerchantId>,
+    provider_merchant_id: Option<orbix_domain_models::platform::ProviderMerchantId>,
 ) -> RouterResponse<api::ProfileResponse> {
     let db = state.store.as_ref();
 
@@ -4685,10 +4685,10 @@ pub async fn update_profile(
         // payment paths resolve; fall back to the auth merchant only when unavailable.
         let dimensions = crate::core::configs::dimension_state::Dimensions::new()
             .with_processor_merchant_id(
-                hyperswitch_domain_models::platform::ProcessorMerchantId::from(merchant_id.clone()),
+                orbix_domain_models::platform::ProcessorMerchantId::from(merchant_id.clone()),
             )
             .with_provider_merchant_id(provider_merchant_id.unwrap_or_else(|| {
-                hyperswitch_domain_models::platform::ProviderMerchantId::new(merchant_id.clone())
+                orbix_domain_models::platform::ProviderMerchantId::new(merchant_id.clone())
             }))
             .with_profile_id(profile_id.clone());
         if crate::core::payments::routing::utils::is_decision_engine_routing_effective(
@@ -5192,7 +5192,7 @@ async fn locker_recipient_create_call(
         key_manager_state,
         type_name!(payment_method::PaymentMethod),
         domain_types::CryptoOperation::Encrypt(
-            Secret::<String, hyperswitch_masking::WithType>::new(data_json),
+            Secret::<String, orbix_masking::WithType>::new(data_json),
         ),
         identifier,
         key,

@@ -9,10 +9,10 @@ pub use diesel_models::payment_method::PaymentMethod;
 use diesel_models::payment_method::{PaymentMethodUpdate, PaymentMethodUpdateInternal};
 use error_stack::ResultExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::payment_methods::PaymentMethodVaultSourceDetails;
+use orbix_domain_models::payment_methods::PaymentMethodVaultSourceDetails;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::platform::Initiator;
-use hyperswitch_domain_models::{
+use orbix_domain_models::platform::Initiator;
+use orbix_domain_models::{
     merchant_key_store::MerchantKeyStore,
     payment_methods::{
         PaymentMethod as DomainPaymentMethod, PaymentMethodCompatAction, PaymentMethodInterface,
@@ -1334,20 +1334,20 @@ pub use diesel_models::{
     enums as storage_enums, PaymentMethodUpdate as StoragePaymentMethodUpdate,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payment_methods::EncryptedPaymentMethodSession;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payment_methods::EncryptedPaymentMethodSession;
+use orbix_domain_models::{
     payment_methods::EncryptedPaymentMethod,
     type_encryption::{crypto_operation, CryptoOperation},
 };
 #[cfg(feature = "v2")]
-use hyperswitch_masking::ExposeInterface;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::ExposeInterface;
+use orbix_masking::{PeekInterface, Secret};
 #[cfg(feature = "v2")]
 use serde_json::Value;
 
 #[cfg(feature = "v1")]
 #[async_trait::async_trait]
-impl Conversion for hyperswitch_domain_models::payment_methods::PaymentMethod {
+impl Conversion for orbix_domain_models::payment_methods::PaymentMethod {
     type DstType = PaymentMethod;
     type NewDstType = diesel_models::payment_method::PaymentMethodNew;
     async fn convert(self) -> CustomResult<Self::DstType, ValidationError> {
@@ -1588,7 +1588,7 @@ impl Conversion for hyperswitch_domain_models::payment_methods::PaymentMethod {
 
 #[cfg(feature = "v2")]
 #[async_trait::async_trait]
-impl Conversion for hyperswitch_domain_models::payment_methods::PaymentMethod {
+impl Conversion for orbix_domain_models::payment_methods::PaymentMethod {
     type DstType = PaymentMethod;
     type NewDstType = diesel_models::payment_method::PaymentMethodNew;
     async fn convert(self) -> CustomResult<Self::DstType, ValidationError> {
@@ -1750,7 +1750,7 @@ impl Conversion for hyperswitch_domain_models::payment_methods::PaymentMethod {
                 payment_method_data,
                 locker_id: storage_model
                     .locker_id
-                    .map(hyperswitch_domain_models::payment_methods::VaultId::generate),
+                    .map(orbix_domain_models::payment_methods::VaultId::generate),
                 last_used_at: storage_model.last_used_at,
                 connector_mandate_details: storage_model.connector_mandate_details.map(From::from),
                 customer_acceptance: storage_model.customer_acceptance,
@@ -1840,7 +1840,7 @@ impl Conversion for hyperswitch_domain_models::payment_methods::PaymentMethod {
 
 #[cfg(feature = "v2")]
 #[async_trait::async_trait]
-impl Conversion for hyperswitch_domain_models::payment_methods::PaymentMethodSession {
+impl Conversion for orbix_domain_models::payment_methods::PaymentMethodSession {
     type DstType = diesel_models::payment_methods_session::PaymentMethodSession;
     type NewDstType = diesel_models::payment_methods_session::PaymentMethodSession;
     async fn convert(self) -> CustomResult<Self::DstType, ValidationError> {

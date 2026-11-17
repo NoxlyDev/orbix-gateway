@@ -1,7 +1,7 @@
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 /// Lead source constant for Hubspot
-pub const HUBSPOT_LEAD_SOURCE: &str = "Hyperswitch Dashboard";
+pub const HUBSPOT_LEAD_SOURCE: &str = "Orbix Gateway Dashboard";
 
 /// Struct representing a request to Hubspot
 #[derive(Clone, Debug, serde::Serialize, Default)]
@@ -30,7 +30,7 @@ pub struct HubspotRequest {
     #[serde(rename = "companyName")]
     pub company_name: String,
 
-    /// The source of the lead, typically set to "Hyperswitch Dashboard".
+    /// The source of the lead, typically set to "Orbix Gateway Dashboard".
     pub lead_source: String,
 
     /// The website URL of the company.

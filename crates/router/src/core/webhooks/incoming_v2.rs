@@ -5,17 +5,17 @@ use common_utils::{
     errors::ReportSwitchExt, events::ApiEventsType, types::keymanager::KeyManagerState,
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     api::{IncomingWebhookEventMetadata, WebhookResponse},
     payments::{HeaderPayload, PaymentStatusData},
     router_request_types::VerifyWebhookSourceRequestData,
     router_response_types::{VerifyWebhookSourceResponseData, VerifyWebhookStatus},
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::ConnectorCommon,
     webhooks::{IncomingWebhookRequestDetails, WebhookResourceData},
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router_env::{instrument, tracing};
 
 use super::{source_verification::IncomingWebhookVerifier, types, utils, MERCHANT_ID};
@@ -234,7 +234,7 @@ async fn incoming_webhooks_core(
     logger::info!(process_webhook=?process_webhook_further);
 
     let flow_type: api::WebhookFlow = event_type.into();
-    let mut event_object: Box<dyn hyperswitch_masking::ErasedMaskSerialize> =
+    let mut event_object: Box<dyn orbix_masking::ErasedMaskSerialize> =
         Box::new(serde_json::Value::Null);
     let webhook_effect = if process_webhook_further
         && !matches!(flow_type, api::WebhookFlow::ReturnResponse)
@@ -672,7 +672,7 @@ where
 
     // We need the address here to send it in the response
     // In case we need to send an outgoing webhook, we might have to send the billing address and shipping address
-    let payment_address = hyperswitch_domain_models::payment_address::PaymentAddress::new(
+    let payment_address = orbix_domain_models::payment_address::PaymentAddress::new(
         payment_intent
             .shipping_address
             .clone()
@@ -719,7 +719,7 @@ async fn verify_webhook_source_verification_call(
     .change_context(errors::ConnectorError::WebhookSourceVerificationFailed)
     .attach_printable("invalid connector name received in payment attempt")?;
     let connector_integration: services::BoxedWebhookSourceVerificationConnectorIntegrationInterface<
-        hyperswitch_domain_models::router_flow_types::VerifyWebhookSource,
+        orbix_domain_models::router_flow_types::VerifyWebhookSource,
         VerifyWebhookSourceRequestData,
         VerifyWebhookSourceResponseData,
     > = connector_data.connector.get_connector_integration();

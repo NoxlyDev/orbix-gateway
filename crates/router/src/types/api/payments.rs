@@ -17,7 +17,7 @@ pub use api_models::{
     },
     payments::{
         Address, AddressDetails, Amount, ApplepayPaymentMethod, AuthenticationForStartResponse,
-        Card, CryptoData, CustomerDetails, CustomerDetailsResponse, HyperswitchVaultSessionDetails,
+        Card, CryptoData, CustomerDetails, CustomerDetailsResponse, OrbixVaultSessionDetails,
         InternalVaultSessionDetails, MandateAmountData, MandateData, MandateType,
         MandateValidationFields, NextActionType, OpenBankingSessionToken, PayLaterData,
         PaymentIdType, PaymentListConstraints, PaymentListFilters, PaymentListFiltersV2,
@@ -39,8 +39,8 @@ pub use api_models::{
 };
 pub use common_types::payments::{AcceptanceType, CustomerAcceptance, OnlineMandate};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::mandates;
-pub use hyperswitch_domain_models::router_flow_types::payments::{
+use orbix_domain_models::mandates;
+pub use orbix_domain_models::router_flow_types::payments::{
     Approve, Authorize, AuthorizeSessionToken, Balance, CalculateTax, Capture, CompleteAuthorize,
     CreateConnectorCustomer, CreateOrder, ExtendAuthorization, ExternalVaultProxy, GenerateQr,
     IncrementalAuthorization, InitPayment, PSync, PaymentCreateIntent, PaymentGetIntent,
@@ -49,7 +49,7 @@ pub use hyperswitch_domain_models::router_flow_types::payments::{
     Session, SetupMandate, SurchargeRefundComplete as SurchargeRefundCompleteFlow,
     SurchargeRefundInit as SurchargeRefundInitFlow, UpdateMetadata, UpdatePostConfirm, Void,
 };
-pub use hyperswitch_interfaces::api::payments::{
+pub use orbix_interfaces::api::payments::{
     ConnectorCustomer, MandateSetup, Payment, PaymentApprove, PaymentAuthorize,
     PaymentAuthorizeSessionToken, PaymentCapture, PaymentIncrementalAuthorization,
     PaymentPostCaptureVoid, PaymentPostCaptureVoidSync, PaymentPostSessionTokens, PaymentReject,
@@ -150,7 +150,7 @@ mod payments_test {
             card_number: "1234432112344321".to_string().try_into().unwrap(),
             card_exp_month: "12".to_string().into(),
             card_exp_year: "99".to_string().into(),
-            card_holder_name: Some(hyperswitch_masking::Secret::new("JohnDoe".to_string())),
+            card_holder_name: Some(orbix_masking::Secret::new("JohnDoe".to_string())),
             card_cvc: "123".to_string().into(),
             card_issuer: Some("HDFC".to_string()),
             card_network: Some(api_models::enums::CardNetwork::Visa),
@@ -161,7 +161,7 @@ mod payments_test {
             card_subtype: None,
             card_segment_type: None,
             funding_source: None,
-            nick_name: Some(hyperswitch_masking::Secret::new("nick_name".into())),
+            nick_name: Some(orbix_masking::Secret::new("nick_name".into())),
         }
     }
 

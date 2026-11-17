@@ -1,4 +1,4 @@
-// Copyright (c) Juspay Technologies. All rights reserved.
+// Copyright (c) Orbix Technologies. All rights reserved.
 //
 // Dispute-specific request/response messages. DisputeService is in services.proto.
 // Shared dispute status, evidence, and response types remain in payment.proto.
@@ -11,7 +11,7 @@ import "payment.proto";
 import "payment_methods.proto";
 import "common_types.proto";
 
-option go_package = "github.com/juspay/connector-service/crates/types-traits/grpc-api-types/proto;proto";
+option go_package = "github.com/orbix/connector-service/crates/types-traits/grpc-api-types/proto;proto";
 
 // ============================================================================
 // DISPUTE SERVICE MESSAGES

@@ -2,7 +2,7 @@
 
 use api_models::payment_methods::PaymentMethodId;
 use common_utils::request::Method;
-use hyperswitch_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
+use orbix_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
 use serde::Deserialize;
 
 /// V1-facing delete flow type.
@@ -98,7 +98,7 @@ impl DeletePaymentMethod {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     DeletePaymentMethod,
     method = Method::Delete,
     path = "/v2/payment-methods/{id}",

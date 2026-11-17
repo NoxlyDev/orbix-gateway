@@ -43,7 +43,7 @@ impl Default for SqlxClient {
     fn default() -> Self {
         let database_url = format!(
             "postgres://{}:{}@{}:{}/{}",
-            "db_user", "db_pass", "localhost", 5432, "hyperswitch_db"
+            "db_user", "db_pass", "localhost", 5432, "orbix_db"
         );
         Self {
             #[allow(clippy::expect_used)]

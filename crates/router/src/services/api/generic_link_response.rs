@@ -1,6 +1,6 @@
 use common_utils::{errors::CustomResult, link_utils::CspNonce};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::api::{
+use orbix_domain_models::api::{
     GenericExpiredLinkData, GenericLinkFormData, GenericLinkStatusData, GenericLinksData,
 };
 use tera::{Context, Tera};

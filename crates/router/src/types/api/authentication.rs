@@ -3,7 +3,7 @@ use std::str::FromStr;
 use api_models::enums;
 use common_utils::errors::CustomResult;
 use error_stack::ResultExt;
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     router_flow_types::authentication::{
         Authentication, PostAuthentication, PreAuthentication, PreAuthenticationVersionCall,
     },
@@ -32,10 +32,10 @@ pub struct AuthenticationResponse {
     pub error_message: Option<String>,
 }
 
-impl TryFrom<hyperswitch_domain_models::authentication::Authentication> for AuthenticationResponse {
+impl TryFrom<orbix_domain_models::authentication::Authentication> for AuthenticationResponse {
     type Error = error_stack::Report<errors::ApiErrorResponse>;
     fn try_from(
-        authentication: hyperswitch_domain_models::authentication::Authentication,
+        authentication: orbix_domain_models::authentication::Authentication,
     ) -> Result<Self, Self::Error> {
         let trans_status = authentication
             .trans_status
@@ -63,7 +63,7 @@ impl TryFrom<hyperswitch_domain_models::authentication::Authentication> for Auth
 #[derive(Clone, serde::Deserialize, Debug, serde::Serialize)]
 pub struct PostAuthenticationResponse {
     pub trans_status: String,
-    pub authentication_value: Option<hyperswitch_masking::Secret<String>>,
+    pub authentication_value: Option<orbix_masking::Secret<String>>,
     pub eci: Option<String>,
 }
 
@@ -107,8 +107,8 @@ impl AuthenticationConnectorData {
             enums::AuthenticationConnectors::UnifiedAuthenticationService => Ok(
                 ConnectorEnum::Old(Box::new(connector::UnifiedAuthenticationService::new())),
             ),
-            enums::AuthenticationConnectors::Juspaythreedsserver => Ok(ConnectorEnum::Old(
-                Box::new(connector::Juspaythreedsserver::new()),
+            enums::AuthenticationConnectors::Orbixthreedsserver => Ok(ConnectorEnum::Old(
+                Box::new(connector::Orbixthreedsserver::new()),
             )),
             enums::AuthenticationConnectors::Cardinal => Ok(ConnectorEnum::Old(Box::new(
                 connector::UnifiedAuthenticationService::new(),

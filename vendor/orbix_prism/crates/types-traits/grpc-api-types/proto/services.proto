@@ -1,4 +1,4 @@
-// Copyright (c) Juspay Technologies. All rights reserved.
+// Copyright (c) Orbix Technologies. All rights reserved.
 //
 // Package: ucs.v2
 // File: services.proto
@@ -75,7 +75,7 @@ import "payouts.proto";
 import "surcharge.proto";
 import "frm.proto";
 
-option go_package = "github.com/juspay/connector-service/crates/types-traits/grpc-api-types/proto;proto";
+option go_package = "github.com/orbix/connector-service/crates/types-traits/grpc-api-types/proto;proto";
 
 // ============================================================================
 // SERVICE DEFINITIONS
@@ -175,7 +175,7 @@ service PaymentService {
   //
   // 3DS flows (PreAuthenticate, Authenticate, PostAuthenticate) are available
   // because the vault proxy substitutes aliases with the real PAN before
-  // forwarding to the 3DS server (Netcetera, JuspayThreeDsServer, etc.).
+  // forwarding to the 3DS server (Netcetera, OrbixThreeDsServer, etc.).
 
   // Authorize using vault-aliased card data. Proxy substitutes before connector.
   rpc ProxyAuthorize(PaymentServiceProxyAuthorizeRequest) returns (PaymentServiceAuthorizeResponse);

@@ -1,10 +1,10 @@
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     behaviour::{Conversion, ReverseConversion},
     hierarchical_resource as domain,
     hierarchical_resource::HierarchicalResourceInterface,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router_env::instrument;
 
 use crate::{

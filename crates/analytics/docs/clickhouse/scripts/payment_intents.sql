@@ -28,7 +28,7 @@ CREATE TABLE payment_intents_queue
     `created_by` Nullable(String),
     `sign_flag` Int8
 ) ENGINE = Kafka SETTINGS kafka_broker_list = 'kafka0:29092',
-kafka_topic_list = 'hyperswitch-payment-intent-events',
+kafka_topic_list = 'orbix-payment-intent-events',
 kafka_group_name = 'hyper',
 kafka_format = 'JSONEachRow',
 kafka_handle_error_mode = 'stream';

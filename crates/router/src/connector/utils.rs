@@ -20,8 +20,8 @@ use common_utils::{
 };
 use diesel_models::{enums, types::OrderDetailsWithAmount};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{mandates, payments::payment_attempt::PaymentAttempt};
-use hyperswitch_masking::{Deserialize, ExposeInterface, Secret};
+use orbix_domain_models::{mandates, payments::payment_attempt::PaymentAttempt};
+use orbix_masking::{Deserialize, ExposeInterface, Secret};
 use regex::Regex;
 
 #[cfg(feature = "frm")]
@@ -69,20 +69,20 @@ impl AccessTokenRequestInfo for types::RefreshTokenRouterData {
 }
 
 pub trait RouterData {
-    fn get_billing(&self) -> Result<&hyperswitch_domain_models::address::Address, Error>;
+    fn get_billing(&self) -> Result<&orbix_domain_models::address::Address, Error>;
     fn get_billing_country(&self) -> Result<api_models::enums::CountryAlpha2, Error>;
     fn get_billing_phone(&self)
-        -> Result<&hyperswitch_domain_models::address::PhoneDetails, Error>;
+        -> Result<&orbix_domain_models::address::PhoneDetails, Error>;
     fn get_description(&self) -> Result<String, Error>;
     fn get_billing_address(
         &self,
-    ) -> Result<&hyperswitch_domain_models::address::AddressDetails, Error>;
+    ) -> Result<&orbix_domain_models::address::AddressDetails, Error>;
     fn get_shipping_address(
         &self,
-    ) -> Result<&hyperswitch_domain_models::address::AddressDetails, Error>;
+    ) -> Result<&orbix_domain_models::address::AddressDetails, Error>;
     fn get_shipping_address_with_phone_number(
         &self,
-    ) -> Result<&hyperswitch_domain_models::address::Address, Error>;
+    ) -> Result<&orbix_domain_models::address::Address, Error>;
     fn get_connector_meta(&self) -> Result<pii::SecretSerdeValue, Error>;
     fn get_session_token(&self) -> Result<String, Error>;
     fn get_billing_first_name(&self) -> Result<Secret<String>, Error>;
@@ -108,8 +108,8 @@ pub trait RouterData {
     #[cfg(feature = "payouts")]
     fn get_quote_id(&self) -> Result<String, Error>;
 
-    fn get_optional_billing(&self) -> Option<&hyperswitch_domain_models::address::Address>;
-    fn get_optional_shipping(&self) -> Option<&hyperswitch_domain_models::address::Address>;
+    fn get_optional_billing(&self) -> Option<&orbix_domain_models::address::Address>;
+    fn get_optional_shipping(&self) -> Option<&orbix_domain_models::address::Address>;
     fn get_optional_shipping_line1(&self) -> Option<Secret<String>>;
     fn get_optional_shipping_line2(&self) -> Option<Secret<String>>;
     fn get_optional_shipping_line3(&self) -> Option<Secret<String>>;
@@ -292,7 +292,7 @@ pub fn get_unimplemented_payment_method_error_message(connector: &str) -> String
 }
 
 impl<Flow, Request, Response> RouterData for types::RouterData<Flow, Request, Response> {
-    fn get_billing(&self) -> Result<&hyperswitch_domain_models::address::Address, Error> {
+    fn get_billing(&self) -> Result<&orbix_domain_models::address::Address, Error> {
         self.address
             .get_payment_method_billing()
             .ok_or_else(missing_field_err("billing"))
@@ -310,18 +310,18 @@ impl<Flow, Request, Response> RouterData for types::RouterData<Flow, Request, Re
 
     fn get_billing_phone(
         &self,
-    ) -> Result<&hyperswitch_domain_models::address::PhoneDetails, Error> {
+    ) -> Result<&orbix_domain_models::address::PhoneDetails, Error> {
         self.address
             .get_payment_method_billing()
             .and_then(|a| a.phone.as_ref())
             .ok_or_else(missing_field_err("billing.phone"))
     }
 
-    fn get_optional_billing(&self) -> Option<&hyperswitch_domain_models::address::Address> {
+    fn get_optional_billing(&self) -> Option<&orbix_domain_models::address::Address> {
         self.address.get_payment_method_billing()
     }
 
-    fn get_optional_shipping(&self) -> Option<&hyperswitch_domain_models::address::Address> {
+    fn get_optional_shipping(&self) -> Option<&orbix_domain_models::address::Address> {
         self.address.get_shipping()
     }
 
@@ -426,7 +426,7 @@ impl<Flow, Request, Response> RouterData for types::RouterData<Flow, Request, Re
     }
     fn get_billing_address(
         &self,
-    ) -> Result<&hyperswitch_domain_models::address::AddressDetails, Error> {
+    ) -> Result<&orbix_domain_models::address::AddressDetails, Error> {
         self.address
             .get_payment_method_billing()
             .as_ref()
@@ -645,7 +645,7 @@ impl<Flow, Request, Response> RouterData for types::RouterData<Flow, Request, Re
 
     fn get_shipping_address(
         &self,
-    ) -> Result<&hyperswitch_domain_models::address::AddressDetails, Error> {
+    ) -> Result<&orbix_domain_models::address::AddressDetails, Error> {
         self.address
             .get_shipping()
             .and_then(|a| a.address.as_ref())
@@ -654,7 +654,7 @@ impl<Flow, Request, Response> RouterData for types::RouterData<Flow, Request, Re
 
     fn get_shipping_address_with_phone_number(
         &self,
-    ) -> Result<&hyperswitch_domain_models::address::Address, Error> {
+    ) -> Result<&orbix_domain_models::address::Address, Error> {
         self.address
             .get_shipping()
             .ok_or_else(missing_field_err("shipping"))
@@ -715,7 +715,7 @@ pub trait AddressData {
     fn get_optional_full_name(&self) -> Option<Secret<String>>;
 }
 
-impl AddressData for hyperswitch_domain_models::address::Address {
+impl AddressData for orbix_domain_models::address::Address {
     fn get_email(&self) -> Result<Email, Error> {
         self.email.clone().ok_or_else(missing_field_err("email"))
     }
@@ -1454,7 +1454,7 @@ impl CardData for payouts::CardPayout {
 }
 
 impl CardData
-    for hyperswitch_domain_models::payment_method_data::CardDetailsForNetworkTransactionId
+    for orbix_domain_models::payment_method_data::CardDetailsForNetworkTransactionId
 {
     fn get_card_expiry_year_2_digit(&self) -> Result<Secret<String>, errors::ConnectorError> {
         let binding = self.card_exp_year.clone();
@@ -1724,7 +1724,7 @@ pub trait PhoneDetailsData {
     fn extract_country_code(&self) -> Result<String, Error>;
 }
 
-impl PhoneDetailsData for hyperswitch_domain_models::address::PhoneDetails {
+impl PhoneDetailsData for orbix_domain_models::address::PhoneDetails {
     fn get_country_code(&self) -> Result<String, Error> {
         self.country_code
             .clone()
@@ -1771,7 +1771,7 @@ pub trait AddressDetailsData {
     fn get_optional_country(&self) -> Option<api_models::enums::CountryAlpha2>;
 }
 
-impl AddressDetailsData for hyperswitch_domain_models::address::AddressDetails {
+impl AddressDetailsData for orbix_domain_models::address::AddressDetails {
     fn get_first_name(&self) -> Result<&Secret<String>, Error> {
         self.first_name
             .as_ref()

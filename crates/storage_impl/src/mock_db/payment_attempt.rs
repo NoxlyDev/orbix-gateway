@@ -3,7 +3,7 @@ use common_utils::errors::CustomResult;
 use common_utils::id_type;
 use diesel_models::enums as storage_enums;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments::payment_attempt::{PaymentAttempt, PaymentAttemptInterface, PaymentAttemptUpdate},
     platform::{ProcessorKeyStore, ProcessorMerchantId, ProcessorStorageScheme},
 };
@@ -32,11 +32,11 @@ impl PaymentAttemptInterface for MockDb {
     #[cfg(all(feature = "v1", feature = "olap"))]
     async fn get_filters_for_payments(
         &self,
-        _pi: &[hyperswitch_domain_models::payments::PaymentIntent],
+        _pi: &[orbix_domain_models::payments::PaymentIntent],
         _processor_merchant_id: &ProcessorMerchantId,
         _storage_scheme: ProcessorStorageScheme,
     ) -> CustomResult<
-        hyperswitch_domain_models::payments::payment_attempt::PaymentListFilters,
+        orbix_domain_models::payments::payment_attempt::PaymentListFilters,
         StorageError,
     > {
         Err(StorageError::MockDbError)?

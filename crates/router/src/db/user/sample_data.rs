@@ -9,7 +9,7 @@ use diesel_models::{
 };
 use error_stack::{Report, ResultExt};
 use futures::{future::try_join_all, FutureExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     behaviour::Conversion,
     merchant_key_store::MerchantKeyStore,
     payments::{payment_attempt::PaymentAttempt, PaymentIntent},

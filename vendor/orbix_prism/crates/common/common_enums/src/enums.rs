@@ -2379,7 +2379,7 @@ pub enum CountryAlpha2 {
     US
 }
 
-/// Full ISO country names. Ported from hyperswitch so connectors (e.g. Trustly's
+/// Full ISO country names. Ported from orbix so connectors (e.g. Trustly's
 /// ClearingHouse) that require the English country name can derive it from a
 /// [`CountryAlpha2`] via [`Country::from_alpha2`].
 #[derive(

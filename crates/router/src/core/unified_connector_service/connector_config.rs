@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use common_enums::{connector_enums::Connector, enums::Currency};
 use common_utils::ext_traits::ValueExt;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::router_data::ConnectorAuthType;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_domain_models::router_data::ConnectorAuthType;
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use serde::Serialize;
 
 use crate::{
@@ -222,7 +222,7 @@ pub struct PaysafeApplePayAccountId {
 }
 
 /// Paysafe redirect-APM processing account (Interac, Skrill, paysafecard)
-/// for a specific currency. Mirrors the native hyperswitch Paysafe connector's
+/// for a specific currency. Mirrors the native orbix Paysafe connector's
 /// `RedirectAccountId` (metadata key `three_ds`) so the same MCA metadata is
 /// portable between the native and UCS paths.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -277,10 +277,10 @@ pub struct TsysTransitMetadata {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct JuspayMetadata {
+pub struct OrbixMetadata {
     pub merchant_id: String,
     pub base_url: String,
-    pub juspay_encryption_public_key: Secret<String>,
+    pub orbix_encryption_public_key: Secret<String>,
     pub response_decryption_private_key: Secret<String>,
     pub card_sync_key_id: String,
 }
@@ -494,7 +494,7 @@ pub enum ConnectorSpecificConfig {
     },
     /// Merchante (MerchantE by Omise) — credentials are sent inside the
     /// urlencoded request body (`profile_id` + `profile_key`), not headers.
-    /// Field order and names must mirror hyperswitch-prism's
+    /// Field order and names must mirror orbix-prism's
     /// `ConnectorSpecificConfig::Merchante` variant.
     Merchante {
         profile_id: Secret<String>,
@@ -901,12 +901,12 @@ pub enum ConnectorSpecificConfig {
     },
     /// Givepayments connector configuration
     Givepayments { api_key: Secret<String> },
-    /// Juspay Account Updater configuration
-    Juspay {
+    /// Orbix Account Updater configuration
+    Orbix {
         api_key: Secret<String>,
         merchant_id: String,
         base_url: String,
-        juspay_encryption_public_key: Secret<String>,
+        orbix_encryption_public_key: Secret<String>,
         response_decryption_private_key: Secret<String>,
         card_sync_key_id: String,
     },
@@ -1732,7 +1732,7 @@ impl ForeignTryFrom<(Connector, &ConnectorAuthType, Option<&serde_json::Value>)>
             Connector::Merchante => match auth {
                 // api_key -> Merchante Profile Key (32-char secret),
                 // key1    -> Merchante Profile ID  (20-digit merchant id).
-                // Mirrors the hyperswitch-prism `ConnectorEnum::Merchante` arm.
+                // Mirrors the orbix-prism `ConnectorEnum::Merchante` arm.
                 ConnectorAuthType::BodyKey { api_key, key1 } => Ok(Self::Merchante {
                     profile_key: api_key.clone(),
                     profile_id: key1.clone(),
@@ -2271,20 +2271,20 @@ impl ForeignTryFrom<(Connector, &ConnectorAuthType, Option<&serde_json::Value>)>
                 }),
                 _ => Err(err("Givepayments requires HeaderKey auth type")),
             },
-            Connector::Juspay => match auth {
+            Connector::Orbix => match auth {
                 ConnectorAuthType::HeaderKey { api_key } => {
-                    let juspay_meta = metadata
+                    let orbix_meta = metadata
                         .map(|meta| {
-                            serde_json::from_value::<JuspayMetadata>(meta.clone())
+                            serde_json::from_value::<OrbixMetadata>(meta.clone())
                                 .change_context(errors::ApiErrorResponse::InternalServerError)
-                                .attach_printable("Invalid Juspay metadata format")
+                                .attach_printable("Invalid Orbix metadata format")
                         })
                         .transpose()?
-                        .ok_or_else(|| err("Juspay requires metadata"))?;
+                        .ok_or_else(|| err("Orbix requires metadata"))?;
 
-                    Ok(Self::from((api_key.clone(), juspay_meta)))
+                    Ok(Self::from((api_key.clone(), orbix_meta)))
                 }
-                _ => Err(err("Juspay requires HeaderKey auth type")),
+                _ => Err(err("Orbix requires HeaderKey auth type")),
             },
             Connector::Santander => match auth {
                 ConnectorAuthType::CertificateAuth {
@@ -2360,13 +2360,13 @@ impl ForeignTryFrom<(Connector, &ConnectorAuthType, Option<&serde_json::Value>)>
     }
 }
 
-impl From<(Secret<String>, JuspayMetadata)> for ConnectorSpecificConfig {
-    fn from((api_key, metadata): (Secret<String>, JuspayMetadata)) -> Self {
-        Self::Juspay {
+impl From<(Secret<String>, OrbixMetadata)> for ConnectorSpecificConfig {
+    fn from((api_key, metadata): (Secret<String>, OrbixMetadata)) -> Self {
+        Self::Orbix {
             api_key,
             merchant_id: metadata.merchant_id,
             base_url: metadata.base_url,
-            juspay_encryption_public_key: metadata.juspay_encryption_public_key,
+            orbix_encryption_public_key: metadata.orbix_encryption_public_key,
             response_decryption_private_key: metadata.response_decryption_private_key,
             card_sync_key_id: metadata.card_sync_key_id,
         }

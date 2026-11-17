@@ -1,1 +1,1 @@
-pub use hyperswitch_domain_models::authentication::AuthenticationInterface;
+pub use orbix_domain_models::authentication::AuthenticationInterface;

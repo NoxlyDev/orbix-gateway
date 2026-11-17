@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     config.extern_path(".types.NetworkTokenType", "::cards::NetworkToken");
     config.extern_path(
         ".types.SecretString",
-        "::hyperswitch_masking::Secret<String>",
+        "::orbix_masking::Secret<String>",
     );
     // Add serde rename_all = "snake_case" for oneof enum types to output proper proto JSON
     // This ensures variant names like "ApplePay" serialize as "apple_pay"

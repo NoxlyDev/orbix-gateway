@@ -11,10 +11,10 @@ use common_utils::{
     types::TimeRange,
 };
 use error_stack::ResultExt;
-use hyperswitch_interfaces::secrets_interface::{
+use orbix_interfaces::secrets_interface::{
     SecretManagementInterface, SecretsManagementError,
 };
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use opensearch::{
     auth::Credentials,
     cert::CertificateValidation,
@@ -98,11 +98,11 @@ impl Default for OpenSearchConfig {
                 primary_password: "admin".to_string(),
             },
             indexes: OpenSearchIndexes {
-                payment_attempts: "hyperswitch-payment-attempt-events".to_string(),
-                payment_intents: "hyperswitch-payment-intent-events".to_string(),
-                refunds: "hyperswitch-refund-events".to_string(),
-                disputes: "hyperswitch-dispute-events".to_string(),
-                payouts: "hyperswitch-payout-events".to_string(),
+                payment_attempts: "orbix-payment-attempt-events".to_string(),
+                payment_intents: "orbix-payment-intent-events".to_string(),
+                refunds: "orbix-refund-events".to_string(),
+                disputes: "orbix-dispute-events".to_string(),
+                payouts: "orbix-payout-events".to_string(),
                 sessionizer_payment_attempts: "sessionizer-payment-attempt-events".to_string(),
                 sessionizer_payment_intents: "sessionizer-payment-intent-events".to_string(),
                 sessionizer_refunds: "sessionizer-refund-events".to_string(),

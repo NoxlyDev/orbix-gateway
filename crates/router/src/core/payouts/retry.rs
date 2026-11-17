@@ -2,7 +2,7 @@ use std::vec::IntoIter;
 
 use common_enums::{PayoutRetryType, PreFrmFailureMode};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::HeaderPayload;
+use orbix_domain_models::payments::HeaderPayload;
 use router_env::{logger, tracing::instrument};
 
 use super::{
@@ -195,7 +195,7 @@ pub async fn get_gsm(
     state: &app::SessionState,
     original_connector_data: &api::ConnectorData,
     payout_data: &PayoutData,
-) -> RouterResult<Option<hyperswitch_domain_models::gsm::GatewayStatusMap>> {
+) -> RouterResult<Option<orbix_domain_models::gsm::GatewayStatusMap>> {
     let error_code = payout_data.payout_attempt.error_code.to_owned();
     let error_message = payout_data.payout_attempt.error_message.to_owned();
     let connector_name = Some(original_connector_data.connector_name.to_string());
@@ -213,7 +213,7 @@ pub async fn get_gsm(
 
 #[instrument(skip_all)]
 pub fn get_gsm_decision(
-    option_gsm: Option<hyperswitch_domain_models::gsm::GatewayStatusMap>,
+    option_gsm: Option<orbix_domain_models::gsm::GatewayStatusMap>,
 ) -> common_enums::GsmDecision {
     let option_gsm_decision = option_gsm.map(|gsm| gsm.feature_data.get_decision());
 

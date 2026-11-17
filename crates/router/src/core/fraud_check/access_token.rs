@@ -4,7 +4,7 @@
 use std::str::FromStr;
 
 use common_enums::connector_enums::Connector;
-use hyperswitch_domain_models::router_data::RouterData;
+use orbix_domain_models::router_data::RouterData;
 
 use crate::services::logger;
 

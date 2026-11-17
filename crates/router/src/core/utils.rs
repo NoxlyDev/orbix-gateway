@@ -23,8 +23,8 @@ use common_utils::{
 use diesel_models::refund as diesel_refund;
 use error_stack::{report, ResultExt};
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::types::VaultRouterData;
-use hyperswitch_domain_models::{
+use orbix_domain_models::types::VaultRouterData;
+use orbix_domain_models::{
     mandates,
     merchant_connector_account::{
         MerchantConnectorAccount, MerchantConnectorAccountWithoutEncrypted,
@@ -36,14 +36,14 @@ use hyperswitch_domain_models::{
     router_request_types,
     types::{OrderDetailsWithAmount, VaultRouterDataV2},
 };
-use hyperswitch_interfaces::api::ConnectorSpecifications;
+use orbix_interfaces::api::ConnectorSpecifications;
 #[cfg(feature = "frm")]
-use hyperswitch_interfaces::configs::Connectors;
+use orbix_interfaces::configs::Connectors;
 #[cfg(feature = "payouts")]
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 #[cfg(feature = "v2")]
-use hyperswitch_masking::ExposeOptionInterface;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::ExposeOptionInterface;
+use orbix_masking::{PeekInterface, Secret};
 use maud::{html, PreEscaped};
 use redis_interface::errors::RedisError;
 use regex::Regex;
@@ -2153,8 +2153,8 @@ pub fn is_merchant_enabled_for_payment_id_as_connector_request_id(
 pub fn get_connector_request_reference_id(
     conf: &Settings,
     processor: &domain::Processor,
-    payment_intent: &hyperswitch_domain_models::payments::PaymentIntent,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_intent: &orbix_domain_models::payments::PaymentIntent,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
     connector_name: &str,
 ) -> CustomResult<String, errors::ApiErrorResponse> {
     // If there's already a connector_request_reference_id stored in the payment_attempt,
@@ -2188,7 +2188,7 @@ pub fn get_connector_request_reference_id(
 #[cfg(feature = "payouts")]
 pub fn get_payout_connector_request_reference_id(
     connector_data: &api::ConnectorData,
-    payout_attempt: &hyperswitch_domain_models::payouts::payout_attempt::PayoutAttempt,
+    payout_attempt: &orbix_domain_models::payouts::payout_attempt::PayoutAttempt,
 ) -> String {
     // If there's already a connector_request_reference_id stored in the payout_attempt,
     // reuse it to maintain consistency across multiple connector calls
@@ -2203,7 +2203,7 @@ pub fn get_payout_connector_request_reference_id(
 #[cfg(feature = "frm")]
 pub fn get_gateway_frm_metadata(
     connectors: &Connectors,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
 ) -> CustomResult<Option<common_utils::pii::SecretSerdeValue>, errors::ApiErrorResponse> {
     match &payment_attempt.connector {
         Some(connector_name) => {
@@ -2229,7 +2229,7 @@ pub fn get_gateway_frm_metadata(
 #[cfg(feature = "frm")]
 pub fn get_payout_gateway_frm_metadata(
     connectors: &Connectors,
-    payout_attempt: &hyperswitch_domain_models::payouts::payout_attempt::PayoutAttempt,
+    payout_attempt: &orbix_domain_models::payouts::payout_attempt::PayoutAttempt,
 ) -> CustomResult<Option<common_utils::pii::SecretSerdeValue>, errors::ApiErrorResponse> {
     match &payout_attempt.connector {
         Some(connector_name) => {
@@ -2257,7 +2257,7 @@ pub fn get_payout_gateway_frm_metadata(
 pub fn get_connector_request_reference_id(
     conf: &Settings,
     merchant_id: &common_utils::id_type::MerchantId,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
 ) -> String {
     todo!()
 }
@@ -2268,8 +2268,8 @@ pub fn get_connector_customer_id(
     connector_name: &str,
     connector_customer_id: Option<String>,
     customer_id: &Option<common_utils::id_type::CustomerId>,
-    payment_method_info: &Option<hyperswitch_domain_models::payment_methods::PaymentMethod>,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_method_info: &Option<orbix_domain_models::payment_methods::PaymentMethod>,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
 ) -> CustomResult<Option<String>, errors::ApiErrorResponse> {
     let connector_data = api::ConnectorData::get_connector_by_name(
         &conf.connectors,
@@ -2302,8 +2302,8 @@ pub fn get_connector_customer_id(
     connector_name: &str,
     connector_customer_id: Option<String>,
     customer_id: &Option<common_utils::id_type::CustomerId>,
-    payment_method_info: &Option<hyperswitch_domain_models::payment_methods::PaymentMethod>,
-    payment_attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+    payment_method_info: &Option<orbix_domain_models::payment_methods::PaymentMethod>,
+    payment_attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
 ) -> CustomResult<Option<String>, errors::ApiErrorResponse> {
     todo!()
 }
@@ -2313,8 +2313,8 @@ pub fn get_payout_connector_customer_id(
     connector_data: &api::ConnectorData,
     connector_customer_id: Option<String>,
     customer_id: &Option<common_utils::id_type::CustomerId>,
-    payment_method_info: &Option<hyperswitch_domain_models::payment_methods::PaymentMethod>,
-    payout_attempt: &hyperswitch_domain_models::payouts::payout_attempt::PayoutAttempt,
+    payment_method_info: &Option<orbix_domain_models::payment_methods::PaymentMethod>,
+    payout_attempt: &orbix_domain_models::payouts::payout_attempt::PayoutAttempt,
 ) -> CustomResult<Option<String>, errors::ApiErrorResponse> {
     let mandate_customer_id = payment_method_info
         .as_ref()
@@ -2336,8 +2336,8 @@ pub fn get_payout_connector_customer_id(
     connector_data: &api::ConnectorData,
     connector_customer_id: Option<String>,
     customer_id: &Option<common_utils::id_type::CustomerId>,
-    payment_method_info: &Option<hyperswitch_domain_models::payment_methods::PaymentMethod>,
-    payout_attempt: &hyperswitch_domain_models::payouts::payout_attempt::PayoutAttempt,
+    payment_method_info: &Option<orbix_domain_models::payment_methods::PaymentMethod>,
+    payout_attempt: &orbix_domain_models::payouts::payout_attempt::PayoutAttempt,
 ) -> Option<String> {
     todo!()
 }
@@ -2836,7 +2836,7 @@ impl GetProfileId for domain::Profile {
     }
 }
 
-impl GetProfileId for hyperswitch_domain_models::authentication::Authentication {
+impl GetProfileId for orbix_domain_models::authentication::Authentication {
     fn get_profile_id(&self) -> Option<&common_utils::id_type::ProfileId> {
         Some(&self.profile_id)
     }
@@ -2914,7 +2914,7 @@ pub async fn construct_vault_router_data<F>(
     merchant_id: &common_utils::id_type::MerchantId,
     merchant_connector_account: &MerchantConnectorAccount,
     payment_method_custom_vaulting_data: Option<
-        hyperswitch_domain_models::vault::PaymentMethodCustomVaultingData,
+        orbix_domain_models::vault::PaymentMethodCustomVaultingData,
     >,
     connector_vault_id: Option<String>,
     connector_customer_id: Option<String>,
@@ -3256,7 +3256,7 @@ where
         .change_context(StorageError::SerializationFailed)
         .attach_printable("Unable to encode data")?;
 
-    let secret_data = Secret::<_, hyperswitch_masking::WithType>::new(encoded_data);
+    let secret_data = Secret::<_, orbix_masking::WithType>::new(encoded_data);
 
     let encrypted_data = domain::types::crypto_operation(
         key_manager_state,

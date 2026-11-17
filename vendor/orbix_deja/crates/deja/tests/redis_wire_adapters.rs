@@ -4,7 +4,7 @@
 //!
 //! 1. **Shape pins** (always compiled): the JSON encoding of every variant is
 //!    byte-identical to what the vendor twin enums (`DejaRedisValue` in
-//!    hyperswitch's `redis_interface`, one per client module) emit today, and
+//!    orbix's `redis_interface`, one per client module) emit today, and
 //!    both twins' historical encodings decode. This is what lets the twins be
 //!    deleted without re-recording a single tape.
 //! 2. **Round trips** (per client feature): `client → RedisWireValue →

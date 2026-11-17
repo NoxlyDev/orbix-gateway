@@ -1,6 +1,6 @@
 use diesel_models::enums::FraudCheckLastStep;
 use error_stack::ResultExt;
-use hyperswitch_connectors::types::PoFrmRouterData;
+use orbix_connectors::types::PoFrmRouterData;
 
 use crate::{
     core::{

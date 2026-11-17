@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use common_enums::{EntityType, TokenPurpose};
 use common_utils::{crypto::OptionalEncryptableName, id_type, pii};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use utoipa::ToSchema;
 
 use crate::{offer_engine, user_role::UserStatus};

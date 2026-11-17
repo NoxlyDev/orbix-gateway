@@ -1,6 +1,6 @@
 use common_enums as storage_enums;
 use diesel::{AsChangeset, Identifiable, Insertable, Queryable, Selectable};
-use hyperswitch_masking::{Deserialize, Serialize};
+use orbix_masking::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
 use crate::{

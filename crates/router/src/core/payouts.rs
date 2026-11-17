@@ -46,8 +46,8 @@ use error_stack::{report, ResultExt};
 use external_services::grpc_client;
 #[cfg(feature = "olap")]
 use futures::future::join_all;
-use hyperswitch_domain_models::{self as domain_models, payment_methods::PaymentMethod};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_domain_models::{self as domain_models, payment_methods::PaymentMethod};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 #[cfg(feature = "payout_retry")]
 use retry::GsmValidation;
 use router_env::{instrument, logger, Env};

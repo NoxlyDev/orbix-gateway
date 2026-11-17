@@ -44,7 +44,7 @@ use common_enums::{
 use strum::IntoEnumIterator;
 
 struct SeedData {
-    cgraph: hyperswitch_constraint_graph::ConstraintGraph<dir::DirValue>,
+    cgraph: orbix_constraint_graph::ConstraintGraph<dir::DirValue>,
     connectors: Vec<ast::ConnectorChoice>,
 }
 
@@ -178,7 +178,7 @@ pub fn seed_knowledge_graph(mcas: JsValue) -> JsResult {
         })
         .collect::<Vec<_>>();
     let mca_graph = kgraph_utils::mca::make_mca_graph(mca_graph_data, &config).err_to_js()?;
-    let analysis_graph = hyperswitch_constraint_graph::ConstraintGraph::combine(
+    let analysis_graph = orbix_constraint_graph::ConstraintGraph::combine(
         &mca_graph,
         &dssa::truth::ANALYSIS_GRAPH,
     )
@@ -225,7 +225,7 @@ pub fn get_valid_connectors_for_rule(rule: JsValue) -> JsResult {
             .cgraph
             .perform_context_analysis(
                 ctx,
-                &mut hyperswitch_constraint_graph::Memoization::new(),
+                &mut orbix_constraint_graph::Memoization::new(),
                 None,
             )
             .err_to_js()?;
@@ -240,7 +240,7 @@ pub fn get_valid_connectors_for_rule(rule: JsValue) -> JsResult {
             ctx.push(ctx_val);
             let analysis_result = seed_data.cgraph.perform_context_analysis(
                 ctx,
-                &mut hyperswitch_constraint_graph::Memoization::new(),
+                &mut orbix_constraint_graph::Memoization::new(),
                 None,
             );
             if analysis_result.is_err() {

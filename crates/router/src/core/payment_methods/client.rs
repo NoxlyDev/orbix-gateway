@@ -393,7 +393,7 @@ struct PaymentIntentContext {
     is_cit_transaction: bool,
     billing_address: Option<domain::Address>,
     shipping_address: Option<domain::Address>,
-    customer: Option<hyperswitch_domain_models::customer::Customer>,
+    customer: Option<orbix_domain_models::customer::Customer>,
 }
 
 async fn load_payment_intent_context(

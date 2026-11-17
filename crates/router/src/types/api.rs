@@ -47,13 +47,13 @@ use api_models::routing::{self as api_routing, RoutableConnectorChoice};
 pub use common_utils::id_type::PaymentId;
 use error_stack::ResultExt;
 use euclid::enums::RoutableConnectors;
-pub use hyperswitch_domain_models::router_flow_types::{
+pub use orbix_domain_models::router_flow_types::{
     access_token_auth::{AccessTokenAuth, AccessTokenAuthentication},
     mandate_revoke::MandateRevoke,
     unified_authentication_service::*,
     webhooks::VerifyWebhookSource,
 };
-pub use hyperswitch_interfaces::{
+pub use orbix_interfaces::{
     api::{
         authentication::{
             ConnectorAuthentication, ConnectorPostAuthentication, ConnectorPreAuthentication,
@@ -212,7 +212,7 @@ impl ForeignTryFrom<ConnectorData> for RoutableConnectorChoice {
 
 /// Session Surcharge type
 pub enum SessionSurchargeDetails {
-    /// Surcharge is calculated by hyperswitch
+    /// Surcharge is calculated by orbix
     Calculated(payments_types::SurchargeMetadata),
     /// Surcharge is sent by merchant
     PreDetermined(payments_types::SurchargeDetails),

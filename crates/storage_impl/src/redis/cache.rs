@@ -20,7 +20,7 @@ use crate::{
 };
 
 /// Default redis channel name used for publishing invalidation messages
-pub const DEFAULT_IMC_INVALIDATION_CHANNEL: &str = "hyperswitch_invalidate";
+pub const DEFAULT_IMC_INVALIDATION_CHANNEL: &str = "orbix_invalidate";
 
 /// Default time to live 30 mins
 pub const DEFAULT_CACHE_TTL: u64 = 30 * 60;

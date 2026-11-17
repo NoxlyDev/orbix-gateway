@@ -9,7 +9,7 @@ use common_utils::types::MinorUnit;
 #[cfg(feature = "diesel")]
 use diesel::{sql_types::Jsonb, AsExpression, FromSqlRow};
 #[cfg(feature = "v2")]
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use smithy::SmithyModel;
 use utoipa::ToSchema;
@@ -18,7 +18,7 @@ use utoipa::ToSchema;
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Fee information for Split Payments to be charged on the payment being collected for Adyen
 pub struct AdyenSplitData {
     /// The store identifier
@@ -35,7 +35,7 @@ impl_to_sql_from_sql_json!(AdyenSplitData);
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Data for the split items
 pub struct AdyenSplitItem {
     /// The amount of the split item
@@ -64,7 +64,7 @@ impl_to_sql_from_sql_json!(AdyenSplitItem);
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct XenditSplitSubMerchantData {
     /// The sub-account user-id that you want to make this transaction for.
     #[smithy(value_type = "String")]

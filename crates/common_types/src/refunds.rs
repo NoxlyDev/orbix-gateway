@@ -33,7 +33,7 @@ impl_to_sql_from_sql_json!(ExternalSurchargeRefundDetails);
 #[derive(Default, Debug, ToSchema, Clone, PartialEq, Eq, Deserialize, Serialize, SmithyModel)]
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(deny_unknown_fields)]
 /// Feature metadata for a refund operation.
 pub struct RefundFeatureMetadata {
@@ -50,7 +50,7 @@ impl_to_sql_from_sql_json!(RefundFeatureMetadata);
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Charge specific fields for controlling the revert of funds from either platform or connected account. Check sub-fields for more details.
 pub enum SplitRefund {
     /// StripeSplitRefundRequest
@@ -70,7 +70,7 @@ impl_to_sql_from_sql_json!(SplitRefund);
 #[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Jsonb))]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Charge specific fields for controlling the revert of funds from either platform or connected account for Stripe. Check sub-fields for more details.
 pub struct StripeSplitRefundRequest {
     /// Toggle for reverting the application fee that was collected for the payment.

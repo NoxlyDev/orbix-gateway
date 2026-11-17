@@ -76,8 +76,8 @@ where
 }
 pub use common_types::payments::PhoneDetails;
 #[cfg(feature = "v1")]
-use hyperswitch_masking::ExposeInterface;
-use hyperswitch_masking::{PeekInterface, Secret, WithType};
+use orbix_masking::ExposeInterface;
+use orbix_masking::{PeekInterface, Secret, WithType};
 use router_derive::Setter;
 #[cfg(any(feature = "v1", feature = "v2"))]
 use serde::{de, Deserializer};
@@ -146,7 +146,7 @@ pub struct BankCodeResponse {
 #[derive(
     Debug, Default, serde::Deserialize, serde::Serialize, Clone, ToSchema, PartialEq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CustomerDetails {
     /// The identifier for the customer.
     #[schema(value_type = Option<String>, max_length = 64, min_length = 1, example = "cus_y3oqhf46pyzuxjbcn2giaqnb44")]
@@ -202,7 +202,7 @@ pub struct CustomerDetails {
     Setter,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CustomerDetailsResponse {
     /// The identifier for the customer.
     #[schema(value_type = Option<String>, max_length = 64, min_length = 1, example = "cus_y3oqhf46pyzuxjbcn2giaqnb44")]
@@ -311,7 +311,7 @@ pub struct PaymentsCreateIntentRequest {
     pub description: Option<common_utils::types::Description>,
 
     /// The URL to which you want the user to be redirected after the completion of the payment operation
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     #[schema(value_type = Option<FutureUsage>, example = "off_session")]
@@ -322,7 +322,7 @@ pub struct PaymentsCreateIntentRequest {
     pub apply_mit_exemption: Option<common_enums::MitExemptionRequest>,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters.
-    #[schema(max_length = 22, example = "Hyperswitch Router", value_type = Option<String>)]
+    #[schema(max_length = 22, example = "Orbix Gateway Router", value_type = Option<String>)]
     pub statement_descriptor: Option<common_utils::types::StatementDescriptor>,
 
     /// Use this object to capture the details about the different products for which the payment is being made. The sum of amount across different products here should be equal to the overall payment amount
@@ -345,7 +345,7 @@ pub struct PaymentsCreateIntentRequest {
     /// Some connectors like Airwallex and Noon might require some additional information, find specific details in the child attributes below.
     pub connector_metadata: Option<ConnectorMetadata>,
 
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     pub feature_metadata: Option<FeatureMetadata>,
 
     /// Whether to generate the payment link for this payment or not (if applicable)
@@ -516,7 +516,7 @@ pub struct PaymentsUpdateIntentRequest {
     pub description: Option<common_utils::types::Description>,
 
     /// The URL to which you want the user to be redirected after the completion of the payment operation
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     #[schema(value_type = Option<FutureUsage>, example = "off_session")]
@@ -527,7 +527,7 @@ pub struct PaymentsUpdateIntentRequest {
     pub apply_mit_exemption: Option<common_enums::MitExemptionRequest>,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters.
-    #[schema(max_length = 22, example = "Hyperswitch Router", value_type = Option<String>)]
+    #[schema(max_length = 22, example = "Orbix Gateway Router", value_type = Option<String>)]
     pub statement_descriptor: Option<common_utils::types::StatementDescriptor>,
 
     /// Use this object to capture the details about the different products for which the payment is being made. The sum of amount across different products here should be equal to the overall payment amount
@@ -551,7 +551,7 @@ pub struct PaymentsUpdateIntentRequest {
     #[schema(value_type = Option<ConnectorMetadata>)]
     pub connector_metadata: Option<ConnectorMetadata>,
 
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     #[schema(value_type = Option<FeatureMetadata>)]
     pub feature_metadata: Option<FeatureMetadata>,
 
@@ -711,7 +711,7 @@ pub struct PaymentsIntentResponse {
     pub description: Option<common_utils::types::Description>,
 
     /// The URL to which you want the user to be redirected after the completion of the payment operation
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     #[schema(value_type = FutureUsage, example = "off_session")]
@@ -722,7 +722,7 @@ pub struct PaymentsIntentResponse {
     pub apply_mit_exemption: common_enums::MitExemptionRequest,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters.
-    #[schema(max_length = 22, example = "Hyperswitch Router", value_type = Option<String>)]
+    #[schema(max_length = 22, example = "Orbix Gateway Router", value_type = Option<String>)]
     pub statement_descriptor: Option<common_utils::types::StatementDescriptor>,
 
     /// Use this object to capture the details about the different products for which the payment is being made. The sum of amount across different products here should be equal to the overall payment amount
@@ -746,7 +746,7 @@ pub struct PaymentsIntentResponse {
     #[schema(value_type = Option<ConnectorMetadata>)]
     pub connector_metadata: Option<ConnectorMetadata>,
 
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     #[schema(value_type = Option<FeatureMetadata>)]
     pub feature_metadata: Option<FeatureMetadata>,
 
@@ -877,7 +877,7 @@ pub struct RevenueRecoveryGetIntentResponse {
     pub description: Option<common_utils::types::Description>,
 
     /// The URL to which you want the user to be redirected after the completion of the payment operation
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     #[schema(value_type = FutureUsage, example = "off_session")]
@@ -888,7 +888,7 @@ pub struct RevenueRecoveryGetIntentResponse {
     pub apply_mit_exemption: common_enums::MitExemptionRequest,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters.
-    #[schema(max_length = 22, example = "Hyperswitch Router", value_type = Option<String>)]
+    #[schema(max_length = 22, example = "Orbix Gateway Router", value_type = Option<String>)]
     pub statement_descriptor: Option<common_utils::types::StatementDescriptor>,
 
     /// Use this object to capture the details about the different products for which the payment is being made. The sum of amount across different products here should be equal to the overall payment amount
@@ -912,7 +912,7 @@ pub struct RevenueRecoveryGetIntentResponse {
     #[schema(value_type = Option<ConnectorMetadata>)]
     pub connector_metadata: Option<ConnectorMetadata>,
 
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     #[schema(value_type = Option<FeatureMetadata>)]
     pub feature_metadata: Option<FeatureMetadata>,
 
@@ -956,7 +956,7 @@ pub struct RevenueRecoveryGetIntentResponse {
 #[cfg(feature = "v2")]
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct AmountDetails {
-    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/juspay/hyperswitch/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
+    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/orbix/orbix/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
     #[schema(value_type = u64, example = 6540)]
     #[serde(default, deserialize_with = "amount::deserialize")]
     order_amount: Amount,
@@ -1000,7 +1000,7 @@ impl AmountDetails {
 #[cfg(feature = "v2")]
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct AmountDetailsUpdate {
-    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/juspay/hyperswitch/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
+    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/orbix/orbix/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
     #[schema(value_type = Option<u64>, example = 6540)]
     #[serde(default, deserialize_with = "amount::deserialize_option")]
     order_amount: Option<Amount>,
@@ -1038,7 +1038,7 @@ pub struct AmountDetailsSetter {
 #[cfg(feature = "v2")]
 #[derive(Clone, Debug, PartialEq, serde::Serialize, ToSchema)]
 pub struct AmountDetailsResponse {
-    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/juspay/hyperswitch/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
+    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/orbix/orbix/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
     #[schema(value_type = u64, example = 6540)]
     pub order_amount: MinorUnit,
     /// The currency of the order
@@ -1066,7 +1066,7 @@ pub struct AmountDetailsResponse {
 #[cfg(feature = "v2")]
 #[derive(Clone, Debug, PartialEq, serde::Serialize, ToSchema)]
 pub struct PaymentAmountDetailsResponse {
-    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/juspay/hyperswitch/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
+    /// The payment amount. Amount for the payment in the lowest denomination of the currency, (i.e) in cents for USD denomination, in yen for JPY denomination etc. E.g., Pass 100 to charge $1.00 and 1 for 1¥ since ¥ is a zero-decimal currency. Read more about [the Decimal and Non-Decimal Currencies](https://github.com/orbix/orbix/wiki/Decimal-and-Non%E2%80%90Decimal-Currencies)
     #[schema(value_type = u64, example = 6540)]
     #[serde(default, deserialize_with = "amount::deserialize")]
     pub order_amount: MinorUnit,
@@ -1194,7 +1194,7 @@ impl AmountDetailsUpdate {
 
 /// Installment selection sent by the customer during payment confirmation.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct InstallmentRequest {
     /// Number of installments chosen by the customer
     #[schema(value_type = u8)]
@@ -1228,7 +1228,7 @@ impl From<InstallmentRequest> for common_payments_types::InstallmentData {
 )]
 #[generate_schemas(PaymentsCreateRequest, PaymentsUpdateRequest, PaymentsConfirmRequest)]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentsRequest {
     /// The primary amount for the payment, provided in the lowest denomination of the specified currency (e.g., 6540 for $65.40 USD). This field is mandatory for creating a payment.
     #[schema(value_type = Option<u64>, example = 6540)]
@@ -1259,7 +1259,7 @@ pub struct PaymentsRequest {
     #[smithy(value_type = "Option<i64>")]
     pub shipping_cost: Option<MinorUnit>,
 
-    /// Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., "pay_mbabizu24mvu3mela5njyhpit4"). If provided, it ensures idempotency for the payment creation request. If omitted, Hyperswitch generates a unique ID for the payment.
+    /// Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., "pay_mbabizu24mvu3mela5njyhpit4"). If provided, it ensures idempotency for the payment creation request. If omitted, Orbix Gateway generates a unique ID for the payment.
     #[schema(
         value_type = Option<String>,
         min_length = 30,
@@ -1308,7 +1308,7 @@ pub struct PaymentsRequest {
     #[remove_in(PaymentsUpdateRequest, PaymentsCreateRequest, PaymentsConfirmRequest)]
     pub capture_on: Option<PrimitiveDateTime>,
 
-    /// If set to `true`, Hyperswitch attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.
+    /// If set to `true`, Orbix Gateway attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.
     #[schema(default = false, example = true)]
     #[smithy(value_type = "Option<bool>")]
     pub confirm: Option<bool>,
@@ -1357,7 +1357,7 @@ pub struct PaymentsRequest {
     pub description: Option<String>,
 
     /// The URL to redirect the customer to after they complete the payment process or authentication. This is crucial for flows that involve off-site redirection (e.g., 3DS, some bank redirects, wallet payments).
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io", max_length = 2048)]
+    #[schema(value_type = Option<String>, example = "https://orbix.example", max_length = 2048)]
     #[smithy(value_type = "Option<String>")]
     pub return_url: Option<Url>,
 
@@ -1374,7 +1374,7 @@ pub struct PaymentsRequest {
     #[smithy(value_type = "Option<PaymentMethod>")]
     pub payment_method: Option<api_enums::PaymentMethod>,
 
-    /// As Hyperswitch tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.
+    /// As Orbix Gateway tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.
     #[schema(example = "187282ab-40ef-47a9-9206-5099ba31e432")]
     #[smithy(value_type = "Option<String>")]
     pub payment_token: Option<String>,
@@ -1389,7 +1389,7 @@ pub struct PaymentsRequest {
     pub shipping: Option<Address>,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.
-    #[schema(max_length = 255, example = "Hyperswitch Router", deprecated)]
+    #[schema(max_length = 255, example = "Orbix Gateway Router", deprecated)]
     #[smithy(value_type = "Option<String>")]
     pub statement_descriptor_name: Option<String>,
 
@@ -1498,7 +1498,7 @@ pub struct PaymentsRequest {
     #[smithy(value_type = "Option<ConnectorMetadata>")]
     pub connector_metadata: Option<ConnectorMetadata>,
 
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     #[remove_in(PaymentsUpdateRequest, PaymentsCreateRequest, PaymentsConfirmRequest)]
     pub feature_metadata: Option<FeatureMetadata>,
 
@@ -1738,7 +1738,7 @@ pub struct PaymentsRequest {
     pub enable_account_name_verification: Option<bool>,
 
     /// Indicates that the merchant has concluded settlement and supplied final amounts.
-    /// When true, Hyperswitch skips tax and surcharge calculations that would change
+    /// When true, Orbix Gateway skips tax and surcharge calculations that would change
     /// those amounts. Omit this field on updates or confirmation to preserve the setting.
     #[schema(default = false, example = false)]
     #[smithy(value_type = "Option<bool>")]
@@ -1746,7 +1746,7 @@ pub struct PaymentsRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CtpServiceDetails {
     /// merchant transaction id
     #[smithy(value_type = "Option<String>")]
@@ -2001,7 +2001,7 @@ impl PaymentsRequest {
     PartialEq,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RequestSurchargeDetails {
     #[schema(value_type = i64, example = 6540)]
     #[smithy(value_type = "i64")]
@@ -2018,7 +2018,7 @@ pub struct RequestSurchargeDetails {
 
 /// Surcharge applied to a payment, or a zero surcharge with connector error details.
 #[derive(Debug, Clone, PartialEq, Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentSurchargeDetailsResponse {
     #[schema(value_type = i64, example = 325)]
     #[smithy(value_type = "i64")]
@@ -2091,7 +2091,7 @@ impl PaymentSurchargeDetailsResponse {
 #[cfg(feature = "v1")]
 /// Browser information to be used for 3DS 2.0
 #[derive(ToSchema, Debug, serde::Deserialize, serde::Serialize, Clone, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BrowserInformation {
     /// Color depth supported by the browser
     #[smithy(value_type = "Option<u8>")]
@@ -2186,7 +2186,7 @@ impl RequestSurchargeDetails {
     router_derive::PolymorphicSchema,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentAttemptResponse {
     /// A unique identifier for this specific payment attempt.
     #[smithy(value_type = "String")]
@@ -2359,7 +2359,7 @@ pub struct PaymentAttemptResponse {
     /// Value passed in X-CLIENT-VERSION header during payments confirm request by the client
     pub client_version: Option<String>,
 
-    /// Additional data that might be required by hyperswitch, to enable some specific features.
+    /// Additional data that might be required by orbix, to enable some specific features.
     pub feature_metadata: Option<PaymentAttemptFeatureMetadata>,
 
     /// The payment method information for the payment attempt
@@ -2381,10 +2381,10 @@ pub struct PaymentAttemptRecordResponse {
     /// Error details for the payment attempt, if any.
     /// This includes fields like error code, network advice code, and network decline code.
     pub error_details: Option<RecordAttemptErrorDetails>,
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     #[schema(value_type = Option<FeatureMetadata>)]
     pub payment_intent_feature_metadata: Option<FeatureMetadata>,
-    /// Additional data that might be required by hyperswitch, to enable some specific features.
+    /// Additional data that might be required by orbix, to enable some specific features.
     pub payment_attempt_feature_metadata: Option<PaymentAttemptFeatureMetadata>,
     /// attempt created at timestamp
     pub created_at: PrimitiveDateTime,
@@ -2393,7 +2393,7 @@ pub struct PaymentAttemptRecordResponse {
 #[cfg(feature = "v2")]
 #[derive(Debug, serde::Serialize, Clone, ToSchema)]
 pub struct RecoveryPaymentsResponse {
-    /// Unique identifier of the invoice in Hyperswitch against which the transaction has been recorded.
+    /// Unique identifier of the invoice in Orbix Gateway against which the transaction has been recorded.
     #[schema(
         min_length = 30,
         max_length = 30,
@@ -2427,7 +2427,7 @@ pub struct RecoveryPaymentsResponse {
 #[cfg(feature = "v2")]
 #[derive(Debug, serde::Serialize, Clone, ToSchema)]
 pub struct RecoveryRetryWebhookDetails {
-    /// Unique identifier of the invoice in Hyperswitch.
+    /// Unique identifier of the invoice in Orbix Gateway.
     #[schema(
         min_length = 30,
         max_length = 30,
@@ -2454,7 +2454,7 @@ pub struct RecoveryRetryWebhookDetails {
 #[cfg(feature = "v2")]
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PartialEq, ToSchema)]
 pub struct PaymentAttemptFeatureMetadata {
-    /// Revenue recovery metadata that might be required by hyperswitch.
+    /// Revenue recovery metadata that might be required by orbix.
     pub revenue_recovery: Option<PaymentAttemptRevenueRecoveryData>,
 }
 
@@ -2492,7 +2492,7 @@ pub struct PaymentAttemptRevenueRecoveryData {
     router_derive::PolymorphicSchema,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CaptureResponse {
     /// A unique identifier for this specific capture operation.
     #[smithy(value_type = "String")]
@@ -2605,7 +2605,7 @@ pub struct VerifyRequest {
 )]
 #[serde(deny_unknown_fields)]
 #[schema(deprecated)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MandateData {
     /// A way to update the mandate's payment method details
     #[smithy(value_type = "Option<String>")]
@@ -2636,7 +2636,7 @@ pub struct SingleUseMandate {
     serde::Deserialize,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MandateAmountData {
     /// The maximum amount to be debited for the mandate transaction
     #[schema(value_type = i64, example = 6540)]
@@ -2668,7 +2668,7 @@ pub struct MandateAmountData {
     Eq, PartialEq, Debug, serde::Deserialize, serde::Serialize, Clone, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum MandateType {
     /// If the mandate should only be valid for 1 off-session use
     #[smithy(value_type = "MandateAmountData")]
@@ -2687,7 +2687,7 @@ impl Default for MandateType {
 #[derive(
     Debug, serde::Deserialize, serde::Serialize, Clone, Eq, PartialEq, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkDetails {
     #[smithy(value_type = "Option<String>")]
     pub network_advice_code: Option<String>,
@@ -2704,7 +2704,7 @@ pub struct NetworkDetails {
     ToSchema,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct Card {
     /// The card number
     #[schema(value_type = String, example = "4242424242424242")]
@@ -2789,7 +2789,7 @@ pub struct Card {
     ToSchema,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CardWithNoCVC {
     /// The card number
     #[schema(value_type = String, example = "4242424242424242")]
@@ -3045,7 +3045,7 @@ impl GetAddressFromPaymentMethodData for CardWithNoCVC {
     SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CardToken {
     /// The card holder's name
     #[schema(value_type = String, example = "John Test")]
@@ -3057,7 +3057,7 @@ pub struct CardToken {
     #[smithy(value_type = "Option<String>")]
     pub card_cvc: Option<Secret<String>>,
 
-    /// Token referencing a CVC vaulted in the hyperswitch (self-hosted) vault. Used by the
+    /// Token referencing a CVC vaulted in the orbix (self-hosted) vault. Used by the
     /// self-hosted default-vault repeat-customer flow, where the card is referenced by the
     /// top-level `payment_token` and the freshly-tokenized CVC arrives as this token; the server
     /// resolves it to the raw CVC. Not used by the external vault proxy flow.
@@ -3082,7 +3082,7 @@ pub struct CardToken {
     SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct VaultCardToken {
     /// The card holder's name
     #[schema(value_type = String, example = "John Test")]
@@ -3099,7 +3099,7 @@ pub struct VaultCardToken {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum CardRedirectData {
     #[smithy(nested_value_type)]
     Knet {},
@@ -3115,7 +3115,7 @@ pub enum CardRedirectData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PayLaterData {
     /// For KlarnaRedirect as PayLater Option
     #[smithy(nested_value_type)]
@@ -3220,7 +3220,7 @@ impl GetAddressFromPaymentMethodData for PayLaterData {
     serde::Deserialize, serde::Serialize, Debug, Clone, ToSchema, Eq, PartialEq, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankDebitData {
     /// Payment Method data for Ach bank debit
     #[smithy(nested_value_type)]
@@ -3584,7 +3584,7 @@ mod payment_method_data_serde {
 #[derive(
     Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, Eq, PartialEq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentMethodDataRequest {
     /// This field is optional because, in case of saved cards we pass the payment_token
     /// There might be cases where we don't need to pass the payment_method_data and pass only payment method billing details
@@ -3721,7 +3721,7 @@ pub struct VaultToken {
     ToSchema,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTokenData {
     /// The network token
     #[schema(value_type = String, example = "4604000460040787")]
@@ -3792,7 +3792,7 @@ pub struct NetworkTokenData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTokenResponse {
     /// The last four digit of the network token
     #[schema(value_type = Option<String>)]
@@ -3848,7 +3848,7 @@ pub struct NetworkTokenResponse {
     Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, Eq, PartialEq, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentMethodData {
     #[schema(title = "Card")]
     #[smithy(value_type = "Card")]
@@ -4241,7 +4241,7 @@ impl GetPaymentMethodType for GiftCardData {
     serde::Deserialize, serde::Serialize, Debug, Clone, ToSchema, Eq, PartialEq, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum GiftCardData {
     #[smithy(value_type = "GiftCardDetails")]
     Givex(GiftCardDetails),
@@ -4323,7 +4323,7 @@ pub struct ApplyPaymentMethodDataSurchargeResponseItem {
     serde::Deserialize, serde::Serialize, Debug, Clone, ToSchema, Eq, PartialEq, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BHNGiftCardDetails {
     /// The gift card or account number
     #[schema(value_type = String)]
@@ -4347,7 +4347,7 @@ pub struct BHNGiftCardDetails {
     serde::Deserialize, serde::Serialize, Debug, Clone, ToSchema, Eq, PartialEq, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GiftCardDetails {
     /// The gift card number
     #[schema(value_type = String)]
@@ -4582,7 +4582,7 @@ pub struct InteracPaymentMethod {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankRedirectData {
     #[smithy(nested_value_type)]
     BancontactCard {
@@ -4623,7 +4623,7 @@ pub enum BankRedirectData {
         #[smithy(value_type = "Option<BankRedirectBilling>")]
         billing_details: Option<BankRedirectBilling>,
 
-        /// The hyperswitch bank code for eps
+        /// The orbix bank code for eps
         #[schema(value_type = BankNames, example = "triodos_bank")]
         #[smithy(value_type = "Option<BankNames>")]
         bank_name: Option<common_enums::BankNames>,
@@ -4660,7 +4660,7 @@ pub enum BankRedirectData {
         #[smithy(value_type = "Option<BankRedirectBilling>")]
         billing_details: Option<BankRedirectBilling>,
 
-        /// The hyperswitch bank code for ideal
+        /// The orbix bank code for ideal
         #[schema(value_type = BankNames, example = "abn_amro")]
         #[smithy(value_type = "Option<BankNames>")]
         bank_name: Option<common_enums::BankNames>,
@@ -4902,7 +4902,7 @@ impl GetAddressFromPaymentMethodData for BankRedirectData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AlfamartVoucherData {
     /// The billing first name for Alfamart
     #[schema(value_type = Option<String>, example = "Jane")]
@@ -4921,7 +4921,7 @@ pub struct AlfamartVoucherData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct IndomaretVoucherData {
     /// The billing first name for Alfamart
     #[schema(value_type = Option<String>, example = "Jane")]
@@ -4940,7 +4940,7 @@ pub struct IndomaretVoucherData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct JCSVoucherData {
     /// The billing first name for Japanese convenience stores
     #[schema(value_type = Option<String>, example = "Jane")]
@@ -4963,7 +4963,7 @@ pub struct JCSVoucherData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AchBillingDetails {
     /// The Email ID for ACH billing
     #[schema(value_type = Option<String>, example = "example@me.com")]
@@ -4974,7 +4974,7 @@ pub struct AchBillingDetails {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct DokuBillingDetails {
     /// The billing first name for Doku
     #[schema(value_type = Option<String>, example = "Jane")]
@@ -4993,7 +4993,7 @@ pub struct DokuBillingDetails {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MultibancoBillingDetails {
     #[schema(value_type = Option<String>, example = "example@me.com")]
     #[smithy(value_type = "Option<String>")]
@@ -5003,7 +5003,7 @@ pub struct MultibancoBillingDetails {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SepaAndBacsBillingDetails {
     /// The Email ID for SEPA and BACS billing
     #[schema(value_type = Option<String>, example = "example@me.com")]
@@ -5019,7 +5019,7 @@ pub struct SepaAndBacsBillingDetails {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CryptoData {
     #[smithy(value_type = "Option<String>")]
     pub pay_currency: Option<String>,
@@ -5031,7 +5031,7 @@ pub struct CryptoData {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum UpiData {
     #[smithy(value_type = "UpiCollectData")]
     UpiCollect(UpiCollectData),
@@ -5044,7 +5044,7 @@ pub enum UpiData {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// The source type for UPI payments. This indicates what payment source is being used for the UPI transaction.
 pub enum UpiSource {
     /// UPI payment using a credit card
@@ -5065,7 +5065,7 @@ pub enum UpiSource {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct UpiCollectData {
     /// The Virtual Payment Address (VPA) for UPI collect payment
     #[schema(value_type = Option<String>, example = "successtest@iata")]
@@ -5080,7 +5080,7 @@ pub struct UpiCollectData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct UpiQrData {
     /// The UPI source type (Credit Card, Credit Line, Account, or Credit Card + Credit Line)
     #[schema(value_type = Option<UpiSource>)]
@@ -5091,7 +5091,7 @@ pub struct UpiQrData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct UpiIntentData {
     /// The UPI source type (Credit Card, Credit Line, Account, or Credit Card + Credit Line)
     #[schema(value_type = Option<UpiSource>)]
@@ -5111,7 +5111,7 @@ pub struct SofortBilling {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BankRedirectBilling {
     /// The name for which billing is issued
     #[schema(value_type = String, example = "John Doe")]
@@ -5149,7 +5149,7 @@ impl GetAddressFromPaymentMethodData for BankRedirectBilling {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankTransferData {
     #[smithy(nested_value_type)]
     AchBankTransfer {
@@ -5296,7 +5296,7 @@ pub enum BankTransferData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct DocumentDetails {
     /// Specifies the type of document - Cpf or Cnpj
     #[schema(value_type = Option<DocumentKind>, example = "cnpj")]
@@ -5320,7 +5320,7 @@ impl DocumentDetails {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum RealTimePaymentData {
     #[smithy(nested_value_type)]
     Fps {},
@@ -5408,7 +5408,7 @@ impl GetAddressFromPaymentMethodData for BankTransferData {
 #[derive(
     serde::Deserialize, serde::Serialize, Debug, Clone, ToSchema, Eq, PartialEq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BankDebitBilling {
     /// The billing name for bank debits
     #[schema(value_type = Option<String>, example = "John Doe")]
@@ -5451,7 +5451,7 @@ impl GetAddressFromPaymentMethodData for BankDebitBilling {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[allow(clippy::large_enum_variant)]
 pub enum WalletData {
     /// The wallet data for Ali Pay HK redirect
@@ -5680,7 +5680,7 @@ impl GetAddressFromPaymentMethodData for WalletData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PazeWalletData {
     #[schema(value_type = String)]
     #[smithy(value_type = "String")]
@@ -5691,7 +5691,7 @@ pub struct PazeWalletData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SamsungPayWalletData {
     #[smithy(value_type = "SamsungPayWalletCredentials")]
     pub payment_credential: SamsungPayWalletCredentials,
@@ -5701,7 +5701,7 @@ pub struct SamsungPayWalletData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case", untagged)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum SamsungPayWalletCredentials {
     #[smithy(value_type = "SamsungPayWebWalletData")]
     SamsungPayWalletDataForWeb(SamsungPayWebWalletData),
@@ -5725,7 +5725,7 @@ impl From<SamsungPayCardBrand> for common_enums::SamsungPayCardBrand {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SamsungPayAppWalletData {
     /// Samsung Pay token data
     #[serde(rename = "3_d_s")]
@@ -5758,7 +5758,7 @@ pub struct SamsungPayAppWalletData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SamsungPayWebWalletData {
     /// Specifies authentication method used
     #[smithy(value_type = "Option<String>")]
@@ -5783,7 +5783,7 @@ pub struct SamsungPayWebWalletData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SamsungPayTokenData {
     /// 3DS type used by Samsung Pay
     #[serde(rename = "type")]
@@ -5802,7 +5802,7 @@ pub struct SamsungPayTokenData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum SamsungPayCardBrand {
     #[serde(alias = "VI")]
     Visa,
@@ -5820,7 +5820,7 @@ pub enum SamsungPayCardBrand {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum OpenBankingData {
     #[serde(rename = "open_banking_pis")]
     #[smithy(nested_value_type)]
@@ -5831,7 +5831,7 @@ pub enum OpenBankingData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum MobilePaymentData {
     #[smithy(nested_value_type)]
     DirectCarrierBilling {
@@ -5850,7 +5850,7 @@ pub enum MobilePaymentData {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GooglePayWalletData {
     /// The type of payment method
     #[serde(rename = "type")]
@@ -5885,43 +5885,43 @@ pub struct AmazonPayMerchantCredentials {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayRedirectData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmazonPayRedirectData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SkrillData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetellerData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PayseraData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GooglePayRedirectData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GooglePayThirdPartySdkData {
     #[schema(value_type = Option<String>)]
     #[smithy(value_type = "Option<String>")]
@@ -5931,7 +5931,7 @@ pub struct GooglePayThirdPartySdkData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayThirdPartySdkData {
     #[schema(value_type = Option<String>)]
     #[smithy(value_type = "Option<String>")]
@@ -5941,31 +5941,31 @@ pub struct ApplePayThirdPartySdkData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct WeChatPayRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct WeChatPay {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct WeChatPayQr {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CashappQr {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaypalRedirection {
     /// paypal's email address
     #[schema(max_length = 255, value_type = Option<String>, example = "johntest@test.com")]
@@ -5991,61 +5991,61 @@ impl From<payment_methods::PaymentMethodDataWalletInfo> for PaypalRedirection {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AliPayQr {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AliPayRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AliPayHkRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BluecodeQrRedirect {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MomoRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct KakaoPayRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GoPayRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GcashRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MobilePayRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MbWayRedirection {
     /// Telephone number of the shopper. Should be Portuguese phone number.
     #[schema(value_type = String)]
@@ -6057,7 +6057,7 @@ pub struct MbWayRedirection {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GooglePayPaymentMethodInfo {
     /// The name of the card network
     #[smithy(value_type = "String")]
@@ -6077,7 +6077,7 @@ pub struct GooglePayPaymentMethodInfo {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GooglePayAssuranceDetails {
     ///indicates that Cardholder possession validation has been performed
     #[smithy(value_type = "bool")]
@@ -6090,7 +6090,7 @@ pub struct GooglePayAssuranceDetails {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PayPalWalletData {
     /// Token generated for the Apple pay
     #[smithy(value_type = "String")]
@@ -6100,25 +6100,25 @@ pub struct PayPalWalletData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct TouchNGoRedirection {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SwishQrData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RevolutPayData {}
 
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MifinityData {
     #[schema(value_type = Date)]
     #[smithy(value_type = "String")]
@@ -6130,7 +6130,7 @@ pub struct MifinityData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmazonPayWalletData {
     /// Checkout Session identifier
     #[smithy(value_type = "String")]
@@ -6140,7 +6140,7 @@ pub struct AmazonPayWalletData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayWalletData {
     /// The payment data of Apple pay
     #[schema(value_type = ApplePayPaymentData)]
@@ -6157,7 +6157,7 @@ pub struct ApplePayWalletData {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplepayPaymentMethod {
     /// The name to be displayed on Apple Pay button
     #[smithy(value_type = "String")]
@@ -6204,7 +6204,7 @@ pub struct ApplepayPaymentMethod {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CardResponse {
     #[smithy(value_type = "Option<String>")]
     pub last4: Option<String>,
@@ -6261,7 +6261,7 @@ pub struct RewardData {
 #[derive(
     Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BoletoVoucherData {
     /// The shopper's social security number (CPF or CNPJ)
     #[schema(value_type = Option<String>)]
@@ -6314,7 +6314,7 @@ pub struct BoletoVoucherData {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum VoucherData {
     #[smithy(value_type = "BoletoVoucherData")]
     Boleto(Box<BoletoVoucherData>),
@@ -6440,7 +6440,7 @@ where
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentMethodDataResponse {
     #[smithy(value_type = "CardResponse")]
     Card(Box<CardResponse>),
@@ -6482,7 +6482,7 @@ pub enum PaymentMethodDataResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BankDebitResponse {
     #[serde(flatten)]
     #[schema(value_type = Option<BankDebitAdditionalData>)]
@@ -6494,7 +6494,7 @@ pub struct BankDebitResponse {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case", tag = "type")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BankRedirectResponse {
     /// Name of the bank
     #[schema(value_type = Option<BankNames>)]
@@ -6512,7 +6512,7 @@ pub struct BankRedirectResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BankTransferResponse {
     #[serde(flatten)]
     #[schema(value_type = Option<BankTransferAdditionalData>)]
@@ -6523,7 +6523,7 @@ pub struct BankTransferResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CardRedirectResponse {
     #[serde(flatten)]
     #[smithy(value_type = "Option<CardRedirectData>")]
@@ -6533,7 +6533,7 @@ pub struct CardRedirectResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CardTokenResponse {
     #[serde(flatten)]
     #[schema(value_type = Option<CardTokenAdditionalData>)]
@@ -6544,7 +6544,7 @@ pub struct CardTokenResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CryptoResponse {
     #[serde(flatten)]
     #[smithy(value_type = "Option<CryptoData>")]
@@ -6554,7 +6554,7 @@ pub struct CryptoResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GiftCardResponse {
     #[serde(flatten)]
     #[schema(value_type = Option<GiftCardAdditionalData>)]
@@ -6565,7 +6565,7 @@ pub struct GiftCardResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct OpenBankingResponse {
     #[serde(flatten)]
     #[smithy(value_type = "Option<OpenBankingData>")]
@@ -6575,7 +6575,7 @@ pub struct OpenBankingResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MobilePaymentResponse {
     #[serde(flatten)]
     #[smithy(value_type = "Option<MobilePaymentData>")]
@@ -6585,7 +6585,7 @@ pub struct MobilePaymentResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RealTimePaymentDataResponse {
     #[serde(flatten)]
     #[smithy(value_type = "Option<RealTimePaymentData>")]
@@ -6595,7 +6595,7 @@ pub struct RealTimePaymentDataResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct UpiResponse {
     #[serde(flatten)]
     #[schema(value_type = Option<UpiAdditionalData>)]
@@ -6606,7 +6606,7 @@ pub struct UpiResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct VoucherResponse {
     #[serde(flatten)]
     #[smithy(value_type = "Option<VoucherData>")]
@@ -6616,7 +6616,7 @@ pub struct VoucherResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaylaterResponse {
     #[smithy(value_type = "Option<KlarnaSdkPaymentMethodResponse>")]
     klarna_sdk: Option<KlarnaSdkPaymentMethodResponse>,
@@ -6625,19 +6625,19 @@ pub struct PaylaterResponse {
 #[derive(
     Eq, PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct WalletResponse {
     #[serde(flatten)]
     #[smithy(value_type = "Option<WalletResponseData>")]
     details: Option<WalletResponseData>,
 }
 
-/// Hyperswitch supports SDK integration with Apple Pay and Google Pay wallets. For other wallets, we integrate with their respective connectors, redirecting the customer to the connector for wallet payments. As a result, we don’t receive any payment method data in the confirm call for payments made through other wallets.
+/// Orbix Gateway supports SDK integration with Apple Pay and Google Pay wallets. For other wallets, we integrate with their respective connectors, redirecting the customer to the connector for wallet payments. As a result, we don’t receive any payment method data in the confirm call for payments made through other wallets.
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum WalletResponseData {
     #[schema(value_type = WalletAdditionalDataForCard)]
     #[smithy(value_type = "Option<WalletAdditionalDataForCard>")]
@@ -6656,7 +6656,7 @@ pub enum WalletResponseData {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct KlarnaSdkPaymentMethodResponse {
     #[smithy(value_type = "Option<String>")]
     pub payment_type: Option<String>,
@@ -6665,7 +6665,7 @@ pub struct KlarnaSdkPaymentMethodResponse {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, ToSchema, serde::Serialize, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentMethodDataResponseWithBilling {
     // The struct is flattened in order to provide backwards compatibility
     #[serde(flatten)]
@@ -6759,7 +6759,7 @@ impl Default for PaymentIdType {
     SmithyModel,
 )]
 // #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct Address {
     /// Provide the address details
     #[smithy(value_type = "Option<AddressDetails>")]
@@ -6773,7 +6773,7 @@ pub struct Address {
     pub email: Option<Email>,
 }
 
-impl hyperswitch_masking::SerializableSecret for Address {}
+impl orbix_masking::SerializableSecret for Address {}
 
 impl Address {
     /// Unify the address, giving priority to `self` when details are present in both
@@ -6804,7 +6804,7 @@ impl Address {
     SmithyModel,
 )]
 // #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AddressDetails {
     /// The city, district, suburb, town, or village of the address.
     #[schema(max_length = 50, example = "New York")]
@@ -6930,7 +6930,7 @@ pub struct EncryptableAddressDetails {
     ToSchema,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentsCaptureRequest {
     /// The unique identifier for the payment being captured. This is taken from the path parameter.
     #[serde(skip_deserializing)]
@@ -7075,7 +7075,7 @@ pub enum NextActionType {
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(tag = "type", rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum NextActionData {
     /// Contains the url for redirection flow
     #[cfg(feature = "v1")]
@@ -7113,7 +7113,7 @@ pub enum NextActionData {
     QrCodeInformation {
         #[schema(value_type = String)]
         #[smithy(value_type = "String")]
-        /// Hyperswitch generated image data source url
+        /// Orbix Gateway generated image data source url
         image_data_url: Option<Url>,
         #[smithy(value_type = "Option<i64>")]
         display_to_timestamp: Option<i64>,
@@ -7201,7 +7201,7 @@ pub enum NextActionData {
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(tag = "method_key")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum IframeData {
     #[serde(rename = "threeDSMethodData")]
     #[smithy(nested_value_type)]
@@ -7236,7 +7236,7 @@ pub struct DDCData {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ThreeDsData {
     /// ThreeDS authentication url - to initiate authentication
     #[smithy(value_type = "String")]
@@ -7271,7 +7271,7 @@ pub struct ThreeDsData {
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(untagged)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ThreeDsMethodData {
     AcsThreeDsMethodData {
         /// Whether ThreeDS method data submission is required
@@ -7295,7 +7295,7 @@ pub enum ThreeDsMethodData {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ThreeDsMethodKey {
     #[serde(rename = "threeDSMethodData")]
     ThreeDsMethodData,
@@ -7306,7 +7306,7 @@ pub enum ThreeDsMethodKey {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PollConfigResponse {
     /// Poll Id
     #[smithy(value_type = "String")]
@@ -7351,7 +7351,7 @@ pub enum QrCodeInformation {
     Clone, Debug, serde::Serialize, serde::Deserialize, Eq, PartialEq, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SdkNextActionData {
     #[smithy(value_type = "NextActionCall")]
     pub next_action: NextActionCall,
@@ -7362,7 +7362,7 @@ pub struct SdkNextActionData {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct FetchQrCodeInformation {
     #[smithy(value_type = "String")]
     pub qr_code_fetch_url: Url,
@@ -7371,7 +7371,7 @@ pub struct FetchQrCodeInformation {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BankTransferNextStepsData {
     /// The instructions for performing a bank transfer
     #[serde(flatten)]
@@ -7385,7 +7385,7 @@ pub struct BankTransferNextStepsData {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct VoucherNextStepData {
     /// Voucher entry date
     #[smithy(value_type = "Option<String>")]
@@ -7431,7 +7431,7 @@ pub struct MobilePaymentNextStepData {
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum MobilePaymentConsent {
     ConsentRequired,
     ConsentNotRequired,
@@ -7488,7 +7488,7 @@ impl NextActionData {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PollConfig {
     /// Interval of the poll
     #[smithy(value_type = "u16")]
@@ -7502,7 +7502,7 @@ pub struct PollConfig {
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankTransferInstructions {
     /// The instructions for Doku bank transactions
     #[smithy(value_type = "DokuBankTransferInstructions")]
@@ -7524,7 +7524,7 @@ pub enum BankTransferInstructions {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SepaBankTransferInstructions {
     #[schema(value_type = String, example = "Jane Doe")]
     #[smithy(value_type = "String")]
@@ -7566,7 +7566,7 @@ pub struct PaymentConnectorInvokeDDCData {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BacsBankTransferInstructions {
     #[schema(value_type = String, example = "Jane Doe")]
     #[smithy(value_type = "String")]
@@ -7582,7 +7582,7 @@ pub struct BacsBankTransferInstructions {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MultibancoTransferInstructions {
     #[schema(value_type = String, example = "122385736258")]
     #[smithy(value_type = "String")]
@@ -7595,7 +7595,7 @@ pub struct MultibancoTransferInstructions {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct DokuBankTransferInstructions {
     #[schema(value_type = String, example = "1707091200000")]
     #[smithy(value_type = "String")]
@@ -7611,7 +7611,7 @@ pub struct DokuBankTransferInstructions {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AchTransfer {
     #[schema(value_type = String, example = "122385736258")]
     #[smithy(value_type = "String")]
@@ -7629,7 +7629,7 @@ pub struct AchTransfer {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ReceiverDetails {
     /// The amount received by receiver
     #[smithy(value_type = "i64")]
@@ -7653,7 +7653,7 @@ pub struct ReceiverDetails {
     SmithyModel,
 )]
 #[generate_schemas(PaymentsCreateResponseOpenApi)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentsResponse {
     /// Unique identifier for the payment. This ensures idempotency for multiple payments
     /// that have been done by a single merchant.
@@ -7744,7 +7744,7 @@ pub struct PaymentsResponse {
     #[schema(value_type = Option<PaymentIntentStateMetadata>)]
     pub state_metadata: Option<common_types::payments::PaymentIntentStateMetadata>,
 
-    /// A secret token unique to this payment intent. It is primarily used by client-side applications (e.g., Hyperswitch SDKs) to authenticate actions like confirming the payment or handling next actions. This secret should be handled carefully and not exposed publicly beyond its intended client-side use.
+    /// A secret token unique to this payment intent. It is primarily used by client-side applications (e.g., Orbix Gateway SDKs) to authenticate actions like confirming the payment or handling next actions. This secret should be handled carefully and not exposed publicly beyond its intended client-side use.
     #[schema(value_type = Option<String>, example = "pay_U42c409qyHwOkWo3vK60_secret_el9ksDkiB8hi6j9N78yo")]
     #[smithy(value_type = "Option<String>")]
     pub client_secret: Option<Secret<String>>,
@@ -7906,7 +7906,7 @@ pub struct PaymentsResponse {
     pub phone: Option<Secret<String>>,
 
     /// The URL to redirect after the completion of the operation
-    #[schema(example = "https://hyperswitch.io")]
+    #[schema(example = "https://orbix.example")]
     #[smithy(value_type = "Option<String>")]
     pub return_url: Option<String>,
 
@@ -7916,7 +7916,7 @@ pub struct PaymentsResponse {
     pub authentication_type: Option<api_enums::AuthenticationType>,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.
-    #[schema(max_length = 255, example = "Hyperswitch Router", deprecated)]
+    #[schema(max_length = 255, example = "Orbix Gateway Router", deprecated)]
     #[smithy(value_type = "Option<String>")]
     pub statement_descriptor_name: Option<String>,
 
@@ -8021,7 +8021,7 @@ pub struct PaymentsResponse {
     #[smithy(value_type = "Option<ConnectorMetadataResponse>")]
     pub connector_response_metadata: Option<ConnectorMetadataResponse>,
 
-    /// Additional data that might be required by hyperswitch, to enable some specific features.
+    /// Additional data that might be required by orbix, to enable some specific features.
     #[schema(value_type = Option<FeatureMetadata>)]
     #[smithy(value_type = "Option<FeatureMetadata>")]
     pub feature_metadata: Option<FeatureMetadata>,
@@ -8172,7 +8172,7 @@ pub struct PaymentsResponse {
 
     /// Merchant's identifier for the payment/invoice. This will be sent to the connector
     /// if the connector provides support to accept multiple reference ids.
-    /// In case the connector supports only one reference id, Hyperswitch's Payment ID will be sent as reference.
+    /// In case the connector supports only one reference id, Orbix Gateway's Payment ID will be sent as reference.
     #[schema(
         value_type = Option<String>,
         max_length = 255,
@@ -8301,7 +8301,7 @@ pub struct PaymentsResponse {
 
 #[cfg(feature = "v1")]
 #[derive(Clone, Debug, PartialEq, serde::Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentMethodTokenizationDetails {
     /// The unique identifier for the payment method
     pub payment_method_id: String,
@@ -8433,11 +8433,11 @@ pub struct PaymentsListResponseItem {
     pub order_details: Option<Vec<Secret<OrderDetailsWithAmount>>>,
 
     /// The URL to redirect after the completion of the operation
-    #[schema(value_type = String, example = "https://hyperswitch.io")]
+    #[schema(value_type = String, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters.
-    #[schema(value_type = Option<String>, max_length = 255, example = "Hyperswitch Router")]
+    #[schema(value_type = Option<String>, max_length = 255, example = "Orbix Gateway Router")]
     pub statement_descriptor: Option<common_utils::types::StatementDescriptor>,
 
     /// Allowed Payment Method Types for a given PaymentIntent
@@ -8553,7 +8553,7 @@ pub struct RecoveryPaymentsListResponseItem {
 pub struct PaymentsConfirmIntentRequest {
     /// The URL to which you want the user to be redirected after the completion of the payment operation
     /// If this url is not passed, the url configured in the business profile will be used
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     /// The payment instrument data to be used for the payment
@@ -8614,7 +8614,7 @@ pub struct PaymentsConfirmIntentRequest {
 pub struct ProxyPaymentsRequest {
     /// The URL to which you want the user to be redirected after the completion of the payment operation
     /// If this url is not passed, the url configured in the business profile will be used
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     pub amount: AmountDetails,
@@ -8640,7 +8640,7 @@ pub struct ProxyPaymentsRequest {
 pub struct ExternalVaultProxyPaymentsRequest {
     /// The URL to which you want the user to be redirected after the completion of the payment operation
     /// If this url is not passed, the url configured in the business profile will be used
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     /// The payment instrument data to be used for the payment
@@ -8736,7 +8736,7 @@ pub struct PaymentsRequest {
     pub description: Option<common_utils::types::Description>,
 
     /// The URL to which you want the user to be redirected after the completion of the payment operation
-    #[schema(value_type = Option<String>, example = "https://hyperswitch.io")]
+    #[schema(value_type = Option<String>, example = "https://orbix.example")]
     pub return_url: Option<common_utils::types::Url>,
 
     #[schema(value_type = Option<FutureUsage>, example = "off_session")]
@@ -8747,7 +8747,7 @@ pub struct PaymentsRequest {
     pub apply_mit_exemption: Option<common_enums::MitExemptionRequest>,
 
     /// For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters.
-    #[schema(max_length = 22, example = "Hyperswitch Router", value_type = Option<String>)]
+    #[schema(max_length = 22, example = "Orbix Gateway Router", value_type = Option<String>)]
     pub statement_descriptor: Option<common_utils::types::StatementDescriptor>,
 
     /// Use this object to capture the details about the different products for which the payment is being made. The sum of amount across different products here should be equal to the overall payment amount
@@ -8770,7 +8770,7 @@ pub struct PaymentsRequest {
     /// Some connectors like Airwallex and Noon might require some additional information, find specific details in the child attributes below.
     pub connector_metadata: Option<ConnectorMetadata>,
 
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     pub feature_metadata: Option<FeatureMetadata>,
 
     /// Whether to generate the payment link for this payment or not (if applicable)
@@ -9226,7 +9226,7 @@ pub struct PaymentsResponse {
     #[schema(value_type = Option<String>)]
     pub raw_connector_response: Option<Secret<String>>,
 
-    /// Additional data that might be required by hyperswitch based on the additional features.
+    /// Additional data that might be required by orbix based on the additional features.
     pub feature_metadata: Option<FeatureMetadata>,
 
     /// You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long. Metadata is useful for storing additional, structured information on an object.
@@ -9291,7 +9291,7 @@ pub struct PaymentStartRedirectionParams {
 
 /// Details of external authentication
 #[derive(Setter, Clone, Default, Debug, PartialEq, serde::Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ExternalAuthenticationDetailsResponse {
     /// Authentication Type - Challenge / Frictionless
     #[schema(value_type = Option<DecoupledAuthenticationType>)]
@@ -9819,7 +9819,7 @@ pub struct RecoveryPaymentListResponse {
 }
 
 #[derive(Setter, Clone, Default, Debug, PartialEq, serde::Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct IncrementalAuthorizationResponse {
     /// The unique identifier of authorization
     #[smithy(value_type = "String")]
@@ -10007,7 +10007,7 @@ pub struct PaymentsAggregateResponse {
 #[derive(
     Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmountFilter {
     /// The start amount to filter list of transactions which are greater than or equal to the start amount
     #[smithy(value_type = "Option<i64>")]
@@ -10347,7 +10347,7 @@ pub struct PaymentsRetrieveRequest {
     pub force_sync: bool,
     /// Optional query parameters that might be specific to a connector or flow, passed through during the retrieve operation. Use with caution and refer to specific connector documentation if applicable.
     pub param: Option<String>,
-    /// Optionally specifies the connector to be used for a 'force_sync' retrieve operation. If provided, Hyperswitch will attempt to sync the payment status from this specific connector.
+    /// Optionally specifies the connector to be used for a 'force_sync' retrieve operation. If provided, Orbix Gateway will attempt to sync the payment status from this specific connector.
     pub connector: Option<String>,
     /// Merchant connector details used to make payments.
     #[schema(value_type = Option<MerchantConnectorDetailsWrap>)]
@@ -10370,7 +10370,7 @@ pub type VatPercentage = ScalarPercentage<DISCOUNT_PERCENTAGE_PRECISION_LENGTH>;
 #[derive(
     Debug, Default, PartialEq, serde::Deserialize, serde::Serialize, Clone, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct OrderDetailsWithAmount {
     /// Name of the product that is being purchased
     #[schema(max_length = 255, example = "shirt")]
@@ -10449,7 +10449,7 @@ pub struct OrderDetailsWithAmount {
     pub discount_type: Option<String>,
 }
 
-impl hyperswitch_masking::SerializableSecret for OrderDetailsWithAmount {}
+impl orbix_masking::SerializableSecret for OrderDetailsWithAmount {}
 
 #[derive(
     Default,
@@ -10462,7 +10462,7 @@ impl hyperswitch_masking::SerializableSecret for OrderDetailsWithAmount {}
     ToSchema,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct RedirectResponse {
     #[schema(value_type = Option<String>)]
     #[smithy(value_type = "Option<String>")]
@@ -10502,7 +10502,7 @@ pub struct PaymentsUpdateMetadataRequest {
     /// Metadata is useful for storing additional, unstructured information on an object.
     #[schema(value_type = Object, example = r#"{ "udf1": "some-value", "udf2": "some-value" }"#)]
     pub metadata: Option<pii::SecretSerdeValue>,
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     /// Deprecated because feature_metadata update will be done via the /update api from now on
     #[schema(value_type = Option<FeatureMetadata>, deprecated)]
     pub feature_metadata: Option<FeatureMetadata>,
@@ -10520,7 +10520,7 @@ pub struct PaymentsUpdateMetadataResponse {
     /// Deprecated because there is no change in the status of payment intent after metadata update, and it might create confusion for the integrators.
     #[schema(value_type = Option<IntentStatus>, example = "failed", default = "requires_confirmation", deprecated)]
     pub status: Option<api_enums::IntentStatus>,
-    /// Additional data that might be required by hyperswitch, to enable some specific features.
+    /// Additional data that might be required by orbix, to enable some specific features.
     /// Deprecated because feature_metadata update will be done via the /update api from now on
     #[deprecated(note = "feature_metadata update will be done via the /update api from now on")]
     #[schema(value_type = Option<FeatureMetadata>)]
@@ -10604,7 +10604,7 @@ pub struct DisplayAmountOnSdk {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayAllowedMethodsParameters {
     /// The list of allowed auth methods (ex: 3DS, No3DS, PAN_ONLY etc)
     #[smithy(value_type = "Vec<String>")]
@@ -10633,7 +10633,7 @@ pub struct GpayAllowedMethodsParameters {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayBillingAddressParameters {
     /// Is billing phone number required
     #[smithy(value_type = "bool")]
@@ -10646,7 +10646,7 @@ pub struct GpayBillingAddressParameters {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum GpayBillingAddressFormat {
     FULL,
     MIN,
@@ -10655,7 +10655,7 @@ pub enum GpayBillingAddressFormat {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayTokenParameters {
     /// The name of the connector
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -10688,7 +10688,7 @@ pub struct GpayTokenParameters {
 /// The tokenization type sent to the Google Pay SDK.
 ///
 /// Unlike [`GooglePayTokenizationType`], this holds only the values Google itself understands:
-/// the Hyperswitch-internal `INTERNAL_GATEWAY` marker is resolved into `PAYMENT_GATEWAY` during
+/// the Orbix Gateway-internal `INTERNAL_GATEWAY` marker is resolved into `PAYMENT_GATEWAY` during
 /// the session flow before this is built, so it can never leak into an SDK response.
 #[derive(
     Debug,
@@ -10712,7 +10712,7 @@ pub enum GooglePayTokenizationSpecificationType {
 /// Resolves the caller-facing [`GooglePayTokenizationType`] into the SDK-side equivalent.
 ///
 /// `INTERNAL_GATEWAY` is not a tokenization type Google understands: sessions served through it
-/// go through Hyperswitch's own registered gateway, which the SDK knows as `PAYMENT_GATEWAY`.
+/// go through Orbix Gateway's own registered gateway, which the SDK knows as `PAYMENT_GATEWAY`.
 impl From<GooglePayTokenizationType> for GooglePayTokenizationSpecificationType {
     fn from(tokenization_type: GooglePayTokenizationType) -> Self {
         match tokenization_type {
@@ -10726,7 +10726,7 @@ impl From<GooglePayTokenizationType> for GooglePayTokenizationSpecificationType 
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayTokenizationSpecification {
     /// The token specification type(ex: PAYMENT_GATEWAY)
     #[serde(rename = "type")]
@@ -10740,7 +10740,7 @@ pub struct GpayTokenizationSpecification {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayAllowedPaymentMethods {
     /// The type of payment method
     #[serde(rename = "type")]
@@ -10757,7 +10757,7 @@ pub struct GpayAllowedPaymentMethods {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayTransactionInfo {
     /// The country code
     #[schema(value_type = CountryAlpha2, example = "US")]
@@ -10779,7 +10779,7 @@ pub struct GpayTransactionInfo {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayMerchantInfo {
     /// The merchant Identifier that needs to be passed while invoking Gpay SDK
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -10879,7 +10879,7 @@ pub struct ApplepaySessionRequest {
 
 /// Some connectors like Apple Pay, Airwallex and Noon might require some additional information, find specific details in the child attributes below.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ConnectorMetadata {
     #[smithy(value_type = "Option<ApplepayConnectorMetadataRequest>")]
     pub apple_pay: Option<ApplepayConnectorMetadataRequest>,
@@ -10907,7 +10907,7 @@ pub struct ConnectorMetadata {
 
 /// PayPal-specific metadata supplied with a payment request.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaypalConnectorMetadata {
     /// FraudNet session identifier sent in the PAYPAL-CLIENT-METADATA-ID request header.
     #[schema(value_type = Option<String>)]
@@ -10916,7 +10916,7 @@ pub struct PaypalConnectorMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct StripeConnectorMetadata {
     /// For MIT (merchant-initiated) payments: when true, Stripe fails the payment outright
     /// instead of returning a `requires_action` status, since there's no customer present to
@@ -10926,7 +10926,7 @@ pub struct StripeConnectorMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(deny_unknown_fields)]
 pub struct CheckoutData {
     /// Purpose of Payment. Required for AFT.
@@ -10936,7 +10936,7 @@ pub struct CheckoutData {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(deny_unknown_fields)]
 pub struct WorldpayxmlData {
     /// Funding Transfer Type. Required for AFT.
@@ -10952,7 +10952,7 @@ pub struct WorldpayxmlData {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(rename_all = "snake_case")]
 pub enum WorldpayxmlFundingTransactionType {
     CreditCardBillRepayment,
@@ -10988,7 +10988,7 @@ pub enum WorldpayxmlFundingTransactionType {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(rename_all = "snake_case")]
 pub enum WorldpayxmlPaymentPurpose {
     FamilySupport,
@@ -11007,7 +11007,7 @@ pub enum WorldpayxmlPaymentPurpose {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(rename_all = "snake_case")]
 pub enum ConnectorMetadataResponse {
     Santander(SantanderData),
@@ -11015,7 +11015,7 @@ pub enum ConnectorMetadataResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct Revolv3Data {
     /// Name of the downstream processor Revolv3 routed the payment to.
     #[schema(value_type = Option<String>, example = "Paysafe")]
@@ -11024,7 +11024,7 @@ pub struct Revolv3Data {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(deny_unknown_fields)]
 pub struct SantanderData {
     #[schema(value_type = Option<String>, example = "E9040088820260710172800044983797")]
@@ -11045,7 +11045,7 @@ pub struct SantanderData {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum SantanderJourneyName {
     #[serde(rename = "journey_1")]
     // PixAutomaticoPush payment method type for zero-amount payments.
@@ -11091,14 +11091,14 @@ impl ConnectorMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AirwallexData {
     /// payload required by airwallex
     #[smithy(value_type = "Option<String>")]
     payload: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NoonData {
     /// Information about the order category that merchant wants to specify at connector level. (e.g. In Noon Payments it can take values like "pay", "food", or any other custom string set by the merchant in Noon's Dashboard)
     #[smithy(value_type = "Option<String>")]
@@ -11106,7 +11106,7 @@ pub struct NoonData {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct BraintreeData {
     /// Information about the merchant_account_id that merchant wants to specify at connector level.
     #[schema(value_type = String)]
@@ -11122,10 +11122,10 @@ pub struct BraintreeData {
 ///
 /// `amount`/`currency` here describe the **merchant settlement leg** — what Planet pays out to
 /// the merchant. The payment's own `amount`/`currency` remain the **customer-facing leg**, i.e.
-/// what the shopper saw at checkout and is charged. Hyperswitch never recomputes either leg; the
+/// what the shopper saw at checkout and is charged. Orbix Gateway never recomputes either leg; the
 /// merchant is the source of truth for both.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MultiCurrencyProcessingData {
     /// The merchant settlement currency, i.e. the currency the merchant is paid out in.
     #[schema(value_type = Currency)]
@@ -11158,14 +11158,14 @@ pub struct MultiCurrencyProcessingData {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AdyenConnectorMetadata {
     #[smithy(value_type = "AdyenTestingData")]
     pub testing: AdyenTestingData,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AdyenTestingData {
     /// Holder name to be sent to Adyen for a card payment(CIT) or a generic payment(MIT). This value overrides the values for card.card_holder_name and applies during both CIT and MIT payment transactions.
     #[schema(value_type = String)]
@@ -11174,7 +11174,7 @@ pub struct AdyenTestingData {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplepayConnectorMetadataRequest {
     #[smithy(value_type = "Option<SessionTokenInfo>")]
     pub session_token_data: Option<SessionTokenInfo>,
@@ -11238,7 +11238,7 @@ pub enum ApplePayCombinedMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PeachpaymentsData {
     /// A numeric reference number supplied by the system retaining the original source information and used to assist in locating that information or a copy thereof.
     #[schema(value_type = Option<String>)]
@@ -11252,7 +11252,7 @@ pub struct PeachpaymentsData {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PeachpaymentsCardOnFileTransactionType {
     /// One-off card payment without CVV.
     OneOff,
@@ -11272,7 +11272,7 @@ pub struct PaymentRequestMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SessionTokenInfo {
     #[schema(value_type = String)]
     #[smithy(value_type = "String")]
@@ -11304,7 +11304,7 @@ pub struct SessionTokenInfo {
     Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Display, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ApplepayInitiative {
     Web,
     Ios,
@@ -11312,10 +11312,10 @@ pub enum ApplepayInitiative {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(tag = "payment_processing_details_at")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentProcessingDetailsAt {
     #[smithy(value_type = "PaymentProcessingDetails")]
-    Hyperswitch(PaymentProcessingDetails),
+    Orbix(PaymentProcessingDetails),
     #[smithy(value_type = "smithy.api#Unit")]
     Connector,
 }
@@ -11323,7 +11323,7 @@ pub enum PaymentProcessingDetailsAt {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentProcessingDetails {
     #[schema(value_type = String)]
     #[smithy(value_type = "String")]
@@ -11347,7 +11347,7 @@ pub struct PaymentProcessingDetails {
     SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentProcessingDetailInputType {
     /// The payment processing certificates are supplied as raw values.
     #[default]
@@ -11391,8 +11391,8 @@ pub struct GooglePayDetails {
     pub cards: GpayAllowedMethodsParameters,
 }
 
-// Google Pay Provider Details can of two types: GooglePayMerchantDetails or GooglePayHyperSwitchDetails
-// GooglePayHyperSwitchDetails is not implemented yet
+// Google Pay Provider Details can of two types: GooglePayMerchantDetails or GooglePayOrbixDetails
+// GooglePayOrbixDetails is not implemented yet
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 pub enum GooglePayProviderDetails {
@@ -11428,7 +11428,7 @@ pub struct GooglePayTokenizationSpecification {
 pub enum GooglePayTokenizationType {
     PaymentGateway,
     Direct,
-    /// Hyperswitch-internal marker: the token is encrypted to Hyperswitch's own registered
+    /// Orbix Gateway-internal marker: the token is encrypted to Orbix Gateway's own registered
     /// gateway key. Never sent to Google as-is; resolved to `PAYMENT_GATEWAY` in the session flow.
     InternalGateway,
 }
@@ -11507,7 +11507,7 @@ pub enum SessionTokensResult {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(tag = "wallet_name")]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum SessionToken {
     /// The session response structure for Google Pay
     #[smithy(value_type = "GpaySessionTokenResponse")]
@@ -11548,7 +11548,7 @@ pub enum SessionToken {
 pub struct VaultDetails {
     /// Internal vault details containing the SDK authorization token (v1 only)
     pub internal_vault: Option<InternalVaultSessionDetails>,
-    /// External vault details (e.g. VGS or Hyperswitch Vault)
+    /// External vault details (e.g. VGS or Orbix Gateway Vault)
     pub external_vault_details: Option<VaultSessionDetails>,
 }
 
@@ -11563,7 +11563,7 @@ pub struct InternalVaultSessionDetails {
 #[serde(rename_all = "snake_case")]
 pub enum VaultSessionDetails {
     Vgs(VgsSessionDetails),
-    HyperswitchVault(HyperswitchVaultSessionDetails),
+    OrbixVault(OrbixVaultSessionDetails),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema)]
@@ -11576,29 +11576,29 @@ pub struct VgsSessionDetails {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema)]
-pub struct HyperswitchVaultSessionDetails {
-    /// Base64-encoded SDK authorization token for the Hyperswitch Vault session
+pub struct OrbixVaultSessionDetails {
+    /// Base64-encoded SDK authorization token for the Orbix Gateway Vault session
     #[schema(value_type = String)]
     pub sdk_authorization: Secret<String>,
 }
 
 /// V1-facing vault details for the session-tokens response, serialized as a tagged
 /// `{ "vault_type": ..., "vault_data": { ... } }` object. Exactly one variant is returned:
-/// external vault details when configured, otherwise the internal Hyperswitch vault session.
+/// external vault details when configured, otherwise the internal Orbix Gateway vault session.
 #[cfg(feature = "v1")]
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, ToSchema)]
 #[serde(tag = "vault_type", content = "vault_data", rename_all = "snake_case")]
 pub enum VaultDetailsResponse {
-    /// Internal/default Hyperswitch vault session
-    Hyperswitch(HyperswitchVaultData),
+    /// Internal/default Orbix Gateway vault session
+    Orbix(OrbixVaultData),
     /// External VGS vault session
     Vgs(VgsVaultData),
 }
 
 #[cfg(feature = "v1")]
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, ToSchema)]
-pub struct HyperswitchVaultData {
-    /// Base64-encoded SDK authorization token for the Hyperswitch Vault session
+pub struct OrbixVaultData {
+    /// Base64-encoded SDK authorization token for the Orbix Gateway Vault session
     pub sdk_authorization: String,
 }
 
@@ -11616,20 +11616,20 @@ pub struct VgsVaultData {
 impl From<VaultDetails> for Option<VaultDetailsResponse> {
     fn from(details: VaultDetails) -> Self {
         match details.external_vault_details {
-            // An external vault is configured: surface it as-is (VGS or Hyperswitch Vault).
+            // An external vault is configured: surface it as-is (VGS or Orbix Gateway Vault).
             Some(VaultSessionDetails::Vgs(vgs)) => Some(VaultDetailsResponse::Vgs(VgsVaultData {
                 vault_id: vgs.external_vault_id,
                 environment: vgs.sdk_env,
             })),
-            Some(VaultSessionDetails::HyperswitchVault(hs)) => {
-                Some(VaultDetailsResponse::Hyperswitch(HyperswitchVaultData {
+            Some(VaultSessionDetails::OrbixVault(hs)) => {
+                Some(VaultDetailsResponse::Orbix(OrbixVaultData {
                     sdk_authorization: hs.sdk_authorization.expose(),
                 }))
             }
             // No external vault configured (the SaaS default): fall back to the internal
-            // Hyperswitch vault SDK authorization.
+            // Orbix Gateway vault SDK authorization.
             None => details.internal_vault.map(|internal| {
-                VaultDetailsResponse::Hyperswitch(HyperswitchVaultData {
+                VaultDetailsResponse::Orbix(OrbixVaultData {
                     sdk_authorization: internal.sdk_authorization,
                 })
             }),
@@ -11641,7 +11641,7 @@ impl From<VaultDetails> for Option<VaultDetailsResponse> {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PazeSessionTokenResponse {
     /// Paze Client ID
     #[smithy(value_type = "String")]
@@ -11670,7 +11670,7 @@ pub struct PazeSessionTokenResponse {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(untagged)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum GpaySessionTokenResponse {
     /// Google pay response involving third party sdk
     #[smithy(value_type = "GooglePayThirdPartySdk")]
@@ -11684,7 +11684,7 @@ pub enum GpaySessionTokenResponse {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GooglePayThirdPartySdk {
     /// Identifier for the delayed session response
     #[smithy(value_type = "bool")]
@@ -11701,7 +11701,7 @@ pub struct GooglePayThirdPartySdk {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GooglePaySessionResponse {
     /// The merchant info
     #[smithy(value_type = "GpayMerchantInfo")]
@@ -11739,7 +11739,7 @@ pub struct GooglePaySessionResponse {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SamsungPaySessionTokenResponse {
     /// Samsung Pay API version
     #[smithy(value_type = "String")]
@@ -11776,7 +11776,7 @@ pub struct SamsungPaySessionTokenResponse {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum SamsungPayProtocolType {
     Protocol3ds,
 }
@@ -11785,7 +11785,7 @@ pub enum SamsungPayProtocolType {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SamsungPayMerchantPaymentInformation {
     /// Merchant name, this will be displayed on the Samsung Pay screen
     #[smithy(value_type = "String")]
@@ -11803,7 +11803,7 @@ pub struct SamsungPayMerchantPaymentInformation {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SamsungPayAmountDetails {
     #[serde(rename = "option")]
     #[smithy(value_type = "SamsungPayAmountFormat")]
@@ -11824,7 +11824,7 @@ pub struct SamsungPayAmountDetails {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum SamsungPayAmountFormat {
     /// Display the total amount only
     FormatTotalPriceOnly,
@@ -11836,7 +11836,7 @@ pub enum SamsungPayAmountFormat {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct GpayShippingAddressParameters {
     /// Is shipping phone number required
     #[smithy(value_type = "bool")]
@@ -11847,7 +11847,7 @@ pub struct GpayShippingAddressParameters {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct KlarnaSessionTokenResponse {
     /// The session token for Klarna
     #[smithy(value_type = "String")]
@@ -11867,7 +11867,7 @@ pub enum PaypalFlow {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaypalCaptureMethod {
     Capture,
     Authorize,
@@ -11902,7 +11902,7 @@ pub struct PaypalTransactionInfo {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaypalSessionTokenResponse {
     /// Name of the connector
     #[smithy(value_type = "String")]
@@ -11933,7 +11933,7 @@ pub struct PaypalSessionTokenResponse {
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct OpenBankingSessionToken {
     /// The session token for OpenBanking Connectors
     #[smithy(value_type = "String")]
@@ -11942,7 +11942,7 @@ pub struct OpenBankingSessionToken {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(rename_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplepaySessionTokenResponse {
     /// Session object for Apple Pay
     /// The session_token_data will be null for iOS devices because the Apple Pay session call is skipped, as there is no web domain involved
@@ -11975,7 +11975,7 @@ pub struct ApplepaySessionTokenResponse {
 #[derive(
     Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, Clone, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SdkNextAction {
     /// The type of next action
     #[smithy(value_type = "NextActionCall")]
@@ -11988,7 +11988,7 @@ pub struct SdkNextAction {
     Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize, Clone, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum NextActionCall {
     /// The next action call is Post Session Tokens
     PostSessionTokens,
@@ -12014,7 +12014,7 @@ pub enum NextActionCall {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(untagged)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ApplePaySessionResponse {
     ///  We get this session response, when third party sdk is involved
     #[smithy(value_type = "ThirdPartySdkSessionResponse")]
@@ -12031,7 +12031,7 @@ pub enum ApplePaySessionResponse {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ThirdPartySdkSessionResponse {
     #[smithy(value_type = "SecretInfoToInitiateSdk")]
     pub secrets: SecretInfoToInitiateSdk,
@@ -12040,7 +12040,7 @@ pub struct ThirdPartySdkSessionResponse {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, ToSchema, serde::Deserialize, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SecretInfoToInitiateSdk {
     // Authorization secrets used by client to initiate sdk
     #[schema(value_type = String)]
@@ -12055,7 +12055,7 @@ pub struct SecretInfoToInitiateSdk {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, ToSchema, serde::Deserialize, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayPaymentRequest {
     /// The code for country
     #[schema(value_type = CountryAlpha2, example = "US")]
@@ -12093,7 +12093,7 @@ pub struct ApplePayPaymentRequest {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayRecurringPaymentRequest {
     /// A description of the recurring payment that Apple Pay displays to the user in the payment sheet
     #[smithy(value_type = "String")]
@@ -12106,7 +12106,7 @@ pub struct ApplePayRecurringPaymentRequest {
     #[smithy(value_type = "Option<String>")]
     pub billing_agreement: Option<String>,
     /// A URL to a web page where the user can update or delete the payment method for the recurring payment
-    #[schema(value_type = String, example = "https://hyperswitch.io")]
+    #[schema(value_type = String, example = "https://orbix.example")]
     #[smithy(value_type = "String")]
     pub management_u_r_l: common_utils::types::Url,
 }
@@ -12114,7 +12114,7 @@ pub struct ApplePayRecurringPaymentRequest {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayRegularBillingRequest {
     /// The amount of the recurring payment
     #[schema(value_type = String, example = "38.02")]
@@ -12150,7 +12150,7 @@ pub struct ApplePayRegularBillingRequest {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ApplePayPaymentTiming {
     /// A value that specifies that the payment occurs when the transaction is complete
     Immediate,
@@ -12167,7 +12167,7 @@ pub struct ApplePayShippingContactFields(pub Vec<ApplePayAddressParameters>);
     Debug, Clone, Eq, PartialEq, serde::Serialize, ToSchema, serde::Deserialize, SmithyModel,
 )]
 #[serde(rename_all = "camelCase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ApplePayAddressParameters {
     PostalAddress,
     Phone,
@@ -12177,7 +12177,7 @@ pub enum ApplePayAddressParameters {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, ToSchema, serde::Deserialize, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmountInfo {
     /// The label must be the name of the merchant.
     #[smithy(value_type = "String")]
@@ -12202,7 +12202,7 @@ pub struct ApplepayErrorResponse {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmazonPaySessionTokenResponse {
     /// Amazon Pay merchant account identifier
     #[smithy(value_type = "String")]
@@ -12237,7 +12237,7 @@ pub struct AmazonPaySessionTokenResponse {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum AmazonPayPaymentIntent {
     /// Create a Charge Permission to authorize and capture funds at a later time
     Confirm,
@@ -12250,7 +12250,7 @@ pub enum AmazonPayPaymentIntent {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmazonPayDeliveryOptions {
     /// Delivery Option identifier
     #[smithy(value_type = "String")]
@@ -12269,7 +12269,7 @@ pub struct AmazonPayDeliveryOptions {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmazonPayDeliveryPrice {
     /// Transaction amount in MinorUnit
     #[smithy(value_type = "i64")]
@@ -12288,7 +12288,7 @@ pub struct AmazonPayDeliveryPrice {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct AmazonPayShippingMethod {
     /// Name of the shipping method
     #[smithy(value_type = "String")]
@@ -12435,7 +12435,7 @@ pub struct PaymentsCompleteAuthorizeRequest {
 
 #[cfg(feature = "v1")]
 #[derive(Default, Debug, serde::Deserialize, serde::Serialize, Clone, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PaymentsCancelRequest {
     /// The identifier for the payment
     #[serde(skip)]
@@ -12602,7 +12602,7 @@ pub struct PaymentsManualStatusUpdateEligibleStatusesResponse {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Indicates if 3DS method data was successfully completed or not
 pub enum ThreeDsCompletionIndicator {
     /// 3DS method successfully completed
@@ -12817,7 +12817,7 @@ pub struct PaymentsStartRequest {
     pub attempt_id: String,
 }
 
-/// additional data that might be required by hyperswitch
+/// additional data that might be required by orbix
 #[cfg(feature = "v2")]
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct FeatureMetadata {
@@ -12997,12 +12997,12 @@ impl FeatureMetadata {
     }
 }
 
-/// additional data that might be required by hyperswitch
+/// additional data that might be required by orbix
 #[cfg(feature = "v1")]
 #[derive(
     Debug, Default, Clone, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel, PartialEq,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct FeatureMetadata {
     /// Redirection response coming in request as metadata field only for redirection scenarios
     #[schema(value_type = Option<RedirectResponse>)]
@@ -13312,7 +13312,7 @@ pub struct ScheduledExpirationTime {
 /// Represents the specific data for Santander Pix Automatico (recurring PIX payments)
 /// Split into CIT (Customer Initiated Transaction) and MIT (Merchant Initiated Transaction) variants
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum PixAutomaticoAdditionalDetails {
     /// Customer Initiated Transaction - used during mandate setup for PixAutomaticoPush Payment Method Type
@@ -13325,7 +13325,7 @@ pub enum PixAutomaticoAdditionalDetails {
 
 /// Data for PixAutomaticoPush Payment Method Type CIT (Customer Initiated Transaction) - used during mandate setup
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PixAutomaticoPushData {
     /// Time in seconds until which the push notification is valid
     #[schema(value_type = u32, example = 3600)]
@@ -13342,7 +13342,7 @@ pub struct PixAutomaticoPushData {
 
 /// Data for PixAutomaticoQr Payment Method Type CIT (Customer Initiated Transaction) - used during mandate setup + non 0$ mandate setup
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PixAutomaticoQrData {
     /// Enable retry policy for failed payments (maps to PERMITE_3R_7D if true)
     #[smithy(value_type = "Option<bool>")]
@@ -13356,7 +13356,7 @@ pub struct PixAutomaticoQrData {
 
 /// Data for Santander Pix Automatico MIT (Merchant Initiated Transaction) - used during recurring charge creation
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PixAutomaticoMitData {
     /// Receiver details for the recurring charge
     #[smithy(value_type = "Option<SantanderPixAutomaticoReceiverDetails>")]
@@ -13375,7 +13375,7 @@ pub struct PixAutomaticoMitData {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SantanderMandateDetails {
     /// Fixed amount for each recurring charge in minor units (e.g., cents). If not provided, the mandate will allow variable amounts.
     #[schema(value_type = Option<u64>, example = 6540)]
@@ -13402,7 +13402,7 @@ pub struct SantanderMandateDetails {
 #[derive(
     Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(rename_all = "snake_case")]
 pub enum SantanderMandatePeriodicity {
     /// Every week
@@ -13421,7 +13421,7 @@ pub enum SantanderMandatePeriodicity {
 /// Account type for Santander Pix Automatico recurring charges
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum AccountType {
     /// Checking account (Conta Corrente)
     Current,
@@ -13433,7 +13433,7 @@ pub enum AccountType {
 
 /// Represents the receiver details for Santander Pix Automatico recurring charges
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SantanderPixAutomaticoReceiverDetails {
     /// Branch code (agencia) of the receiver's bank account
     #[smithy(value_type = "Option<String>")]
@@ -13450,7 +13450,7 @@ pub struct SantanderPixAutomaticoReceiverDetails {
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel, PartialEq)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayRecurringDetails {
     /// A description of the recurring payment that Apple Pay displays to the user in the payment sheet
     #[smithy(value_type = "String")]
@@ -13462,13 +13462,13 @@ pub struct ApplePayRecurringDetails {
     #[smithy(value_type = "Option<String>")]
     pub billing_agreement: Option<String>,
     /// A URL to a web page where the user can update or delete the payment method for the recurring payment
-    #[schema(value_type = String, example = "https://hyperswitch.io")]
+    #[schema(value_type = String, example = "https://orbix.example")]
     #[smithy(value_type = "String")]
     pub management_url: common_utils::types::Url,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel, PartialEq)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ApplePayRegularBillingDetails {
     /// The label that Apple Pay displays to the user in the payment sheet with the recurring details
     pub label: String,
@@ -13494,7 +13494,7 @@ pub struct ApplePayRegularBillingDetails {
     Debug, Clone, Eq, PartialEq, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum RecurringPaymentIntervalUnit {
     Year,
     Month,
@@ -13505,7 +13505,7 @@ pub enum RecurringPaymentIntervalUnit {
 
 ///frm message is an object sent inside the payments response...when frm is invoked, its value is Some(...), else its None
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PartialEq, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct FrmMessage {
     #[smithy(value_type = "String")]
     pub frm_name: String,
@@ -13999,7 +13999,7 @@ pub struct ExtendedCardInfoResponse {
 #[derive(
     Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ClickToPaySessionResponse {
     #[smithy(value_type = "String")]
     pub dpa_id: String,
@@ -14155,7 +14155,7 @@ pub struct EligibilityCardBin {
     Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, Eq, PartialEq, SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum EligibilityPaymentMethodData {
     #[schema(title = "EligibilityCard")]
     #[smithy(value_type = "EligibilityCard")]
@@ -14279,7 +14279,7 @@ mod eligibility_payment_method_data_serde {
 #[derive(
     Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, Eq, PartialEq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct EligibilityPaymentMethodDataRequest {
     #[serde(flatten)]
     #[smithy(value_type = "Option<EligibilityPaymentMethodData>")]
@@ -14624,7 +14624,7 @@ pub struct PaymentsAttemptRecordRequest {
     #[schema(value_type = Option<Object>, example = r#"{ "udf1": "some-value", "udf2": "some-value" }"#)]
     pub metadata: Option<pii::SecretSerdeValue>,
 
-    /// Additional data that might be required by hyperswitch based on the requested features by the merchants.
+    /// Additional data that might be required by orbix based on the requested features by the merchants.
     pub feature_metadata: Option<PaymentAttemptFeatureMetadata>,
 
     /// The time at which payment attempt was created.
@@ -14691,11 +14691,11 @@ pub struct RecoveryPaymentsCreate {
     /// Error details of a failed transaction.
     pub error: Option<ErrorDetails>,
 
-    /// Unique identifier assigned by Hyperswitch for the custom billing connector account. The account must belong to the profile passed in the `X-Profile-Id` header. Required when the `revenue_recovery_trigger_model` of the profile is `internal_triggers`, and ignored when it is `external_triggers`.
+    /// Unique identifier assigned by Orbix Gateway for the custom billing connector account. The account must belong to the profile passed in the `X-Profile-Id` header. Required when the `revenue_recovery_trigger_model` of the profile is `internal_triggers`, and ignored when it is `external_triggers`.
     #[schema(value_type = Option<String>, example = "mca_1234567890")]
     pub billing_merchant_connector_id: Option<id_type::MerchantConnectorAccountId>,
 
-    /// Unique identifier assigned by Hyperswitch for the payment connector account, such as Stripe, on which the transaction was processed. The account must belong to the profile passed in the `X-Profile-Id` header. Required when the `revenue_recovery_trigger_model` of the profile is `internal_triggers`, and ignored when it is `external_triggers`.
+    /// Unique identifier assigned by Orbix Gateway for the payment connector account, such as Stripe, on which the transaction was processed. The account must belong to the profile passed in the `X-Profile-Id` header. Required when the `revenue_recovery_trigger_model` of the profile is `internal_triggers`, and ignored when it is `external_triggers`.
     #[schema(value_type = Option<String>, example = "mca_1234567890")]
     pub payment_merchant_connector_id: Option<id_type::MerchantConnectorAccountId>,
 
@@ -14890,7 +14890,7 @@ impl PaymentsUpdateMetadataRequest {
 
 /// Represents the connector-specific metadata for Santander payments, including boleto data and related rules.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SantanderConnectorMetadataData {
     /// Boleto-specific data and rules for Santander payments
     #[smithy(value_type = "Option<SantanderBoletoData>")]
@@ -14899,7 +14899,7 @@ pub struct SantanderConnectorMetadataData {
 
 /// Represents the specific data and rules related to Santander Boleto payments, including discounts, penalties, collection actions, payment constraints, beneficiary details, and document kind.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SantanderBoletoData {
     // Rules for applying discounts
     #[smithy(value_type = "Option<SantanderPaymentDiscountRules>")]
@@ -14926,7 +14926,7 @@ pub struct SantanderBoletoData {
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Represents the end-recipient of a payout or fund transfer.
 pub struct BeneficiaryDetails {
     /// The full legal name of the individual or entity receiving the funds.
@@ -14948,7 +14948,7 @@ pub struct BeneficiaryDetails {
 
 /// Represents the rules for applying discounts to a payment, such as a percentage discount or a fixed amount discount, along with any applicable grace periods.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PenaltyRules {
     /// Fixed fee applied once after the due date (Fine)
     #[smithy(value_type = "Option<PenaltyDetail>")]
@@ -14962,7 +14962,7 @@ pub struct PenaltyRules {
 
 /// Represents the rules for applying discounts to a payment, such as a percentage discount or a fixed amount discount, along with any applicable grace periods.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct InterestDetail {
     /// Percentage of Juros (Interest). Pattern: ^[0-9]{1,3}\.[0-9]{2}$
     #[schema(value_type = Option<String>, example = "5.00")]
@@ -14977,7 +14977,7 @@ pub struct InterestDetail {
 
 /// Represents the rules for applying discounts to a payment, such as a percentage discount or a fixed amount discount, along with any applicable grace periods.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct PenaltyDetail {
     /// The numeric value (as a string to preserve decimal precision)
     #[schema(value_type = Option<String>, example = "2.00")]
@@ -14991,7 +14991,7 @@ pub struct PenaltyDetail {
 
 /// Represents the legal or administrative actions that may be taken for non-payment, such as protest rules and automatic write-off timelines.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CollectionActions {
     /// Logic for legal protest (official debt registration)
     #[schema(value_type = Option<ProtestRules>)]
@@ -15047,7 +15047,7 @@ pub struct InstallmentDetails {
 
 /// Defines how the payment amount is calculated for penalties or discounts, either as a percentage or as a flat amount.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(rename_all = "snake_case")]
 pub enum CalculationType {
     /// The value is treated as a percentage (e.g., "2.00" represents 2%).
@@ -15062,7 +15062,7 @@ pub enum CalculationType {
 
 /// Defines the type of payment allowance for a boleto, such as whether only the exact amount is accepted, partial payments are allowed, or overpayment is permitted.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentAllowanceType {
     /// Only the exact amount is accepted
     Exact,
@@ -15074,7 +15074,7 @@ pub enum PaymentAllowanceType {
 
 /// Defines the type of protest for non-payment, such as whether the count is based on calendar days, business days, or if the protest logic is determined by a pre-signed contract with the bank.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 #[serde(rename_all = "snake_case")]
 pub enum ProtestType {
     /// No legal protest will be initiated
@@ -15089,7 +15089,7 @@ pub enum ProtestType {
 
 /// Defines the type of discount applied to a payment, such as whether it's a fixed date discount, a daily calendar discount, or a daily business discount.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct SantanderPaymentDiscountRules {
     /// Generic label for the logic (e.g., "tier_based", "early_bird")
     #[schema(value_type = Option<DiscountType>, example = "fixed_date")]
@@ -15114,7 +15114,7 @@ pub struct SantanderPaymentDiscountRules {
     SmithyModel,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum DiscountType {
     /// No discount logic will be applied. The payment amount remains at the base value.
     #[default]
@@ -15129,7 +15129,7 @@ pub enum DiscountType {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct DiscountTier {
     /// The discount value (e.g., "5.50").
     #[schema(value_type = Option<String>, example = "5.50")]
@@ -15144,7 +15144,7 @@ pub struct DiscountTier {
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ToSchema, SmithyModel)]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ProtestRules {
     /// The timing logic for when the protest should occur
     #[schema(value_type = ProtestType, example = "calendar_days")]

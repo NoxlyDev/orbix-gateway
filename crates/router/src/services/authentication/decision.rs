@@ -1,5 +1,5 @@
 use common_utils::{errors::CustomResult, request::RequestContent};
-use hyperswitch_masking::{ErasedMaskSerialize, Secret};
+use orbix_masking::{ErasedMaskSerialize, Secret};
 use serde::Serialize;
 use storage_impl::errors::ApiClientError;
 

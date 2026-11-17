@@ -4,7 +4,7 @@ use rand::RngCore;
 
 /// Every clock and entropy read the client makes, other than key material.
 ///
-/// Services that route such reads through their own instrumented functions (Hyperswitch does,
+/// Services that route such reads through their own instrumented functions (Orbix Gateway does,
 /// so that `deja` can replay them) implement this and pass it to
 /// [`OciKmsClient::with_environment`](crate::OciKmsClient::with_environment). Key material,
 /// such as the Workload Identity session key, always comes from the OS RNG.

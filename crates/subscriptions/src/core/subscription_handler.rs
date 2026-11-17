@@ -7,13 +7,13 @@ use api_models::{
 use common_enums::connector_enums;
 use common_utils::{consts, ext_traits::OptionExt};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     customer, merchant_connector_account,
     platform::Platform,
     router_response_types::{self, subscriptions as subscription_response_types},
     subscription::{Subscription, SubscriptionStatus},
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use super::errors;
 use crate::{
@@ -42,7 +42,7 @@ impl<'a> SubscriptionHandler<'a> {
         billing_processor: connector_enums::Connector,
         merchant_connector_id: common_utils::id_type::MerchantConnectorAccountId,
         merchant_reference_id: Option<String>,
-        profile: &hyperswitch_domain_models::business_profile::Profile,
+        profile: &orbix_domain_models::business_profile::Profile,
         plan_id: Option<String>,
         item_price_id: Option<String>,
     ) -> errors::SubscriptionResult<SubscriptionWithHandler<'_>> {
@@ -169,7 +169,7 @@ impl<'a> SubscriptionHandler<'a> {
         state: &SessionState,
         platform: &Platform,
         profile_id: &common_utils::id_type::ProfileId,
-    ) -> errors::SubscriptionResult<hyperswitch_domain_models::business_profile::Profile> {
+    ) -> errors::SubscriptionResult<orbix_domain_models::business_profile::Profile> {
         let merchant_key_store = platform.get_processor().get_key_store();
         let merchant_id = platform.get_processor().get_account().get_id();
 
@@ -188,7 +188,7 @@ impl<'a> SubscriptionHandler<'a> {
 
     pub async fn find_and_validate_subscription(
         &self,
-        client_secret: &hyperswitch_domain_models::subscription::ClientSecret,
+        client_secret: &orbix_domain_models::subscription::ClientSecret,
     ) -> errors::SubscriptionResult<()> {
         let subscription_id = client_secret.get_subscription_id()?;
         let key_store = self.platform.get_processor().get_key_store();
@@ -214,7 +214,7 @@ impl<'a> SubscriptionHandler<'a> {
 
     pub fn validate_client_secret(
         &self,
-        client_secret: &hyperswitch_domain_models::subscription::ClientSecret,
+        client_secret: &orbix_domain_models::subscription::ClientSecret,
         subscription: &Subscription,
     ) -> errors::SubscriptionResult<()> {
         let stored_client_secret = subscription
@@ -295,13 +295,13 @@ impl<'a> SubscriptionHandler<'a> {
 pub struct SubscriptionWithHandler<'a> {
     pub handler: &'a SubscriptionHandler<'a>,
     pub subscription: Subscription,
-    pub merchant_account: hyperswitch_domain_models::merchant_account::MerchantAccount,
+    pub merchant_account: orbix_domain_models::merchant_account::MerchantAccount,
 }
 
 impl SubscriptionWithHandler<'_> {
     pub fn generate_response(
         &self,
-        invoice: &hyperswitch_domain_models::invoice::Invoice,
+        invoice: &orbix_domain_models::invoice::Invoice,
         payment_response: &subscription_types::PaymentResponseData,
         status: subscription_response_types::SubscriptionStatus,
     ) -> errors::SubscriptionResult<subscription_types::ConfirmSubscriptionResponse> {
@@ -323,7 +323,7 @@ impl SubscriptionWithHandler<'_> {
     pub fn to_subscription_response(
         subscription: &Subscription,
         payment: Option<subscription_types::PaymentResponseData>,
-        invoice: Option<&hyperswitch_domain_models::invoice::Invoice>,
+        invoice: Option<&orbix_domain_models::invoice::Invoice>,
     ) -> errors::SubscriptionResult<SubscriptionResponse> {
         Ok(SubscriptionResponse::new(
             subscription.id.clone(),
@@ -349,7 +349,7 @@ impl SubscriptionWithHandler<'_> {
 
     pub async fn update_subscription(
         &mut self,
-        subscription_update: hyperswitch_domain_models::subscription::SubscriptionUpdate,
+        subscription_update: orbix_domain_models::subscription::SubscriptionUpdate,
     ) -> errors::SubscriptionResult<()> {
         let db = self.handler.state.store.as_ref();
         let updated_subscription = db
@@ -372,7 +372,7 @@ impl SubscriptionWithHandler<'_> {
 
     pub fn get_invoice_handler(
         &self,
-        profile: hyperswitch_domain_models::business_profile::Profile,
+        profile: orbix_domain_models::business_profile::Profile,
     ) -> InvoiceHandler {
         InvoiceHandler {
             subscription: self.subscription.clone(),
@@ -435,11 +435,11 @@ impl SubscriptionWithHandler<'_> {
     }
 }
 
-impl ForeignTryFrom<&hyperswitch_domain_models::invoice::Invoice> for subscription_types::Invoice {
+impl ForeignTryFrom<&orbix_domain_models::invoice::Invoice> for subscription_types::Invoice {
     type Error = error_stack::Report<errors::ApiErrorResponse>;
 
     fn foreign_try_from(
-        invoice: &hyperswitch_domain_models::invoice::Invoice,
+        invoice: &orbix_domain_models::invoice::Invoice,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             id: invoice.id.clone(),

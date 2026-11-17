@@ -27,13 +27,13 @@ use common_utils::{
 };
 use diesel_models::{enums as diesel_enum, process_tracker::business_status};
 use error_stack::{self, report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments::{
         payment_intent::PaymentIntentUpdate, PaymentIntent, PaymentIntentData, PaymentStatusData,
     },
     platform, revenue_recovery as domain_revenue_recovery, ApiModelToDieselModelConvertor,
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use scheduler::errors as sch_errors;
 
 use crate::{
@@ -1650,7 +1650,7 @@ pub async fn resume_revenue_recovery_process_tracker(
         payments::operations::PaymentGetIntent,
         request,
         tracking_data.global_payment_id.clone(),
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
     ))
     .await?;
 

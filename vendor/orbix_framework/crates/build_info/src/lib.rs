@@ -102,7 +102,7 @@
 //! Refer to the [`vergen_integration` example][vergen-integration-example] for a complete example
 //! of using the `vergen-gix` feature.
 //!
-//! [vergen-integration-example]: https://github.com/juspay/framework-libs-rs/tree/main/examples/vergen_integration
+//! [vergen-integration-example]: https://github.com/orbix/framework-libs-rs/tree/main/examples/vergen_integration
 //!
 //! ### `framework-libs-members-env`
 //!
@@ -113,7 +113,7 @@
 //! multiple crates from the repository, for example.
 //! Enabling this feature provides the [`framework_libs_workspace_members()`] function.
 //!
-//! [framework-libs-rs-github]: https://github.com/juspay/framework-libs-rs
+//! [framework-libs-rs-github]: https://github.com/orbix/framework-libs-rs
 //!
 //! #### Example
 //!
@@ -191,7 +191,7 @@ macro_rules! cargo_workspace_members {
 /// This may be useful for enabling logs from crates in the `framework-libs-rs` repository's
 /// workspace, for example.
 ///
-/// [framework-libs-rs-github]: https://github.com/juspay/framework-libs-rs
+/// [framework-libs-rs-github]: https://github.com/orbix/framework-libs-rs
 #[cfg(feature = "framework-libs-members-env")]
 #[inline]
 pub fn framework_libs_workspace_members() -> std::collections::HashSet<&'static str> {

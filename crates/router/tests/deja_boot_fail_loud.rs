@@ -23,7 +23,7 @@ fn replay_mode_without_source_or_lookup_dir_fails_loudly() {
 #[test]
 fn replay_mode_with_missing_lookup_source_fails_loudly() {
     let missing_source =
-        "/__hyperswitch_w3_deja_replay_lookup_table_must_not_exist__/missing.lookup.json";
+        "/__orbix_w3_deja_replay_lookup_table_must_not_exist__/missing.lookup.json";
     let mut settings = settings_for(DejaMode::Replay);
     settings.replay.source = Some(missing_source.to_owned());
 

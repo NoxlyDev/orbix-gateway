@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Hyperswitch",
+  "name": "Orbix",
   "colors": {
     "primary": "#4F8EFF",
     "light": "#6BA3FF",
@@ -529,7 +529,7 @@
         "tab": "Locker API Reference",
         "groups": [
           {
-            "group": "Hyperswitch Card Vault",
+            "group": "Orbix Gateway Card Vault",
             "pages": [
               "locker-api-reference/overview"
             ]
@@ -853,23 +853,23 @@
     "links": [
       {
         "label": "Contact Us",
-        "href": "https://inviter.co/hyperswitch-slack"
+        "href": "https://inviter.co/orbix-slack"
       },
       {
         "label": "Explore with Deepwiki",
-        "href": "https://deepwiki.com/juspay/hyperswitch"
+        "href": "https://deepwiki.com/orbix/orbix"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Self-Deploy",
-      "href": "https://docs.hyperswitch.io/self-hosting"
+      "href": "https://docs.orbix.example/self-hosting"
     }
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/juspay/hyperswitch",
-      "linkedin": "https://www.linkedin.com/company/hyperswitch"
+      "github": "https://github.com/orbix/orbix",
+      "linkedin": "https://www.linkedin.com/company/orbix"
     }
   },
   "integrations": {

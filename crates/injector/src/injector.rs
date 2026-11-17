@@ -4,7 +4,7 @@ pub mod core {
     use async_trait::async_trait;
     use common_utils::request::{Method, RequestBuilder, RequestContent};
     use error_stack::{self, ResultExt};
-    use hyperswitch_masking::{self, ExposeInterface};
+    use orbix_masking::{self, ExposeInterface};
     use nom::{
         bytes::complete::{tag, take_while1},
         character::complete::{char, multispace0},
@@ -34,7 +34,7 @@ pub mod core {
         }
     }
 
-    /// Proxy configuration structure (copied from hyperswitch_interfaces to make injector standalone)
+    /// Proxy configuration structure (copied from orbix_interfaces to make injector standalone)
     #[derive(Debug, serde::Deserialize, Clone)]
     #[serde(default)]
     pub struct Proxy {
@@ -62,7 +62,7 @@ pub mod core {
     impl Proxy {
         /// Builds a `Proxy` from an optional proxy URL secret, applying it to both HTTP and
         /// HTTPS slots. Returns `Proxy::default()` when `proxy_url` is `None`.
-        fn from_optional_url(proxy_url: Option<hyperswitch_masking::Secret<String>>) -> Self {
+        fn from_optional_url(proxy_url: Option<orbix_masking::Secret<String>>) -> Self {
             match proxy_url {
                 Some(url) => {
                     let url_str = url.expose();
@@ -84,9 +84,9 @@ pub mod core {
 
     fn create_client(
         proxy_config: &Proxy,
-        client_certificate: Option<hyperswitch_masking::Secret<String>>,
-        client_certificate_key: Option<hyperswitch_masking::Secret<String>>,
-        ca_certificate: Option<hyperswitch_masking::Secret<String>>,
+        client_certificate: Option<orbix_masking::Secret<String>>,
+        client_certificate_key: Option<orbix_masking::Secret<String>>,
+        ca_certificate: Option<orbix_masking::Secret<String>>,
     ) -> error_stack::Result<reqwest::Client, InjectorError> {
         logger::debug!(
             has_client_cert = client_certificate.is_some(),
@@ -154,12 +154,12 @@ pub mod core {
     /// Extracts vault proxy URL and CA cert from headers when the vault-metadata header is present.
     /// Returns `(proxy_url, ca_cert)` — both `None` when the header is absent or extraction fails.
     fn extract_vault_metadata(
-        headers: &HashMap<String, hyperswitch_masking::Secret<String>>,
+        headers: &HashMap<String, orbix_masking::Secret<String>>,
         endpoint: url::Url,
         http_method: injector_types::HttpMethod,
     ) -> (
-        Option<hyperswitch_masking::Secret<String>>,
-        Option<hyperswitch_masking::Secret<String>>,
+        Option<orbix_masking::Secret<String>>,
+        Option<orbix_masking::Secret<String>>,
     ) {
         if !headers.contains_key(crate::consts::EXTERNAL_VAULT_METADATA_HEADER) {
             return (None, None);
@@ -201,8 +201,8 @@ pub mod core {
     }
 
     fn create_identity_from_certificate_and_key(
-        encoded_certificate: hyperswitch_masking::Secret<String>,
-        encoded_certificate_key: hyperswitch_masking::Secret<String>,
+        encoded_certificate: orbix_masking::Secret<String>,
+        encoded_certificate_key: orbix_masking::Secret<String>,
     ) -> error_stack::Result<reqwest::Identity, InjectorError> {
         let cert_str = encoded_certificate.expose();
         let key_str = encoded_certificate_key.expose();
@@ -218,7 +218,7 @@ pub mod core {
     }
 
     fn create_certificate(
-        encoded_certificate: hyperswitch_masking::Secret<String>,
+        encoded_certificate: orbix_masking::Secret<String>,
     ) -> error_stack::Result<Vec<reqwest::Certificate>, InjectorError> {
         let cert_str = encoded_certificate.expose();
         let cert = reqwest::Certificate::from_pem(cert_str.as_bytes())
@@ -244,9 +244,9 @@ pub mod core {
     /// request. Accepts cert fields directly so callers do not need to clone the whole config.
     fn build_request_with_certificates(
         mut request_builder: RequestBuilder,
-        client_cert: Option<hyperswitch_masking::Secret<String>>,
-        client_key: Option<hyperswitch_masking::Secret<String>>,
-        ca_cert: Option<hyperswitch_masking::Secret<String>>,
+        client_cert: Option<orbix_masking::Secret<String>>,
+        client_key: Option<orbix_masking::Secret<String>>,
+        ca_cert: Option<orbix_masking::Secret<String>>,
     ) -> common_utils::request::Request {
         if let Some(cert) = client_cert {
             request_builder = request_builder.add_certificate(Some(cert));
@@ -294,8 +294,8 @@ pub mod core {
         // Add headers
         for (key, value) in &request.headers {
             let header_value = match value {
-                hyperswitch_masking::Maskable::Masked(secret) => secret.clone().expose(),
-                hyperswitch_masking::Maskable::Normal(normal) => normal.clone(),
+                orbix_masking::Maskable::Masked(secret) => secret.clone().expose(),
+                orbix_masking::Maskable::Normal(normal) => normal.clone(),
             };
             req_builder = req_builder.header(key, header_value);
         }
@@ -365,7 +365,7 @@ pub mod core {
         ///
         /// - **Proxy** (e.g. VGS): interpolate `{{$field}}` with token aliases so the
         ///   forward proxy can detokenize them on the wire.
-        /// - **Transformation** (e.g. HyperswitchVault): return the template unchanged;
+        /// - **Transformation** (e.g. OrbixVault): return the template unchanged;
         ///   the vault resolves placeholders downstream.
         fn process_payload(
             &self,
@@ -413,12 +413,12 @@ pub mod core {
         }
     }
 
-    // ---- HyperswitchVault / Transformation strategy ----------------------------
+    // ---- OrbixVault / Transformation strategy ----------------------------
 
-    struct HyperswitchVaultStrategy;
+    struct OrbixVaultStrategy;
 
     #[async_trait]
-    impl VaultConnectorStrategy for HyperswitchVaultStrategy {
+    impl VaultConnectorStrategy for OrbixVaultStrategy {
         fn process_payload(
             &self,
             _injector: &Injector,
@@ -426,7 +426,7 @@ pub mod core {
             _vault_data: &Value,
         ) -> error_stack::Result<String, InjectorError> {
             logger::debug!(
-                "HyperswitchVault transformation: skipping interpolation, keeping placeholders"
+                "OrbixVault transformation: skipping interpolation, keeping placeholders"
             );
             Ok(template)
         }
@@ -438,9 +438,9 @@ pub mod core {
             processed_payload: &str,
             _content_type: &ContentType,
         ) -> error_stack::Result<InjectorResponse, InjectorError> {
-            logger::debug!("Routing request through HyperswitchVault proxy");
+            logger::debug!("Routing request through OrbixVault proxy");
             injector
-                .make_hyperswitch_vault_request(request, processed_payload)
+                .make_orbix_vault_request(request, processed_payload)
                 .await
         }
     }
@@ -458,7 +458,7 @@ pub mod core {
             _vault_data: &Value,
         ) -> error_stack::Result<String, InjectorError> {
             logger::debug!(
-                "Transformation vault (non-HyperswitchVault): no transformation implemented yet, keeping placeholders"
+                "Transformation vault (non-OrbixVault): no transformation implemented yet, keeping placeholders"
             );
             Ok(template)
         }
@@ -471,7 +471,7 @@ pub mod core {
             content_type: &ContentType,
         ) -> error_stack::Result<InjectorResponse, InjectorError> {
             logger::debug!(
-                "Transformation vault (non-HyperswitchVault): falling back to direct HTTP request"
+                "Transformation vault (non-OrbixVault): falling back to direct HTTP request"
             );
             injector
                 .make_http_request(&request.connection_config, processed_payload, content_type)
@@ -487,8 +487,8 @@ pub mod core {
             ) {
                 (
                     Some(injector_types::VaultConnectorType::Transformation),
-                    Some(injector_types::VaultConnectors::HyperswitchVault),
-                ) => Box::new(HyperswitchVaultStrategy),
+                    Some(injector_types::VaultConnectors::OrbixVault),
+                ) => Box::new(OrbixVaultStrategy),
                 (Some(injector_types::VaultConnectorType::Proxy), _) => Box::new(ProxyStrategy),
                 (Some(injector_types::VaultConnectorType::Transformation), _) => {
                     Box::new(FallbackTransformationStrategy)
@@ -785,14 +785,14 @@ pub mod core {
 
             logger::debug!("Constructed URL: {}", config.endpoint);
 
-            let headers: Vec<(String, hyperswitch_masking::Maskable<String>)> = config
+            let headers: Vec<(String, orbix_masking::Maskable<String>)> = config
                 .headers
                 .clone()
                 .into_iter()
                 .map(|(k, v)| {
                     (
                         k,
-                        hyperswitch_masking::Maskable::new_normal(v.expose().clone()),
+                        orbix_masking::Maskable::new_normal(v.expose().clone()),
                     )
                 })
                 .collect();
@@ -861,9 +861,9 @@ pub mod core {
         }
 
         /// Wraps the template (with `{{$field_name}}` placeholders intact) into the
-        /// HyperswitchVault proxy request format and sends it to the vault endpoint.
+        /// OrbixVault proxy request format and sends it to the vault endpoint.
         #[instrument(skip_all)]
-        async fn make_hyperswitch_vault_request(
+        async fn make_orbix_vault_request(
             &self,
             request: &InjectorRequest,
             processed_payload: &str,
@@ -874,7 +874,7 @@ pub mod core {
                 .as_ref()
                 .ok_or_else(|| {
                     error_stack::Report::new(InjectorError::InvalidTemplate(
-                        "vault_endpoint is required for HyperswitchVault proxy request".to_string(),
+                        "vault_endpoint is required for OrbixVault proxy request".to_string(),
                     ))
                 })?;
 
@@ -884,13 +884,13 @@ pub mod core {
                 .as_ref()
                 .ok_or_else(|| {
                     error_stack::Report::new(InjectorError::InvalidTemplate(
-                        "vault_auth_data is required for HyperswitchVault proxy request"
+                        "vault_auth_data is required for OrbixVault proxy request"
                             .to_string(),
                     ))
                 })?;
 
             let vault_proxy_request =
-                injector_types::HyperswitchVaultProxyRequest::try_from_injector_request(
+                injector_types::OrbixVaultProxyRequest::try_from_injector_request(
                     processed_payload,
                     &request.connection_config,
                     &request.token_data,
@@ -901,32 +901,32 @@ pub mod core {
                 vault_endpoint = %vault_endpoint,
                 destination_url = %vault_proxy_request.destination_url,
                 method = %vault_proxy_request.method,
-                "Sending request to HyperswitchVault proxy"
+                "Sending request to OrbixVault proxy"
             );
 
-            let vault_headers: Vec<(String, hyperswitch_masking::Maskable<String>)> = vec![
+            let vault_headers: Vec<(String, orbix_masking::Maskable<String>)> = vec![
                 (
                     "Content-Type".to_string(),
-                    hyperswitch_masking::Maskable::new_normal("application/json".to_string()),
+                    orbix_masking::Maskable::new_normal("application/json".to_string()),
                 ),
                 (
                     "Accept".to_string(),
-                    hyperswitch_masking::Maskable::new_normal("application/json".to_string()),
+                    orbix_masking::Maskable::new_normal("application/json".to_string()),
                 ),
                 (
                     "Authorization".to_string(),
-                    hyperswitch_masking::Maskable::Masked(
+                    orbix_masking::Maskable::Masked(
                         format!("api-key={}", vault_auth.api_key.clone().expose()).into(),
                     ),
                 ),
                 (
                     "x-profile-id".to_string(),
-                    hyperswitch_masking::Maskable::Masked(vault_auth.profile_id.clone()),
+                    orbix_masking::Maskable::Masked(vault_auth.profile_id.clone()),
                 ),
                 (
                     "User-Agent".to_string(),
-                    hyperswitch_masking::Maskable::new_normal(
-                        "Hyperswitch-Backend-Server".to_string(),
+                    orbix_masking::Maskable::new_normal(
+                        "Orbix Gateway-Backend-Server".to_string(),
                     ),
                 ),
             ];
@@ -1009,11 +1009,11 @@ mod tests {
         let mut headers = HashMap::new();
         headers.insert(
             "Content-Type".to_string(),
-            hyperswitch_masking::Secret::new("application/x-www-form-urlencoded".to_string()),
+            orbix_masking::Secret::new("application/x-www-form-urlencoded".to_string()),
         );
         headers.insert(
             "Authorization".to_string(),
-            hyperswitch_masking::Secret::new("Bearer Test".to_string()),
+            orbix_masking::Secret::new("Bearer Test".to_string()),
         );
 
         let specific_token_data = common_utils::pii::SecretSerdeValue::new(serde_json::json!({
@@ -1085,11 +1085,11 @@ mod tests {
         let mut headers = HashMap::new();
         headers.insert(
             "Content-Type".to_string(),
-            hyperswitch_masking::Secret::new("application/x-www-form-urlencoded".to_string()),
+            orbix_masking::Secret::new("application/x-www-form-urlencoded".to_string()),
         );
         headers.insert(
             "Authorization".to_string(),
-            hyperswitch_masking::Secret::new("Bearer TEST".to_string()),
+            orbix_masking::Secret::new("Bearer TEST".to_string()),
         );
 
         let specific_token_data = common_utils::pii::SecretSerdeValue::new(serde_json::json!({

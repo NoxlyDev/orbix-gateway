@@ -113,7 +113,7 @@ label = "Payment Processing Details At"
 placeholder = "Enter Payment Processing Details At"
 required = true
 type = "Radio"
-options = ["Connector", "Hyperswitch"]
+options = ["Connector", "Orbix"]
 [[aci.metadata.google_pay]]
 name = "merchant_name"
 label = "Google Pay Merchant Name"
@@ -436,7 +436,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector", "Hyperswitch"]
+options=["Connector", "Orbix"]
 
 [[adyen.metadata.google_pay]]
 name="merchant_name"
@@ -1060,7 +1060,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector","Hyperswitch"]
+options=["Connector","Orbix"]
 
 [[bankofamerica.metadata.google_pay]]
 name="merchant_name"
@@ -1259,7 +1259,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector","Hyperswitch"]
+options=["Connector","Orbix"]
 
 [[barclaycard.metadata.google_pay]]
 name = "merchant_name"
@@ -1661,7 +1661,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector","Hyperswitch"]
+options=["Connector","Orbix"]
 
 [[braintree.metadata.google_pay]]
 name = "merchant_name"
@@ -1945,7 +1945,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options = ["Connector", "Hyperswitch"]
+options = ["Connector", "Orbix"]
 
 [[checkout.metadata.google_pay]]
 name="merchant_name"
@@ -2212,7 +2212,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector","Hyperswitch"]
+options=["Connector","Orbix"]
 
 [[cybersource.metadata.google_pay]]
 name="merchant_name"
@@ -2677,7 +2677,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector", "Hyperswitch"]
+options=["Connector", "Orbix"]
 
 [fiservemea]
 [[fiservemea.credit]]
@@ -2810,7 +2810,7 @@ key1="Secret Key"
   placeholder = "Enter Payment Processing Details At"
   required = true
   type = "Radio"
-  options = ["Hyperswitch"]
+  options = ["Orbix"]
 [[fiservcommercehub.metadata.google_pay]]
   name = "merchant_name"
   label = "Google Pay Merchant Name"
@@ -3175,7 +3175,7 @@ key2="Resource ID"
 [jpmorgan.metadata.company_name]
 name = "company_name"
 label = "Company Name"
-placeholder = "Enter the company name. Example: JPMC, Hyperswitch"
+placeholder = "Enter the company name. Example: JPMC, Orbix Gateway"
 required = true
 type = "Text"
 [jpmorgan.metadata.product_name]
@@ -3416,7 +3416,7 @@ api_secret="Merchant Id"
   placeholder="Enter Payment Processing Details At"
   required=true
   type="Radio"
-  options=["Hyperswitch"]
+  options=["Orbix"]
 [[moneris.metadata.google_pay]]
   name = "merchant_name"
   label = "Google Pay Merchant Name"
@@ -3842,7 +3842,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector","Hyperswitch"]
+options=["Connector","Orbix"]
 
 [[nmi.metadata.google_pay]]
 name="merchant_name"
@@ -4405,7 +4405,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Hyperswitch"]
+options=["Orbix"]
 
 [[nuvei.metadata.google_pay]]
 name="merchant_name"
@@ -5379,7 +5379,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector","Hyperswitch"]
+options=["Connector","Orbix"]
 
 [[stripe.metadata.google_pay]]
 name="merchant_name"
@@ -7071,7 +7071,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Hyperswitch"]
+options=["Orbix"]
 
 [fiuu.connector_webhook_details]
 merchant_secret="Source verification key"
@@ -7388,38 +7388,38 @@ key1="API Token"
 [inespay.connector_webhook_details]
 merchant_secret="API Key"
 
-[juspaythreedsserver.metadata.three_ds_requestor_name]
+[orbixthreedsserver.metadata.three_ds_requestor_name]
 name = "three_ds_requestor_name"
 label = "ThreeDS requestor name"
 placeholder = "Enter ThreeDS requestor name"
 required = false
 type = "Text"
-[juspaythreedsserver.metadata.three_ds_requestor_id]
+[orbixthreedsserver.metadata.three_ds_requestor_id]
 name = "three_ds_requestor_id"
 label = "ThreeDS request id"
 placeholder = "Enter ThreeDS request id"
 required = true
 type = "Text"
-[juspaythreedsserver.connector_auth.NoKey]
-[juspaythreedsserver.metadata.merchant_category_code]
+[orbixthreedsserver.connector_auth.NoKey]
+[orbixthreedsserver.metadata.merchant_category_code]
 name = "merchant_category_code"
 label = "merchant_category_code"
 placeholder = "Enter Merchant Category Code"
 required = true
 type = "Text"
-[juspaythreedsserver.metadata.merchant_country_code]
+[orbixthreedsserver.metadata.merchant_country_code]
 name = "merchant_country_code"
 label = "merchant_country_code"
 placeholder = "Enter Merchant Country Code"
 required = true
 type = "Text"
-[juspaythreedsserver.metadata.merchant_name]
+[orbixthreedsserver.metadata.merchant_name]
 name = "merchant_name"
 label = "merchant_name"
 placeholder = "Enter Merchant Name"
 required = true
 type = "Text"
-[juspaythreedsserver.metadata.pull_mechanism_for_external_3ds_enabled]
+[orbixthreedsserver.metadata.pull_mechanism_for_external_3ds_enabled]
 name="pull_mechanism_for_external_3ds_enabled"
 label="Pull Mechanism Enabled"
 placeholder="Enter Pull Mechanism Enabled"
@@ -7659,7 +7659,7 @@ label = "Payment Processing Details At"
 placeholder = "Enter Payment Processing Details At"
 required = true
 type = "Radio"
-options = ["Hyperswitch"]
+options = ["Orbix"]
 
 [archipel.metadata.acquirer_bin]
 name = "acquirer_bin"
@@ -7881,7 +7881,7 @@ options=["PAN_ONLY", "CRYPTOGRAM_3DS"]
   placeholder="Enter Payment Processing Details At"
   required=true
   type="Radio"
-  options=["Connector","Hyperswitch"]
+  options=["Connector","Orbix"]
 
 [worldpayxml.connector_auth.SignatureKey]
 api_secret="Merchant Code"
@@ -8554,7 +8554,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Connector","Hyperswitch"]
+options=["Connector","Orbix"]
 
 [[paysafe.metadata.google_pay]]
 name="merchant_name"
@@ -9058,7 +9058,7 @@ label="Payment Processing Details At"
 placeholder="Enter Payment Processing Details At"
 required=true
 type="Radio"
-options=["Hyperswitch"]
+options=["Orbix"]
 
 [[tesouro.metadata.google_pay]]
 name="merchant_name"
@@ -9674,7 +9674,7 @@ merchant_secret = "Secret key"
   placeholder = "Enter Payment Processing Details At"
   required = true
   type = "Radio"
-  options = ["Hyperswitch"]
+  options = ["Orbix"]
 [[worldpayraft.metadata.google_pay]]
   name = "merchant_name"
   label = "Google Pay Merchant Name"
@@ -10059,7 +10059,7 @@ key1="Secret API Key"
   placeholder = "Enter Payment Processing Details At"
   required = true
   type = "Radio"
-  options = ["Hyperswitch"]
+  options = ["Orbix"]
 [[elavon_pg.metadata.google_pay]]
   name = "merchant_name"
   label = "Google Pay Merchant Name"

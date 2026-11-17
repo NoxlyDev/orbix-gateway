@@ -928,7 +928,7 @@ export const connectorDetails = {
             country_code: "+1",
           },
         },
-        email: "hyperswitch.example@gmail.com",
+        email: "orbix.example@gmail.com",
       },
       Response: {
         status: 200,
@@ -978,7 +978,7 @@ export const connectorDetails = {
             ach_bank_debit: {
               billing_details: {
                 name: "Venkata Karthik",
-                email: "customer139@juspay.in",
+                email: "customer139@orbix.example",
               },
               account_number: "9876543210",
               routing_number: "021000021",
@@ -1004,9 +1004,9 @@ export const connectorDetails = {
             number: "4155551234",
             country_code: "+1",
           },
-          email: "customer143@juspay.in",
+          email: "customer143@orbix.example",
         },
-        email: "customer143@juspay.in",
+        email: "customer143@orbix.example",
       },
       Response: {
         status: 200,

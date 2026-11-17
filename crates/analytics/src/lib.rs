@@ -26,7 +26,7 @@ use api_event::metrics::{ApiEventMetric, ApiEventMetricRow};
 use common_utils::{errors::CustomResult, types::TenantConfig};
 use disputes::metrics::{DisputeMetric, DisputeMetricRow};
 use enums::AuthInfo;
-use hyperswitch_interfaces::secrets_interface::{
+use orbix_interfaces::secrets_interface::{
     secret_handler::SecretsHandler,
     secret_state::{RawSecret, SecretStateContainer, SecuredSecret},
     SecretManagementInterface, SecretsManagementError,
@@ -1201,7 +1201,7 @@ impl Default for ProcessTrackerReportConfig {
             query_timeout_secs: 300,
             email_bcc: Vec::new(),
             report_email_bcc: HashMap::new(),
-            email_env_label: "Hyperswitch".to_owned(),
+            email_env_label: "Orbix".to_owned(),
         }
     }
 }

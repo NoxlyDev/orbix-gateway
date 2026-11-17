@@ -1,7 +1,7 @@
 //! Collection and persistence of payment callback URLs for connectors and the SDK.
 
-use hyperswitch_domain_models::router_response_types::RedirectCallback;
-use hyperswitch_masking::Secret;
+use orbix_domain_models::router_response_types::RedirectCallback;
+use orbix_masking::Secret;
 
 use crate::{
     core::{configs::payment_callback::PaymentCallbackMode, errors::RouterResult},

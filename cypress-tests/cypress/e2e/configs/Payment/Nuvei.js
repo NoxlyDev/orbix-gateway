@@ -817,7 +817,7 @@ export const connectorDetails = {
         authentication_type: "no_three_ds",
         capture_method: "automatic",
         billing_descriptor: {
-          name: "Juspay",
+          name: "Orbix",
           phone: "8056594427",
         },
         email: "test@example.com",
@@ -850,7 +850,7 @@ export const connectorDetails = {
         authentication_type: "no_three_ds",
         capture_method: "automatic",
         billing_descriptor: {
-          name: "Juspay",
+          name: "Orbix",
           phone: "12345678901234",
         },
         email: "test@example.com",

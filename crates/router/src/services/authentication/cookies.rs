@@ -6,7 +6,7 @@ use cookie::{
 };
 use error_stack::{report, ResultExt};
 #[cfg(feature = "olap")]
-use hyperswitch_masking::{ExposeInterface, Mask, Secret};
+use orbix_masking::{ExposeInterface, Mask, Secret};
 
 use crate::{
     consts::JWT_TOKEN_COOKIE_NAME,

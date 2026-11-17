@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-/// Utility to import a hyperswitch TOML configuration file, convert it into environment variable
+/// Utility to import a orbix TOML configuration file, convert it into environment variable
 /// key-value pairs, and export it in the specified format.
 #[derive(clap::Parser, Debug)]
 #[command(arg_required_else_help = true)]

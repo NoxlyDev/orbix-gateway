@@ -53,11 +53,11 @@ pub use diesel_models::{
     ProcessTrackerUpdate,
 };
 #[cfg(feature = "payouts")]
-pub use hyperswitch_domain_models::payouts::{
+pub use orbix_domain_models::payouts::{
     payout_attempt::{PayoutAttempt, PayoutAttemptNew, PayoutAttemptUpdate},
     payouts::{Payouts, PayoutsNew, PayoutsUpdate},
 };
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     payments::{
         payment_attempt::{PaymentAttempt, PaymentAttemptUpdate},
         payment_intent::{PaymentIntentUpdate, PaymentIntentUpdateFields},

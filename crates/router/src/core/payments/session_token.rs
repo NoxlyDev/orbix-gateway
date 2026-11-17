@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use common_enums::enums;
 use error_stack::{report, ResultExt};
-use hyperswitch_interfaces::api::ConnectorSpecifications;
+use orbix_interfaces::api::ConnectorSpecifications;
 
 use crate::{
     core::{
@@ -19,7 +19,7 @@ pub(crate) async fn add_session_token_if_needed<'a, F: Clone, Req: Debug + Clone
     state: &routes::SessionState,
     connector: &api_types::ConnectorData,
     gateway_context: &gateway_context::RouterGatewayContext,
-    current_flow: Option<hyperswitch_interfaces::api::CurrentFlowInfo>,
+    current_flow: Option<orbix_interfaces::api::CurrentFlowInfo>,
 ) -> RouterResult<Option<String>>
 where
     types::AuthorizeSessionTokenData:

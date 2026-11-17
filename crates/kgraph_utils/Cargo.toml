@@ -17,8 +17,8 @@ common_enums = { version = "0.1.0", path = "../common_enums" }
 common_utils = { version = "0.1.0", path = "../common_utils" }
 common_types = {version = "0.1.0", path = "../common_types" }
 euclid = { version = "0.1.0", path = "../euclid" }
-hyperswitch_constraint_graph = { version = "0.1.0", path = "../hyperswitch_constraint_graph", features = ["viz"] }
-hyperswitch_masking = { version = "0.0.1" }
+orbix_constraint_graph = { version = "0.1.0", path = "../orbix_constraint_graph", features = ["viz"] }
+orbix_masking = { path = "../../vendor/orbix_framework/crates/orbix_masking" }
 
 # Third party crates
 serde = "1.0.219"

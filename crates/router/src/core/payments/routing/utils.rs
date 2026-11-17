@@ -27,9 +27,9 @@ use euclid::{
 };
 #[cfg(all(feature = "v1", feature = "dynamic_routing"))]
 use external_services::grpc_client::dynamic_routing as ir_client;
-use hyperswitch_domain_models::business_profile;
-use hyperswitch_interfaces::events::routing_api_logs as routing_events;
-use hyperswitch_masking::{Mask, PeekInterface};
+use orbix_domain_models::business_profile;
+use orbix_interfaces::events::routing_api_logs as routing_events;
+use orbix_masking::{Mask, PeekInterface};
 use router_env::RequestId;
 use serde::{Deserialize, Serialize};
 
@@ -92,7 +92,7 @@ pub struct HybridRoutingOutcome {
 }
 
 impl HybridRoutingOutcome {
-    /// Empty outcome (no DE connectors); the caller falls back to the Hyperswitch static result.
+    /// Empty outcome (no DE connectors); the caller falls back to the Orbix Gateway static result.
     pub fn empty() -> Self {
         Self {
             connectors: Vec::new(),
@@ -198,7 +198,7 @@ where
         .method(http_method)
         .url(&url);
 
-    // The Decision Engine authenticates Hyperswitch via a shared admin secret: its admin
+    // The Decision Engine authenticates Orbix Gateway via a shared admin secret: its admin
     // endpoints (merchant provisioning, SSO code mint) verify the header in the handler, and
     // its protected router accepts it as service-to-service auth. Attach it on every call
     // when configured; an empty secret omits the header.
@@ -1088,7 +1088,7 @@ pub fn parse_de_euclid_routing_record(raw: serde_json::Value) -> Option<RoutingA
         .map_err(|error| {
             logger::warn!(
                 ?error,
-                "decision_engine_euclid: skipping DE routing record not representable in Hyperswitch"
+                "decision_engine_euclid: skipping DE routing record not representable in Orbix Gateway"
             );
         })
         .ok()
@@ -1282,7 +1282,7 @@ pub async fn decision_engine_routing_batch(
 }
 
 /// The batch call, degrading to concurrent single evaluations when the engine does
-/// not expose the batch endpoint yet. Lets Hyperswitch deploy ahead of the engine:
+/// not expose the batch endpoint yet. Lets Orbix Gateway deploy ahead of the engine:
 /// against an old engine every batch call fails once and the singles carry the
 /// request, and once the engine ships the endpoint the fallback stops firing.
 pub async fn decision_engine_routing_batch_with_fallback(
@@ -1356,7 +1356,7 @@ pub struct ListRountingAlgorithmsRequest {
     pub created_by: String,
 }
 
-// Maps Hyperswitch `BackendInput` to a `RoutingEvaluateRequest` compatible with Decision Engine
+// Maps Orbix Gateway `BackendInput` to a `RoutingEvaluateRequest` compatible with Decision Engine
 pub fn convert_backend_input_to_routing_eval(
     created_by: String,
     payment_id: Option<String>,
@@ -2117,7 +2117,7 @@ fn stringify_choice(c: RoutableConnectorChoice) -> ConnectorInfo {
 
 // Reverse of the transformers above: rebuilds a euclid AST from a Decision Engine
 // program, so a rule authored on the DE can be served through the same typed
-// response shape as a Hyperswitch-authored one.
+// response shape as a Orbix Gateway-authored one.
 impl TryFrom<Program> for ast::Program<ConnectorSelection> {
     type Error = error_stack::Report<errors::RoutingError>;
 
@@ -2326,18 +2326,18 @@ pub async fn select_routing_result<T>(
     state: &SessionState,
     dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantIdAndProfileId,
     business_profile: &business_profile::Profile,
-    hyperswitch_result: T,
+    orbix_result: T,
     de_result: T,
 ) -> T
 where
     T: Clone + IntoIterator,
 {
     // Same predicate as every other consumer: with both global flags off the profile is
-    // Hyperswitch-routed, so reads must not serve DE records the payment path ignores.
+    // Orbix Gateway-routed, so reads must not serve DE records the payment path ignores.
     let routing_result_source = if is_decision_engine_routing_effective(state, dimensions).await {
         api_routing::RoutingResultSource::DecisionEngine
     } else {
-        api_routing::RoutingResultSource::HyperswitchRouting
+        api_routing::RoutingResultSource::OrbixRouting
     };
 
     match routing_result_source {
@@ -2349,25 +2349,25 @@ where
 
             let is_de_result_empty = de_result.clone().into_iter().next().is_none();
             if is_de_result_empty {
-                // Warn, not debug: this is a cut-over profile being routed by Hyperswitch
+                // Warn, not debug: this is a cut-over profile being routed by Orbix Gateway
                 // because the engine returned nothing -- unreachable, or the profile's rules
-                // are not migrated yet. Under DE-only writes the Hyperswitch rule is frozen
+                // are not migrated yet. Under DE-only writes the Orbix Gateway rule is frozen
                 // at the moment of cutover, so this needs to be visible rather than silent.
                 logger::warn!(
                     business_profile_id=?business_profile.get_id(),
-                    "decision_engine_euclid: DE result empty for a cut-over profile, serving the Hyperswitch result"
+                    "decision_engine_euclid: DE result empty for a cut-over profile, serving the Orbix Gateway result"
                 );
-                hyperswitch_result
+                orbix_result
             } else {
                 de_result
             }
         }
-        api_routing::RoutingResultSource::HyperswitchRouting => {
+        api_routing::RoutingResultSource::OrbixRouting => {
             logger::debug!(
                 business_profile_id=?business_profile.get_id(),
-                "decision_engine_euclid: Using Hyperswitch routing result"
+                "decision_engine_euclid: Using Orbix Gateway routing result"
             );
-            hyperswitch_result
+            orbix_result
         }
     }
 }

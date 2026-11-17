@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use futures::future::OptionFuture;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router::types::{self, domain, storage::enums};
 use serial_test::serial;
 

@@ -205,13 +205,13 @@ function renderStatusDetails(paymentDetails) {
   // Status specific information
   switch (status) {
     case "expired":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/failed.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/failed.png";
       statusDetails.status = translations.paymentLinkExpired;
       statusDetails.message = translations.paymentLinkExpiredMessage;
       break;
 
     case "succeeded":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/success.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/success.png";
       statusDetails.message = translations.paymentReceived;
       statusDetails.status = translations.paidSuccessfully;
       statusDetails.amountText = new Date(
@@ -221,13 +221,13 @@ function renderStatusDetails(paymentDetails) {
 
     case "requires_customer_action":
     case "processing":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/pending.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/pending.png";
       statusDetails.message = translations.paymentTakingLonger;
       statusDetails.status = translations.paymentPending;
       break;
 
     case "failed":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/failed.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/failed.png";
       statusDetails.status = translations.paymentFailed;
       var unifiedErrorCode = paymentDetails.unified_code || paymentDetails.error_code;
       var unifiedErrorMessage = paymentDetails.unified_message || paymentDetails.error_message;
@@ -241,29 +241,29 @@ function renderStatusDetails(paymentDetails) {
       break;
 
     case "cancelled":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/failed.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/failed.png";
       statusDetails.status = translations.paymentCancelled;
       break;
 
     case "requires_merchant_action":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/pending.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/pending.png";
       statusDetails.status = translations.paymentUnderReview;
       break;
 
     case "requires_capture":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/success.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/success.png";
       statusDetails.message = translations.paymentReceived;
       statusDetails.status = translations.paymentSuccess;
       break;
 
     case "partially_captured":
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/success.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/success.png";
       statusDetails.message = translations.partialPaymentCaptured;
       statusDetails.status = translations.paymentSuccess;
       break;
 
     default:
-      statusDetails.imageSource = "https://live.hyperswitch.io/payment-link-assets/failed.png";
+      statusDetails.imageSource = "https://live.orbix.example/payment-link-assets/failed.png";
       statusDetails.status = translations.somethingWentWrong;
       // Error details
       if (typeof paymentDetails.error === "object") {

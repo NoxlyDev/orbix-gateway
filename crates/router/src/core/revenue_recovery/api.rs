@@ -3,7 +3,7 @@ use api_models::{payments as payments_api, payments as api_payments};
 use common_types::payments::{RecoveryConnectorAccounts, RecoveryConnectorDetails};
 use common_utils::id_type;
 use error_stack::{report, FutureExt, ResultExt};
-use hyperswitch_domain_models::{payments as payments_domain, platform::Platform};
+use orbix_domain_models::{payments as payments_domain, platform::Platform};
 
 use super::{external_triggers, trigger_model::RecoveryTrigger};
 use crate::{
@@ -251,7 +251,7 @@ pub async fn record_internal_attempt_api(
         revenue_recovery_payment_data.profile.clone(),
         request_payload,
         payment_intent.id.clone(),
-        hyperswitch_domain_models::payments::HeaderPayload::default(),
+        orbix_domain_models::payments::HeaderPayload::default(),
     ))
     .await;
 
@@ -352,7 +352,7 @@ pub async fn custom_revenue_recovery_core(
         }
     };
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         get_recovery_payments_response(&updated_recovery_intent, next_retry),
     ))
 }
@@ -393,7 +393,7 @@ async fn record_transaction_and_schedule_retries(
     request: &api_models::payments::RecoveryPaymentsCreate,
     billing_merchant_connector_id: &id_type::MerchantConnectorAccountId,
     payment_merchant_connector_id: &id_type::MerchantConnectorAccountId,
-) -> RouterResult<hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent> {
+) -> RouterResult<orbix_domain_models::revenue_recovery::RecoveryPaymentIntent> {
     let payment_connector_account =
         find_connector_account_of_profile(state, platform, profile, payment_merchant_connector_id)
             .await?;
@@ -469,7 +469,7 @@ async fn record_transaction_and_schedule_retries(
 }
 
 fn get_recovery_payments_response(
-    recovery_intent: &hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent,
+    recovery_intent: &orbix_domain_models::revenue_recovery::RecoveryPaymentIntent,
     next_retry: Option<common_types::payments::RecoveryNextRetry>,
 ) -> payments_api::RecoveryPaymentsResponse {
     payments_api::RecoveryPaymentsResponse {
@@ -487,7 +487,7 @@ pub(super) async fn get_or_create_invoice(
     platform: &Platform,
     profile: &domain::Profile,
     request: &api_models::payments::RecoveryPaymentsCreate,
-) -> RouterResult<hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent> {
+) -> RouterResult<orbix_domain_models::revenue_recovery::RecoveryPaymentIntent> {
     recovery_incoming::RevenueRecoveryInvoice::get_or_create_custom_recovery_intent(
         request.clone(),
         state,
@@ -512,11 +512,11 @@ pub(super) async fn record_transaction(
     platform: &Platform,
     profile: &domain::Profile,
     request: &api_models::payments::RecoveryPaymentsCreate,
-    recovery_intent: &hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent,
+    recovery_intent: &orbix_domain_models::revenue_recovery::RecoveryPaymentIntent,
     connector_details: &RecoveryConnectorDetails,
 ) -> RouterResult<(
-    hyperswitch_domain_models::revenue_recovery::RecoveryPaymentAttempt,
-    hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent,
+    orbix_domain_models::revenue_recovery::RecoveryPaymentAttempt,
+    orbix_domain_models::revenue_recovery::RecoveryPaymentIntent,
 )> {
     Box::pin(
         recovery_incoming::RevenueRecoveryAttempt::load_recovery_attempt_from_api(
@@ -588,9 +588,9 @@ pub async fn cancel_revenue_recovery_core(
         })
     })?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         get_recovery_payments_response(
-            &hyperswitch_domain_models::revenue_recovery::RecoveryPaymentIntent::from(
+            &orbix_domain_models::revenue_recovery::RecoveryPaymentIntent::from(
                 &cancelled_intent,
             ),
             cancelled_intent.get_external_trigger_next_retry(),

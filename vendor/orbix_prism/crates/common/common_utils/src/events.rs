@@ -2,7 +2,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use hyperswitch_masking::ErasedMaskSerialize;
+use orbix_masking::ErasedMaskSerialize;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::EventPublisherError;
@@ -29,14 +29,14 @@ pub struct MaskedSerdeValue {
 
 impl MaskedSerdeValue {
     pub fn from_masked<T: Serialize>(value: &T) -> Result<Self, serde_json::Error> {
-        let masked_value = hyperswitch_masking::masked_serialize(value)?;
+        let masked_value = orbix_masking::masked_serialize(value)?;
         Ok(Self {
             inner: masked_value,
         })
     }
 
     pub fn from_masked_optional<T: Serialize>(value: &T, context: &str) -> Option<Self> {
-        hyperswitch_masking::masked_serialize(value)
+        orbix_masking::masked_serialize(value)
             .map(|masked_value| Self {
                 inner: masked_value,
             })
@@ -752,14 +752,14 @@ pub fn apply_log_fields(
 /// Normal values are preserved as-is; masked values use the standard masking format
 /// from `Maskable`'s `Debug` implementation.
 pub fn maskable_headers_to_json<'a>(
-    headers: impl IntoIterator<Item = &'a (String, hyperswitch_masking::Maskable<String>)>,
+    headers: impl IntoIterator<Item = &'a (String, orbix_masking::Maskable<String>)>,
 ) -> serde_json::Value {
     headers
         .into_iter()
         .map(|(k, v)| {
             let val = match v {
-                hyperswitch_masking::Maskable::Normal(s) => s.clone(),
-                hyperswitch_masking::Maskable::Masked(secret) => format!("{secret:?}"),
+                orbix_masking::Maskable::Normal(s) => s.clone(),
+                orbix_masking::Maskable::Masked(secret) => format!("{secret:?}"),
             };
             (k.clone(), serde_json::Value::String(val))
         })

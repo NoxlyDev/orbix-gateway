@@ -3,7 +3,7 @@ use common_utils::{date_time, id_type};
 #[cfg(feature = "v2")]
 use error_stack::ResultExt;
 #[cfg(feature = "v2")]
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 #[cfg(feature = "v2")]
 use redis_interface::{errors::RedisError, HsetnxReply};
 #[cfg(feature = "v2")]

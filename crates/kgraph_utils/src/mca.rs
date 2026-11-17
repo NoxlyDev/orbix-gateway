@@ -9,7 +9,7 @@ use euclid::{
     frontend::{ast, dir},
     types::{NumValue, NumValueRefinement},
 };
-use hyperswitch_constraint_graph as cgraph;
+use orbix_constraint_graph as cgraph;
 use strum::IntoEnumIterator;
 
 use crate::{error::KgraphError, transformers::IntoDirValue, types as kgraph_types};
@@ -1088,7 +1088,7 @@ mod tests {
         dirval,
         dssa::graph::{AnalysisContext, CgraphExt},
     };
-    use hyperswitch_constraint_graph::{ConstraintGraph, CycleCheck, Memoization};
+    use orbix_constraint_graph::{ConstraintGraph, CycleCheck, Memoization};
 
     use super::*;
     use crate::types as kgraph_types;
@@ -1102,7 +1102,7 @@ mod tests {
         //     connector_name: "stripe".to_string(),
         //     id: common_utils::generate_merchant_connector_account_id_of_default_length(),
         //     connector_label: Some("something".to_string()),
-        //     connector_account_details: hyperswitch_masking::Secret::new(serde_json::json!({})),
+        //     connector_account_details: orbix_masking::Secret::new(serde_json::json!({})),
         //     disabled: None,
         //     metadata: None,
         //     payment_methods_enabled: Some(vec![PaymentMethodsEnabled {

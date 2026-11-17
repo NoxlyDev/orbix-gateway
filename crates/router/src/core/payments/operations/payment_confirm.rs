@@ -13,14 +13,14 @@ use common_utils::ext_traits::{AsyncExt, Encode, ValueExt};
 use diesel_models::payment_attempt::ConnectorMandateReferenceId as DieselConnectorMandateReferenceId;
 use error_stack::{report, ResultExt};
 use futures::FutureExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates,
     mandates::{ConnectorMandateReferenceId, MandateTransactionType},
     payment_method_data::RecurringDetails as domain_recurring_details,
     payments::{self as domain_payments, payment_intent::PaymentIntentUpdateFields},
     router_request_types::unified_authentication_service,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_masking::{ExposeInterface, PeekInterface};
 use router_derive::PaymentOperation;
 use router_env::{instrument, logger, tracing};
 use tracing_futures::Instrument;
@@ -83,7 +83,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
         platform: &domain::Platform,
         auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: &orbix_domain_models::payments::HeaderPayload,
         payment_method_fetch_data: operations::PaymentMethodFetchData,
         dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -496,7 +496,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
             .transpose()
             .change_context(errors::ApiErrorResponse::InternalServerError)
             .attach_printable("Failed while encoding customer_acceptance to value")?
-            .map(hyperswitch_masking::Secret::new)
+            .map(orbix_masking::Secret::new)
             .or(payment_attempt.customer_acceptance);
 
         currency = payment_attempt.currency.get_required_value("currency")?;
@@ -547,7 +547,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
             .map(serde_json::to_value)
             .transpose()
             .change_context(errors::ApiErrorResponse::InternalServerError)?
-            .map(hyperswitch_masking::Secret::new);
+            .map(orbix_masking::Secret::new);
         payment_intent.metadata = request.metadata.clone().or(payment_intent.metadata);
         payment_intent.frm_metadata = request.frm_metadata.clone().or(payment_intent.frm_metadata);
         payment_intent.request_incremental_authorization = request
@@ -620,7 +620,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
             platform.get_processor().get_account().get_id(),
             billing_address
                 .as_ref()
-                .map(hyperswitch_domain_models::address::Address::from)
+                .map(orbix_domain_models::address::Address::from)
                 .is_some_and(|billing| billing.has_location_details()),
         )
         .await;
@@ -655,7 +655,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
             .or(billing_address
                 .as_ref()
                 .filter(|_| should_replace_persisted_saved_billing)
-                .map(hyperswitch_domain_models::address::Address::from)
+                .map(orbix_domain_models::address::Address::from)
                 .map(api_models::payments::Address::from));
         let m_payment_intent_customer_id = payment_intent.customer_id.clone();
         let m_payment_intent_payment_id = payment_intent.payment_id.clone();
@@ -907,7 +907,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentData<F>, api::PaymentsRequest>
                     .map(|decrypted_data| decrypted_data.into_inner().expose())
                     .and_then(|decrypted_value| {
                         decrypted_value
-                            .parse_value::<hyperswitch_domain_models::address::Address>(
+                            .parse_value::<orbix_domain_models::address::Address>(
                                 "payment method billing address",
                             )
                             .ok()
@@ -1748,7 +1748,7 @@ impl<F: Clone + Send + Sync> Domain<F, api::PaymentsRequest, PaymentData<F>> for
                 let billing_address = payment_data.address.get_payment_method_billing().cloned();
                 let shipping = payment_data.address.get_shipping().cloned();
                 let browser_info: Option<
-                    hyperswitch_domain_models::router_request_types::BrowserInformation,
+                    orbix_domain_models::router_request_types::BrowserInformation,
                 > = payment_data
                     .payment_attempt
                     .browser_info
@@ -2141,7 +2141,7 @@ impl<F: Clone + Send + Sync> Domain<F, api::PaymentsRequest, PaymentData<F>> for
                                 let token_details = authentication_details.token_details.ok_or(errors::ApiErrorResponse::InternalServerError)
                                     .attach_printable("Missing authentication_details.token_details")?;
                                 (Some(
-                                    hyperswitch_domain_models::payment_method_data::NetworkTokenData {
+                                    orbix_domain_models::payment_method_data::NetworkTokenData {
                                         token_number: token_details.payment_token,
                                         token_exp_month: token_details
                                             .token_expiration_month,
@@ -2200,7 +2200,7 @@ impl<F: Clone + Send + Sync> Domain<F, api::PaymentsRequest, PaymentData<F>> for
                             platform.get_initiator(),
                         )
                         .await?;
-                        let authentication_store = hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore {
+                        let authentication_store = orbix_domain_models::router_request_types::authentication::AuthenticationStore {
                             cavv: network_token.and_then(|token| token.token_cryptogram),
                             authentication
                         };
@@ -2239,7 +2239,7 @@ impl<F: Clone + Send + Sync> Domain<F, api::PaymentsRequest, PaymentData<F>> for
                     customer_details_encrypted
                         .into_inner()
                         .expose()
-                        .parse_value::<hyperswitch_domain_models::payments::payment_intent::CustomerData>("CustomerData")
+                        .parse_value::<orbix_domain_models::payments::payment_intent::CustomerData>("CustomerData")
                 })
                 .transpose()
                 .change_context(errors::StorageError::DeserializationFailed)
@@ -2273,7 +2273,7 @@ impl<F: Clone + Send + Sync> Domain<F, api::PaymentsRequest, PaymentData<F>> for
                     };
 
                 let pm_data: api_models::payments::PaymentMethodData = match payment_data.payment_method_data.clone() {
-                    Some(hyperswitch_domain_models::payment_method_data::PaymentMethodData::Card(card)) => {
+                    Some(orbix_domain_models::payment_method_data::PaymentMethodData::Card(card)) => {
                         api_models::payments::PaymentMethodData::Card(
                             api_models::payments::Card {
                                 card_number: card.card_number,
@@ -2426,7 +2426,7 @@ impl<F: Clone + Send + Sync> Domain<F, api::PaymentsRequest, PaymentData<F>> for
                  )
                     .update_storage_scheme(platform.get_processor().get_account().storage_scheme);
 
-                let authentication_store = hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore {
+                let authentication_store = orbix_domain_models::router_request_types::authentication::AuthenticationStore {
                         cavv: None,
                     authentication:authentication_domain_model
                     };
@@ -2518,7 +2518,7 @@ impl<F: Clone + Send + Sync> Domain<F, api::PaymentsRequest, PaymentData<F>> for
                 };
 
                 let authentication_store =
-                        hyperswitch_domain_models::router_request_types::authentication::AuthenticationStore {
+                        orbix_domain_models::router_request_types::authentication::AuthenticationStore {
                             cavv,
                             authentication:authentication_domain_model
                         };
@@ -2786,7 +2786,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         mut _payment_data: PaymentData<F>,
         _customer: Option<domain::Customer>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionWithProcessorAndProviderMerchaantId,
     ) -> RouterResult<(
         BoxedOperation<'b, F, api::PaymentsRequest, PaymentData<F>>,
@@ -2810,7 +2810,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         frm_suggestion: Option<FrmSuggestion>,
-        header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: orbix_domain_models::payments::HeaderPayload,
         dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(
         BoxedOperation<'b, F, api::PaymentsRequest, PaymentData<F>>,
@@ -2863,7 +2863,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
         };
 
         let status_handler_for_authentication_results =
-            |authentication: &hyperswitch_domain_models::authentication::Authentication| {
+            |authentication: &orbix_domain_models::authentication::Authentication| {
                 if authentication.authentication_status.is_failed() {
                     (
                         storage_enums::IntentStatus::Failed,
@@ -3093,7 +3093,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsRequest> for
                             .customer_acceptance
                             .clone(),
                         net_amount:
-                            hyperswitch_domain_models::payments::payment_attempt::NetAmount::new(
+                            orbix_domain_models::payments::payment_attempt::NetAmount::new(
                                 payment_data.payment_attempt.net_amount.get_order_amount(),
                                 payment_data.payment_intent.shipping_cost,
                                 payment_data
@@ -3543,7 +3543,7 @@ async fn apply_selected_offer<F: Clone + Send + Sync>(
                     payments::PaymentEligibilityData::resolve_payment_token_to_method_data(
                         state,
                         platform,
-                        &hyperswitch_masking::Secret::new(payment_token.to_owned()),
+                        &orbix_masking::Secret::new(payment_token.to_owned()),
                         payment_method,
                         &profile_id,
                     ),
@@ -3589,7 +3589,7 @@ async fn apply_selected_offer<F: Clone + Send + Sync>(
         card_bin: offer_pmd
             .as_ref()
             .and_then(|offer_pmd| offer_pmd.get_offer_card_bin())
-            .map(hyperswitch_masking::Secret::new),
+            .map(orbix_masking::Secret::new),
         card_type: offer_card.and_then(|card| card.card_type.clone()),
         bank_code: offer_card.and_then(|card| card.bank_code.clone()),
         card_country: offer_card.and_then(|card| card.card_issuing_country.clone()),

@@ -1,4 +1,4 @@
-pub use hyperswitch_interfaces::api::payments_v2::{
+pub use orbix_interfaces::api::payments_v2::{
     ConnectorCustomerV2, MandateSetupV2, PaymentApproveV2, PaymentAuthorizeSessionTokenV2,
     PaymentAuthorizeV2, PaymentCaptureV2, PaymentExtendAuthorizationV2,
     PaymentIncrementalAuthorizationV2, PaymentPostCaptureVoidSyncV2, PaymentPostCaptureVoidV2,

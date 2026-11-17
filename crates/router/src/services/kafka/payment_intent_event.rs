@@ -13,10 +13,10 @@ use diesel_models::enums as storage_enums;
 use diesel_models::{types as diesel_types, PaymentLinkConfigRequestForPayments};
 #[cfg(feature = "v2")]
 use diesel_models::{types::OrderDetailsWithAmount, TaxDetails};
-use hyperswitch_domain_models::payments::PaymentIntent;
+use orbix_domain_models::payments::PaymentIntent;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::{address, routing};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_domain_models::{address, routing};
+use orbix_masking::{PeekInterface, Secret};
 use serde_json::Value;
 use time::OffsetDateTime;
 

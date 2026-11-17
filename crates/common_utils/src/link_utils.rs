@@ -1,4 +1,4 @@
-//! This module has common utilities for links in HyperSwitch
+//! This module has common utilities for links in Orbix Gateway
 
 use std::{collections::HashSet, primitive::i64};
 
@@ -14,7 +14,7 @@ use diesel::{
 };
 #[cfg(feature = "diesel")]
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use regex::Regex;
 #[cfg(feature = "logs")]
 use router_env::logger;
@@ -187,11 +187,11 @@ crate::impl_to_sql_from_sql_json!(PayoutLinkData);
 #[derive(Clone, Debug, serde::Deserialize, Serialize, ToSchema)]
 pub struct GenericLinkUiConfig {
     /// Merchant's display logo
-    #[schema(value_type = Option<String>, max_length = 255, example = "https://hyperswitch.io/favicon.ico")]
+    #[schema(value_type = Option<String>, max_length = 255, example = "https://orbix.example/favicon.ico")]
     pub logo: Option<url::Url>,
 
     /// Custom merchant name for the link
-    #[schema(value_type = Option<String>, max_length = 255, example = "Hyperswitch")]
+    #[schema(value_type = Option<String>, max_length = 255, example = "Orbix")]
     pub merchant_name: Option<Secret<String>>,
 
     /// Primary color to be used in the form represented in hex format
@@ -213,11 +213,11 @@ impl crate::validation::ValidateXSSOrSQLi for GenericLinkUiConfig {
 #[derive(Clone, Debug, serde::Deserialize, Serialize, ToSchema)]
 pub struct GenericLinkUiConfigFormData {
     /// Merchant's display logo
-    #[schema(value_type = String, max_length = 255, example = "https://hyperswitch.io/favicon.ico")]
+    #[schema(value_type = String, max_length = 255, example = "https://orbix.example/favicon.ico")]
     pub logo: url::Url,
 
     /// Custom merchant name for the link
-    #[schema(value_type = String, max_length = 255, example = "Hyperswitch")]
+    #[schema(value_type = String, max_length = 255, example = "Orbix")]
     pub merchant_name: Secret<String>,
 
     /// Primary color to be used in the form represented in hex format

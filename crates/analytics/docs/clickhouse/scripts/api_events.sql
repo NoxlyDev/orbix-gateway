@@ -28,7 +28,7 @@ CREATE TABLE api_events_queue (
     `url_path` Nullable(String),
     `dispute_id` Nullable(String)
 ) ENGINE = Kafka SETTINGS kafka_broker_list = 'kafka0:29092',
-kafka_topic_list = 'hyperswitch-api-log-events',
+kafka_topic_list = 'orbix-api-log-events',
 kafka_group_name = 'hyper',
 kafka_format = 'JSONEachRow',
 kafka_handle_error_mode = 'stream';

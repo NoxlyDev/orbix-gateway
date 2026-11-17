@@ -2,12 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use api_models::{enums, payment_methods::RequiredFieldInfo};
 use common_utils::errors::CustomResult;
-use hyperswitch_interfaces::secrets_interface::{
+use orbix_interfaces::secrets_interface::{
     secret_handler::SecretsHandler,
     secret_state::{RawSecret, SecretStateContainer, SecuredSecret},
     SecretManagementInterface, SecretsManagementError,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{self, Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

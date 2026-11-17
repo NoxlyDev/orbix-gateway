@@ -5,7 +5,7 @@ use actix_web::http::header::HeaderMap;
 use common_enums::connector_enums::Connector;
 use common_utils::errors::{CustomResult, ErrorSwitch};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::webhooks::IncomingWebhookIpRange;
+use orbix_domain_models::webhooks::IncomingWebhookIpRange;
 use router_env::logger;
 
 use super::source_verification::VerificationStatus;

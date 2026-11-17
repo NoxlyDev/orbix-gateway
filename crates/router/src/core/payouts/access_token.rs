@@ -1,6 +1,6 @@
 use common_utils::ext_traits::AsyncExt;
 use error_stack::ResultExt;
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::{ConnectorCommon, ConnectorValidation},
     consts,
 };

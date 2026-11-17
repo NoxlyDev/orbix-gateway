@@ -1,1 +1,1 @@
-pub use hyperswitch_domain_models::customer::{CustomerInterface, CustomerListConstraints};
+pub use orbix_domain_models::customer::{CustomerInterface, CustomerListConstraints};

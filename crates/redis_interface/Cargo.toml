@@ -37,7 +37,7 @@ rustls-native-certs = { version = "0.7.3", optional = true }
 # First party crates
 common_utils = { version = "0.1.0", path = "../common_utils", features = ["async_ext"] }
 deja = { path = "../../vendor/orbix_deja/crates/deja", optional = true, default-features = false, features = ["error-stack"] }
-hyperswitch_masking = "0.0.1"
+orbix_masking = { path = "../../vendor/orbix_framework/crates/orbix_masking" }
 router_env = { version = "0.1.0", path = "../router_env", optional = true }
 
 [dev-dependencies]

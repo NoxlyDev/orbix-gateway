@@ -32,7 +32,7 @@
 //!   caller takes responsibility for any temporal checks.
 
 use base64::Engine;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use josekit::jwe::{alg::rsaes::RsaesJweAlgorithm, JweHeader};
 use openssl::{
     hash::MessageDigest,
@@ -536,7 +536,7 @@ fn decrypt_jwe_rsa_oaep(jwe_compact: &str, private_key_pem: &str) -> Result<Vec<
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
-    use hyperswitch_masking::{PeekInterface, Secret};
+    use orbix_masking::{PeekInterface, Secret};
     use openssl::{pkey::PKey, rsa::Rsa};
     use serde::{Deserialize, Serialize};
 

@@ -10,7 +10,7 @@ use common_utils::{
 };
 #[cfg(feature = "v1")]
 use common_utils::{crypto::OptionalEncryptableName, ext_traits::ValueExt};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use serde::{Deserialize, Serialize};
 use smithy::SmithyModel;
 use utoipa::ToSchema;
@@ -1135,7 +1135,7 @@ pub struct MerchantConnectorCreate {
     #[schema(value_type = Connector, example = "stripe")]
     pub connector_name: api_enums::Connector,
 
-    /// This is an unique label you can generate and pass in order to identify this connector account on your Hyperswitch dashboard and reports, If not passed then if will take `connector_name`_`profile_name`. Eg: if your profile label is `default`, connector label can be `stripe_default`
+    /// This is an unique label you can generate and pass in order to identify this connector account on your Orbix Gateway dashboard and reports, If not passed then if will take `connector_name`_`profile_name`. Eg: if your profile label is `default`, connector label can be `stripe_default`
     #[schema(example = "stripe_US_travel")]
     pub connector_label: Option<String>,
 
@@ -1187,7 +1187,7 @@ pub struct MerchantConnectorCreate {
     #[schema(value_type = Option<ConnectorWalletDetails>)]
     pub connector_wallets_details: Option<ConnectorWalletDetails>,
 
-    /// Additional data that might be required by hyperswitch, to enable some specific features.
+    /// Additional data that might be required by orbix, to enable some specific features.
     #[schema(value_type = Option<MerchantConnectorAccountFeatureMetadata>)]
     pub feature_metadata: Option<MerchantConnectorAccountFeatureMetadata>,
 }
@@ -1235,7 +1235,7 @@ pub struct MerchantConnectorCreate {
     /// Name of the Connector
     #[schema(value_type = Connector, example = "stripe")]
     pub connector_name: api_enums::Connector,
-    /// This is an unique label you can generate and pass in order to identify this connector account on your Hyperswitch dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`
+    /// This is an unique label you can generate and pass in order to identify this connector account on your Orbix Gateway dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`
     #[schema(example = "stripe_US_travel")]
     pub connector_label: Option<String>,
 
@@ -1716,7 +1716,7 @@ pub struct MerchantConnectorResponse {
     #[schema(value_type = Option<ConnectorWalletDetails>)]
     pub connector_wallets_details: Option<ConnectorWalletDetails>,
 
-    /// Additional data that might be required by hyperswitch, to enable some specific features.
+    /// Additional data that might be required by orbix, to enable some specific features.
     #[schema(value_type = Option<MerchantConnectorAccountFeatureMetadata>)]
     pub feature_metadata: Option<MerchantConnectorAccountFeatureMetadata>,
 }
@@ -2033,7 +2033,7 @@ pub struct MerchantConnectorUpdate {
     #[schema(value_type = ConnectorType, example = "payment_processor")]
     pub connector_type: api_enums::ConnectorType,
 
-    /// This is an unique label you can generate and pass in order to identify this connector account on your Hyperswitch dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`
+    /// This is an unique label you can generate and pass in order to identify this connector account on your Orbix Gateway dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`
     #[schema(example = "stripe_US_travel")]
     pub connector_label: Option<String>,
 
@@ -2151,7 +2151,7 @@ pub struct MerchantConnectorUpdate {
     #[schema(value_type = ConnectorType, example = "payment_processor")]
     pub connector_type: api_enums::ConnectorType,
 
-    /// This is an unique label you can generate and pass in order to identify this connector account on your Hyperswitch dashboard and reports, If not passed then if will take `connector_name`_`profile_name`. Eg: if your profile label is `default`, connector label can be `stripe_default`
+    /// This is an unique label you can generate and pass in order to identify this connector account on your Orbix Gateway dashboard and reports, If not passed then if will take `connector_name`_`profile_name`. Eg: if your profile label is `default`, connector label can be `stripe_default`
     #[schema(example = "stripe_US_travel")]
     pub connector_label: Option<String>,
 
@@ -2201,7 +2201,7 @@ pub struct MerchantConnectorUpdate {
     /// The connector_wallets_details is used to store wallet details such as certificates and wallet credentials
     pub connector_wallets_details: Option<ConnectorWalletDetails>,
 
-    /// Additional data that might be required by hyperswitch, to enable some specific features.
+    /// Additional data that might be required by orbix, to enable some specific features.
     #[schema(value_type = Option<MerchantConnectorAccountFeatureMetadata>)]
     pub feature_metadata: Option<MerchantConnectorAccountFeatureMetadata>,
 }
@@ -2417,7 +2417,7 @@ pub struct ToggleAllKVResponse {
     SmithyModel,
     ToSchema,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MerchantConnectorDetailsWrap {
     /// Creds Identifier is to uniquely identify the credentials. Do not send any sensitive info, like encoded_data in this field. And do not send the string "null".
     #[smithy(value_type = "String")]
@@ -2438,7 +2438,7 @@ pub struct MerchantConnectorDetailsWrap {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, SmithyModel, ToSchema)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MerchantConnectorDetails {
     /// Account details of the Connector. You can specify up to 50 keys, with key names up to 40 characters long and values up to 500 characters long. Useful for storing additional, structured information on an object.
     #[schema(value_type = Option<Object>,example = json!({ "auth_type": "HeaderKey","api_key": "Basic MyVerySecretApiKey" }))]
@@ -2814,7 +2814,7 @@ pub struct ProfileCreate {
     #[schema(value_type = Option<SplitTxnsEnabled>, default = "skip")]
     pub split_txns_enabled: Option<common_enums::SplitTxnsEnabled>,
 
-    /// Decides who triggers the retries of failed invoices under revenue recovery, and so which fields the recovery API needs. With `internal_triggers` Hyperswitch schedules the retries using the billing and payment merchant connector accounts. With `external_triggers` the merchant triggers them, and transactions are only recorded, without any merchant connector account.
+    /// Decides who triggers the retries of failed invoices under revenue recovery, and so which fields the recovery API needs. With `internal_triggers` Orbix Gateway schedules the retries using the billing and payment merchant connector accounts. With `external_triggers` the merchant triggers them, and transactions are only recorded, without any merchant connector account.
     #[schema(value_type = Option<RevenueRecoveryTriggerModel>, default = "internal_triggers", example = "external_triggers")]
     pub revenue_recovery_trigger_model: Option<common_enums::RevenueRecoveryTriggerModel>,
 
@@ -3225,7 +3225,7 @@ pub struct ProfileResponse {
     #[schema(value_type = SplitTxnsEnabled, default = "skip")]
     pub split_txns_enabled: common_enums::SplitTxnsEnabled,
 
-    /// Decides who triggers the retries of failed invoices under revenue recovery, and so which fields the recovery API needs. With `internal_triggers` Hyperswitch schedules the retries using the billing and payment merchant connector accounts. With `external_triggers` the merchant triggers them, and transactions are only recorded, without any merchant connector account.
+    /// Decides who triggers the retries of failed invoices under revenue recovery, and so which fields the recovery API needs. With `internal_triggers` Orbix Gateway schedules the retries using the billing and payment merchant connector accounts. With `external_triggers` the merchant triggers them, and transactions are only recorded, without any merchant connector account.
     #[schema(value_type = RevenueRecoveryTriggerModel, default = "internal_triggers", example = "external_triggers")]
     pub revenue_recovery_trigger_model: common_enums::RevenueRecoveryTriggerModel,
 
@@ -3613,7 +3613,7 @@ pub struct ProfileUpdate {
     #[schema(value_type = Option<SplitTxnsEnabled>, default = "skip")]
     pub split_txns_enabled: Option<common_enums::SplitTxnsEnabled>,
 
-    /// Decides who triggers the retries of failed invoices under revenue recovery, and so which fields the recovery API needs. With `internal_triggers` Hyperswitch schedules the retries using the billing and payment merchant connector accounts. With `external_triggers` the merchant triggers them, and transactions are only recorded, without any merchant connector account.
+    /// Decides who triggers the retries of failed invoices under revenue recovery, and so which fields the recovery API needs. With `internal_triggers` Orbix Gateway schedules the retries using the billing and payment merchant connector accounts. With `external_triggers` the merchant triggers them, and transactions are only recorded, without any merchant connector account.
     #[schema(value_type = Option<RevenueRecoveryTriggerModel>, default = "internal_triggers", example = "external_triggers")]
     pub revenue_recovery_trigger_model: Option<common_enums::RevenueRecoveryTriggerModel>,
 
@@ -3752,7 +3752,7 @@ pub struct BusinessPaymentLinkConfig {
     /// A list of allowed domains (glob patterns) where this link can be embedded / opened from
     #[schema(value_type = Option<HashSet<String>>)]
     pub allowed_domains: Option<HashSet<String>>,
-    /// Toggle for HyperSwitch branding visibility
+    /// Toggle for Orbix Gateway branding visibility
     pub branding_visibility: Option<bool>,
 }
 
@@ -3812,7 +3812,7 @@ pub struct PaymentLinkConfigRequest {
     #[schema(value_type = Option<String>, max_length = 255, example = "https://i.pinimg.com/736x/4d/83/5c/4d835ca8aafbbb15f84d07d926fda473.jpg")]
     pub logo: Option<String>,
     /// Custom merchant name for payment link
-    #[schema(value_type = Option<String>, max_length = 255, example = "hyperswitch")]
+    #[schema(value_type = Option<String>, max_length = 255, example = "orbix")]
     pub seller_name: Option<String>,
     /// Custom layout for sdk
     #[schema(value_type = Option<String>, max_length = 255, example = "accordion")]
@@ -3939,7 +3939,7 @@ pub struct TransactionDetailsUiConfiguration {
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, PartialEq, ToSchema)]
 pub struct PaymentLinkBackgroundImageConfig {
     /// URL of the image
-    #[schema(value_type = String, example = "https://hyperswitch.io/favicon.ico")]
+    #[schema(value_type = String, example = "https://orbix.example/favicon.ico")]
     pub url: common_utils::types::Url,
     /// Position of the image in the UI
     #[schema(value_type = Option<ElementPosition>, example = "top-left")]
@@ -3985,7 +3985,7 @@ pub struct PaymentLinkConfig {
     /// Custom layout for details section
     #[schema(value_type = Option<PaymentLinkDetailsLayout>, example = "layout1")]
     pub details_layout: Option<api_enums::PaymentLinkDetailsLayout>,
-    /// Toggle for HyperSwitch branding visibility
+    /// Toggle for Orbix Gateway branding visibility
     pub branding_visibility: Option<bool>,
     /// Text for payment link's handle confirm button
     pub payment_button_text: Option<String>,

@@ -10,7 +10,7 @@ if [ "${ONE_CLICK_SETUP}" = "true" ]; then
 fi
 
 # Define the URL and parameters
-SCARF_URL="https://hyperswitch.gateway.scarf.sh/only-docker"
+SCARF_URL="https://orbix.gateway.scarf.sh/only-docker"
 VERSION="unknown"
 STATUS="initiated"
 

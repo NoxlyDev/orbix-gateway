@@ -8,8 +8,8 @@ use common_types::primitive_wrappers;
 use common_utils::generate_id;
 use common_utils::id_type;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payment_method_data::NetworkTokenDetails;
-use hyperswitch_masking::Secret;
+use orbix_domain_models::payment_method_data::NetworkTokenDetails;
+use orbix_masking::Secret;
 use router_env::logger;
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +34,7 @@ pub trait VaultingInterface {
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct VaultFingerprintRequest {
     pub data: String,
-    pub key: hyperswitch_domain_models::vault::V1VaultEntityId,
+    pub key: orbix_domain_models::vault::V1VaultEntityId,
 }
 
 #[cfg(feature = "v1")]
@@ -80,7 +80,7 @@ pub struct VaultBatchFingerprintResponse {
 #[cfg(feature = "v1")]
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct AddVaultRequest<D> {
-    pub entity_id: hyperswitch_domain_models::vault::V1VaultEntityId,
+    pub entity_id: orbix_domain_models::vault::V1VaultEntityId,
     pub vault_id: domain::VaultId,
     pub data: D,
     pub ttl: i64,
@@ -121,14 +121,14 @@ pub struct AddVaultResponse {
     #[cfg(feature = "v2")]
     pub vault_id: domain::VaultId,
     #[cfg(feature = "v1")]
-    pub vault_id: hyperswitch_domain_models::router_response_types::VaultIdType,
+    pub vault_id: orbix_domain_models::router_response_types::VaultIdType,
     pub fingerprint_id: Option<String>,
 }
 
 #[cfg(feature = "v1")]
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct InternalAddVaultResponse {
-    pub entity_id: Option<hyperswitch_domain_models::vault::V1VaultEntityId>,
+    pub entity_id: Option<orbix_domain_models::vault::V1VaultEntityId>,
     pub vault_id: domain::VaultId,
     pub fingerprint_id: Option<String>,
 }
@@ -235,7 +235,7 @@ pub struct SavedPMLPaymentsInfo {
 #[cfg(feature = "v1")]
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct VaultRetrieveRequest {
-    pub entity_id: hyperswitch_domain_models::vault::V1VaultEntityId,
+    pub entity_id: orbix_domain_models::vault::V1VaultEntityId,
     pub vault_id: domain::VaultId,
 }
 
@@ -254,7 +254,7 @@ pub struct VaultRetrieveRequest {
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct VaultRetrieveResponse {
-    pub data: hyperswitch_domain_models::vault::PaymentMethodVaultingData,
+    pub data: orbix_domain_models::vault::PaymentMethodVaultingData,
 }
 
 #[cfg(feature = "v2")]
@@ -344,8 +344,8 @@ pub struct NTEligibilityResponse {
     pub extended_card_type: Option<String>,
     /// card brand (like VISA, MASTERCARD etc)
     pub brand: Option<String>,
-    /// bank code as per juspay
-    pub juspay_bank_code: Option<String>,
+    /// bank code as per orbix
+    pub orbix_bank_code: Option<String>,
     /// object type
     pub object: Option<String>,
     /// card bin length
@@ -614,10 +614,10 @@ pub enum PaymentMethodIntegrationType {
 
 #[cfg(feature = "v2")]
 pub struct PaymentMethodUpdateHandler<'a> {
-    pub platform: &'a hyperswitch_domain_models::platform::Platform,
-    pub profile: &'a hyperswitch_domain_models::business_profile::Profile,
-    pub request: hyperswitch_domain_models::payment_methods::PaymentMethodUpdate,
-    pub payment_method: hyperswitch_domain_models::payment_methods::PaymentMethod,
+    pub platform: &'a orbix_domain_models::platform::Platform,
+    pub profile: &'a orbix_domain_models::business_profile::Profile,
+    pub request: orbix_domain_models::payment_methods::PaymentMethodUpdate,
+    pub payment_method: orbix_domain_models::payment_methods::PaymentMethod,
     pub insert_promoted_record: bool,
     pub state: &'a SessionState,
 }

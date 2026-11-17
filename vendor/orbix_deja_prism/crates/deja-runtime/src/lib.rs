@@ -2038,7 +2038,7 @@ pub fn global_runtime_hook_from_env() -> Option<Arc<RuntimeHook>> {
 /// This is the injection point applications use when they want to construct
 /// the hook with a custom sink (typically a [`crate::writer::CompositeSink`]
 /// fanning a JSONL primary out to one or more secondaries supplied by the
-/// application — e.g. Hyperswitch's Kafka producer). Must be called BEFORE
+/// application — e.g. Orbix Gateway's Kafka producer). Must be called BEFORE
 /// any code path invokes [`global_runtime_hook_from_env`]; returns
 /// `Err` if the hook has already been initialized.
 pub fn set_global_runtime_hook(hook: Option<RuntimeHook>) -> Result<(), &'static str> {
@@ -2774,7 +2774,7 @@ pub fn serialized_result_is_error(result: &serde_json::Value) -> bool {
 ///
 /// Returns the shared [`RecordingHook`] inside the process-wide runtime hook when
 /// it was installed as [`RuntimeHook::Recording`] at boot via
-/// [`set_global_runtime_hook`] (e.g. Hyperswitch's `deja_boot`, which composes a
+/// [`set_global_runtime_hook`] (e.g. Orbix Gateway's `deja_boot`, which composes a
 /// Kafka secondary onto the JSONL primary). Every caller uses the exact same
 /// recorder as callers of [`global_runtime_hook_from_env`] — one `global_sequence`
 /// counter and one sink set across every boundary. Non-recording hooks (replay /
@@ -4100,7 +4100,7 @@ fn classify_fail_stop(
 ///
 /// # Host wiring
 ///
-/// One call site, the ingress middleware's replay branch (hyperswitch:
+/// One call site, the ingress middleware's replay branch (orbix:
 /// `crates/router_env/src/request_id.rs`, the `service.call(request)` arm taken
 /// when deja is active but not recording), which turns `Err(FailStop)` into a
 /// 5xx whose body is [`FailStop::message`]. Until that call site exists the

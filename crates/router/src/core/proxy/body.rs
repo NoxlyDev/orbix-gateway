@@ -140,7 +140,7 @@ impl<'a> ProxyBodyBuilder<'a, Validated<'a>> {
         vault: &Value,
         url: &str,
         method: Method,
-        headers: Vec<(String, hyperswitch_masking::Maskable<String>)>,
+        headers: Vec<(String, orbix_masking::Maskable<String>)>,
     ) -> Result<ProxyBodyBuilder<'a, Prepared>, ProxyBodyError> {
         let bytes = self.body.render(vault)?;
         let content_type = self.state.content_type.map_or(

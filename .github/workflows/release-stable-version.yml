@@ -23,8 +23,8 @@ jobs:
         env:
           NODE_USE_ENV_PROXY: "1"
         with:
-          client-id: ${{ secrets.HYPERSWITCH_BOT_APP_ID }}
-          private-key: ${{ secrets.HYPERSWITCH_BOT_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.ORBIX_BOT_APP_ID }}
+          private-key: ${{ secrets.ORBIX_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -75,7 +75,7 @@ jobs:
             [[ status_code -eq 200 ]]
           }
 
-          allowed_teams=('hyperswitch-admins' 'hyperswitch-maintainers')
+          allowed_teams=('orbix-admins' 'orbix-maintainers')
           is_user_authorized=false
           username=${{ github.triggering_actor }}
 

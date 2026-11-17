@@ -6,7 +6,7 @@ use api_models::payment_methods::{
 };
 use common_utils::{ext_traits::ValueExt, id_type};
 use error_stack::ResultExt;
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use router_env::logger;
 
 use crate::{

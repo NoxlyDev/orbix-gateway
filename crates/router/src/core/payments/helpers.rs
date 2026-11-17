@@ -40,9 +40,9 @@ use error_stack::{report, ResultExt};
 use external_services::superposition::Config;
 use futures::future::Either;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::payments::payment_intent::CustomerData;
-pub use hyperswitch_domain_models::{customer, type_encryption::AsyncLift};
-use hyperswitch_domain_models::{
+use orbix_domain_models::payments::payment_intent::CustomerData;
+pub use orbix_domain_models::{customer, type_encryption::AsyncLift};
+use orbix_domain_models::{
     mandates,
     mandates::MandateData,
     payment_method_data::{GetPaymentMethodType, PazeWalletData},
@@ -53,12 +53,12 @@ use hyperswitch_domain_models::{
     router_data::{InteracCustomerInfo, KlarnaSdkResponse, PaymentMethodToken},
     router_request_types::MandateIdSettable,
 };
-pub use hyperswitch_interfaces::{
+pub use orbix_interfaces::{
     api::ConnectorSpecifications,
     configs::MerchantConnectorAccountType,
     integrity::{CheckIntegrity, FlowIntegrity, GetIntegrityObject},
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, SwitchStrategy};
+use orbix_masking::{ExposeInterface, PeekInterface, SwitchStrategy};
 use josekit::jwe;
 use num_traits::{FromPrimitive, ToPrimitive};
 use openssl::{
@@ -293,7 +293,7 @@ pub async fn create_or_update_address_for_payment_by_request(
                     updated_by: storage_scheme.to_string(),
                     email: encryptable_address.email.map(|email| {
                         let encryptable: Encryptable<
-                            hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                            orbix_masking::Secret<String, pii::EmailStrategy>,
                         > = Encryptable::new(
                             email.clone().into_inner().switch_strategy(),
                             email.into_encrypted(),
@@ -497,7 +497,7 @@ pub async fn get_domain_address(
             updated_by: storage_scheme.to_string(),
             email: encryptable_address.email.map(|email| {
                 let encryptable: Encryptable<
-                    hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                    orbix_masking::Secret<String, pii::EmailStrategy>,
                 > = Encryptable::new(
                     email.clone().into_inner().switch_strategy(),
                     email.into_encrypted(),
@@ -1122,7 +1122,7 @@ pub fn validate_amount_to_capture_and_capture_method(
     payment_attempt: Option<&PaymentAttempt>,
     request: &api_models::payments::PaymentsRequest,
 ) -> CustomResult<(), errors::ApiErrorResponse> {
-    let option_net_amount = hyperswitch_domain_models::payments::payment_attempt::NetAmount::from_payments_request_and_payment_attempt(
+    let option_net_amount = orbix_domain_models::payments::payment_attempt::NetAmount::from_payments_request_and_payment_attempt(
         request,
         payment_attempt,
     );
@@ -1190,7 +1190,7 @@ pub fn validate_card_data(
 
 #[instrument(skip_all)]
 fn validate_card_cvc(
-    card_cvc: &hyperswitch_masking::Secret<String>,
+    card_cvc: &orbix_masking::Secret<String>,
 ) -> CustomResult<(), errors::ApiErrorResponse> {
     let cvc = card_cvc.peek().to_string();
     if cvc.len() < 3 || cvc.len() > 4 {
@@ -1214,8 +1214,8 @@ fn validate_card_cvc(
 
 #[instrument(skip_all)]
 pub fn validate_card_expiry(
-    card_exp_month: &hyperswitch_masking::Secret<String>,
-    card_exp_year: &hyperswitch_masking::Secret<String>,
+    card_exp_month: &orbix_masking::Secret<String>,
+    card_exp_year: &orbix_masking::Secret<String>,
 ) -> CustomResult<(), errors::ApiErrorResponse> {
     let exp_month = card_exp_month
         .peek()
@@ -1653,7 +1653,7 @@ pub fn validate_customer_information(
 pub async fn validate_card_ip_blocking_for_business_profile(
     state: &SessionState,
     ip: IpAddr,
-    fingerprnt: hyperswitch_masking::Secret<String>,
+    fingerprnt: orbix_masking::Secret<String>,
     card_testing_guard_config: &diesel_models::business_profile::CardTestingGuardConfig,
 ) -> RouterResult<String> {
     let cache_key = format!(
@@ -1670,7 +1670,7 @@ pub async fn validate_card_ip_blocking_for_business_profile(
 
 pub async fn validate_guest_user_card_blocking_for_business_profile(
     state: &SessionState,
-    fingerprnt: hyperswitch_masking::Secret<String>,
+    fingerprnt: orbix_masking::Secret<String>,
     customer_id: Option<id_type::CustomerId>,
     card_testing_guard_config: &diesel_models::business_profile::CardTestingGuardConfig,
 ) -> RouterResult<String> {
@@ -1762,7 +1762,7 @@ pub fn get_customer_details_from_request_or_pm_table(
     mandate_type: Option<&api::MandateTransactionType>,
 ) -> Result<
     CustomerDetails,
-    error_stack::Report<hyperswitch_domain_models::errors::api_error_response::ApiErrorResponse>,
+    error_stack::Report<orbix_domain_models::errors::api_error_response::ApiErrorResponse>,
 > {
     let customer_id = request.get_customer_id().map(ToOwned::to_owned);
 
@@ -2250,7 +2250,7 @@ pub async fn create_customer_if_not_exist<'a, F: Clone, R, D>(
                             name: encryptable_customer.name,
                             email: encryptable_customer.email.map(|email| {
                                 let encryptable: Encryptable<
-                                    hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                                    orbix_masking::Secret<String, pii::EmailStrategy>,
                                 > = Encryptable::new(
                                     email.clone().into_inner().switch_strategy(),
                                     email.into_encrypted(),
@@ -2324,7 +2324,7 @@ pub async fn create_customer_if_not_exist<'a, F: Clone, R, D>(
                         encryptable_customer.name,
                         encryptable_customer.email.map(|email| {
                             let encryptable: Encryptable<
-                                hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                                orbix_masking::Secret<String, pii::EmailStrategy>,
                             > = Encryptable::new(
                                 email.clone().into_inner().switch_strategy(),
                                 email.into_encrypted(),
@@ -2745,8 +2745,8 @@ impl Default for RolloutConfig {
     }
 }
 
-// Re-export ProxyOverride from hyperswitch_interfaces
-pub use hyperswitch_interfaces::types::ProxyOverride;
+// Re-export ProxyOverride from orbix_interfaces
+pub use orbix_interfaces::types::ProxyOverride;
 
 #[derive(Debug, Clone)]
 pub struct RolloutExecutionResult {
@@ -3498,7 +3498,7 @@ pub async fn fetch_card_details_from_internal_locker(
             .card_cvc
             .unwrap_or_default(),
         card_issuer: None,
-        nick_name: card.nick_name.map(hyperswitch_masking::Secret::new),
+        nick_name: card.nick_name.map(orbix_masking::Secret::new),
         card_network: card
             .card_brand
             .map(|card_brand| enums::CardNetwork::from_str(&card_brand))
@@ -3552,10 +3552,10 @@ pub async fn fetch_card_details_from_external_vault(
     let payment_methods_data = payment_method_info.get_payment_methods_data();
 
     match vault_resp {
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(card) => Ok(
+        orbix_domain_models::vault::PaymentMethodVaultingData::Card(card) => Ok(
             domain::Card::from((card, card_token_data, co_badged_card_data)),
         ),
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::CardNumber(card_number) => {
+        orbix_domain_models::vault::PaymentMethodVaultingData::CardNumber(card_number) => {
             let payment_methods_data = payment_methods_data
                 .get_required_value("PaymentMethodsData")
                 .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -3573,19 +3573,19 @@ pub async fn fetch_card_details_from_external_vault(
                     .attach_printable("Failed to generate card data")?,
             )
         }
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::NetworkToken(_) => {
+        orbix_domain_models::vault::PaymentMethodVaultingData::NetworkToken(_) => {
             Err(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Network Token not supported")
         }
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankDebit(_) => {
+        orbix_domain_models::vault::PaymentMethodVaultingData::BankDebit(_) => {
             Err(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Bank Debit not supported")
         }
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::Wallet(_) => {
+        orbix_domain_models::vault::PaymentMethodVaultingData::Wallet(_) => {
             Err(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Wallet not supported")
         }
-        hyperswitch_domain_models::vault::PaymentMethodVaultingData::BankRedirect(_) => {
+        orbix_domain_models::vault::PaymentMethodVaultingData::BankRedirect(_) => {
             Err(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Bank Redirect not supported")
         }
@@ -3633,7 +3633,7 @@ pub async fn fetch_network_token_details_from_locker(
         token_cryptogram: None,
         token_exp_month: token_data.card_exp_month,
         token_exp_year: token_data.card_exp_year,
-        nick_name: token_data.nick_name.map(hyperswitch_masking::Secret::new),
+        nick_name: token_data.nick_name.map(orbix_masking::Secret::new),
         card_issuer: None,
         card_network,
         card_type: None,
@@ -3674,7 +3674,7 @@ pub async fn fetch_card_details_for_network_transaction_flow_from_locker(
         .flatten();
 
     let card_details_for_network_transaction_id =
-        hyperswitch_domain_models::payment_method_data::CardDetailsForNetworkTransactionId {
+        orbix_domain_models::payment_method_data::CardDetailsForNetworkTransactionId {
             card_number: card_details_from_locker.card_number,
             card_exp_month: card_details_from_locker.card_exp_month,
             card_exp_year: card_details_from_locker.card_exp_year,
@@ -3689,7 +3689,7 @@ pub async fn fetch_card_details_for_network_transaction_flow_from_locker(
             bank_code: None,
             nick_name: card_details_from_locker
                 .nick_name
-                .map(hyperswitch_masking::Secret::new),
+                .map(orbix_masking::Secret::new),
             card_holder_name: card_details_from_locker.name_on_card.clone(),
         };
 
@@ -3774,7 +3774,7 @@ pub async fn retrieve_payment_token_data(
         .attach_printable("Failed to get redis connection")?;
 
     let key = format!(
-        "pm_token_{}_{}_hyperswitch",
+        "pm_token_{}_{}_orbix",
         token,
         payment_method.get_required_value("payment_method")?
     );
@@ -3794,7 +3794,7 @@ pub async fn retrieve_payment_token_data(
         .clone()
         .parse_struct("PaymentTokenData")
         .change_context(errors::ApiErrorResponse::InternalServerError)
-        .attach_printable("failed to deserialize hyperswitch token data");
+        .attach_printable("failed to deserialize orbix token data");
 
     let token_data = match token_data_result {
         Ok(data) => data,
@@ -4053,7 +4053,7 @@ pub async fn make_pm_data<'a, F: Clone, R, D>(
 
     // TODO: Handle case where payment method and token both are present in request properly.
     let (payment_method, pm_id) = match (&request, payment_data.token_data.as_ref()) {
-        (_, Some(hyperswitch_token)) => {
+        (_, Some(orbix_token)) => {
             let existing_vault_data = payment_data.get_vault_operation();
 
             let vault_data = existing_vault_data.and_then(|data| match data {
@@ -4065,7 +4065,7 @@ pub async fn make_pm_data<'a, F: Clone, R, D>(
             let pm_data = Box::pin(payment_methods::retrieve_payment_method_with_token(
                 state,
                 platform,
-                hyperswitch_token,
+                orbix_token,
                 &payment_data.payment_intent,
                 &payment_data.payment_attempt,
                 card_token_data.as_ref(),
@@ -4191,7 +4191,7 @@ pub async fn store_in_vault_and_generate_ppmt(
     )
     .await?;
     let parent_payment_method_token = generate_id(consts::ID_LENGTH, "token");
-    let key_for_hyperswitch_token = payment_attempt.get_payment_method().map(|payment_method| {
+    let key_for_orbix_token = payment_attempt.get_payment_method().map(|payment_method| {
         payment_methods_handler::ParentPaymentMethodToken::create_key_for_token((
             &parent_payment_method_token,
             payment_method,
@@ -4202,8 +4202,8 @@ pub async fn store_in_vault_and_generate_ppmt(
         .and_then(|b_profile| b_profile.get_order_fulfillment_time())
         .unwrap_or(consts::DEFAULT_FULFILLMENT_TIME);
 
-    if let Some(key_for_hyperswitch_token) = key_for_hyperswitch_token {
-        key_for_hyperswitch_token
+    if let Some(key_for_orbix_token) = key_for_orbix_token {
+        key_for_orbix_token
             .insert(
                 intent_fulfillment_time,
                 storage::PaymentTokenData::temporary_generic(router_token),
@@ -4519,8 +4519,8 @@ pub fn get_handle_response_url_for_modular_authentication(
     business_profile: &domain::Profile,
     response: &api_models::authentication::AuthenticationAuthenticateResponse,
     connector: String,
-    return_url: Option<hyperswitch_masking::Secret<String>>,
-    client_secret: Option<&hyperswitch_masking::Secret<String>>,
+    return_url: Option<orbix_masking::Secret<String>>,
+    client_secret: Option<&orbix_masking::Secret<String>>,
     amount: Option<MinorUnit>,
 ) -> RouterResult<api::RedirectionResponse> {
     let authentication_return_url = return_url;
@@ -4551,9 +4551,9 @@ pub fn get_handle_response_url_for_modular_authentication(
 #[cfg(feature = "v1")]
 pub fn make_merchant_url_with_response_for_authentication(
     business_profile: &domain::Profile,
-    redirection_response: hyperswitch_domain_models::authentication::PgRedirectResponseForAuthentication,
+    redirection_response: orbix_domain_models::authentication::PgRedirectResponseForAuthentication,
     request_return_url: Option<&String>,
-    client_secret: Option<&hyperswitch_masking::Secret<String>>,
+    client_secret: Option<&orbix_masking::Secret<String>>,
     manual_retry_allowed: Option<bool>,
 ) -> RouterResult<String> {
     // take return url if provided in the request else use merchant return url
@@ -4619,7 +4619,7 @@ pub fn make_merchant_url_with_response(
     business_profile: &domain::Profile,
     redirection_response: api::PgRedirectResponse,
     request_return_url: Option<&String>,
-    client_secret: Option<&hyperswitch_masking::Secret<String>>,
+    client_secret: Option<&orbix_masking::Secret<String>>,
     manual_retry_allowed: Option<bool>,
 ) -> RouterResult<String> {
     // take return url if provided in the request else use merchant return url
@@ -4728,7 +4728,7 @@ pub async fn create_client_secret(
 
     let store = &state.store;
     let id = id_type::ClientSecretId::generate();
-    let secret = hyperswitch_masking::Secret::new(generate_time_ordered_id("cs"));
+    let secret = orbix_masking::Secret::new(generate_time_ordered_id("cs"));
 
     let client_secret = client_secret::ClientSecretTypeNew {
         id,
@@ -4789,8 +4789,8 @@ pub fn make_pg_redirect_response_for_authentication(
     connector: String,
     amount: Option<MinorUnit>,
     trans_status: common_enums::TransactionStatus,
-) -> hyperswitch_domain_models::authentication::PgRedirectResponseForAuthentication {
-    hyperswitch_domain_models::authentication::PgRedirectResponseForAuthentication {
+) -> orbix_domain_models::authentication::PgRedirectResponseForAuthentication {
+    orbix_domain_models::authentication::PgRedirectResponseForAuthentication {
         authentication_id,
         status: trans_status,
         gateway_id: connector,
@@ -4918,7 +4918,7 @@ pub fn generate_mandate(
                 .set_customer_ip_address(
                     customer_acceptance
                         .get_ip_address()
-                        .map(hyperswitch_masking::Secret::new),
+                        .map(orbix_masking::Secret::new),
                 )
                 .set_customer_user_agent_extended(customer_acceptance.get_user_agent())
                 .set_customer_accepted_at(Some(customer_acceptance.get_accepted_at()))
@@ -6902,9 +6902,9 @@ pub fn is_apple_pay_simplified_flow(
 // If yes, it will encrypt connector_wallets_details and store it in the database.
 // If no, it will check if apple pay details are present in metadata and merge it with connector_wallets_details, encrypt and store it.
 pub async fn get_connector_wallets_details_with_apple_pay_certificates(
-    connector_metadata: &Option<hyperswitch_masking::Secret<tera::Value>>,
+    connector_metadata: &Option<orbix_masking::Secret<tera::Value>>,
     connector_wallets_details_optional: &Option<api_models::admin::ConnectorWalletDetails>,
-) -> RouterResult<Option<hyperswitch_masking::Secret<serde_json::Value>>> {
+) -> RouterResult<Option<orbix_masking::Secret<serde_json::Value>>> {
     let connector_wallet_details_with_apple_pay_metadata_optional =
         get_apple_pay_metadata_if_needed(connector_metadata, connector_wallets_details_optional)
             .await?;
@@ -6916,13 +6916,13 @@ pub async fn get_connector_wallets_details_with_apple_pay_certificates(
                 .attach_printable("Failed to serialize Apple Pay metadata as JSON")
         })
         .transpose()?
-        .map(hyperswitch_masking::Secret::new);
+        .map(orbix_masking::Secret::new);
 
     Ok(connector_wallets_details)
 }
 
 async fn get_apple_pay_metadata_if_needed(
-    connector_metadata: &Option<hyperswitch_masking::Secret<tera::Value>>,
+    connector_metadata: &Option<orbix_masking::Secret<tera::Value>>,
     connector_wallets_details_optional: &Option<api_models::admin::ConnectorWalletDetails>,
 ) -> RouterResult<Option<api_models::admin::ConnectorWalletDetails>> {
     if let Some(connector_wallets_details) = connector_wallets_details_optional {
@@ -6944,7 +6944,7 @@ async fn get_apple_pay_metadata_if_needed(
 }
 
 async fn get_and_merge_apple_pay_metadata(
-    connector_metadata: Option<hyperswitch_masking::Secret<tera::Value>>,
+    connector_metadata: Option<orbix_masking::Secret<tera::Value>>,
     connector_wallets_details_optional: Option<api_models::admin::ConnectorWalletDetails>,
 ) -> RouterResult<Option<api_models::admin::ConnectorWalletDetails>> {
     let apple_pay_metadata_optional = get_applepay_metadata(connector_metadata)
@@ -6966,7 +6966,7 @@ async fn get_and_merge_apple_pay_metadata(
                     .attach_printable("Failed to serialize Apple Pay combined metadata as JSON")?;
 
                 api_models::admin::ConnectorWalletDetails {
-                    apple_pay_combined: Some(hyperswitch_masking::Secret::new(
+                    apple_pay_combined: Some(orbix_masking::Secret::new(
                         combined_metadata_json,
                     )),
                     apple_pay: connector_wallets_details_optional
@@ -6992,7 +6992,7 @@ async fn get_and_merge_apple_pay_metadata(
                     .attach_printable("Failed to serialize Apple Pay metadata as JSON")?;
 
                 api_models::admin::ConnectorWalletDetails {
-                    apple_pay: Some(hyperswitch_masking::Secret::new(metadata_json)),
+                    apple_pay: Some(orbix_masking::Secret::new(metadata_json)),
                     apple_pay_combined: connector_wallets_details_optional
                         .as_ref()
                         .and_then(|d| d.apple_pay_combined.clone()),
@@ -7245,18 +7245,18 @@ pub async fn get_apple_pay_retryable_connectors(
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApplePayData {
-    version: hyperswitch_masking::Secret<String>,
-    data: hyperswitch_masking::Secret<String>,
-    signature: hyperswitch_masking::Secret<String>,
+    version: orbix_masking::Secret<String>,
+    data: orbix_masking::Secret<String>,
+    signature: orbix_masking::Secret<String>,
     header: ApplePayHeader,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApplePayHeader {
-    ephemeral_public_key: hyperswitch_masking::Secret<String>,
-    public_key_hash: hyperswitch_masking::Secret<String>,
-    transaction_id: hyperswitch_masking::Secret<String>,
+    ephemeral_public_key: orbix_masking::Secret<String>,
+    public_key_hash: orbix_masking::Secret<String>,
+    transaction_id: orbix_masking::Secret<String>,
 }
 
 impl ApplePayData {
@@ -7272,8 +7272,8 @@ impl ApplePayData {
 
     pub async fn decrypt(
         &self,
-        payment_processing_certificate: &hyperswitch_masking::Secret<String>,
-        payment_processing_certificate_key: &hyperswitch_masking::Secret<String>,
+        payment_processing_certificate: &orbix_masking::Secret<String>,
+        payment_processing_certificate_key: &orbix_masking::Secret<String>,
     ) -> CustomResult<serde_json::Value, errors::ApplePayDecryptionError> {
         let merchant_id = self.merchant_id(payment_processing_certificate)?;
         let shared_secret = self.shared_secret(payment_processing_certificate_key)?;
@@ -7286,7 +7286,7 @@ impl ApplePayData {
 
     pub fn merchant_id(
         &self,
-        payment_processing_certificate: &hyperswitch_masking::Secret<String>,
+        payment_processing_certificate: &orbix_masking::Secret<String>,
     ) -> CustomResult<String, errors::ApplePayDecryptionError> {
         let cert_data = payment_processing_certificate.clone().expose();
 
@@ -7325,7 +7325,7 @@ impl ApplePayData {
 
     pub fn shared_secret(
         &self,
-        payment_processing_certificate_key: &hyperswitch_masking::Secret<String>,
+        payment_processing_certificate_key: &orbix_masking::Secret<String>,
     ) -> CustomResult<Vec<u8>, errors::ApplePayDecryptionError> {
         let public_ec_bytes = BASE64_ENGINE
             .decode(self.header.ephemeral_public_key.peek().as_bytes())
@@ -7409,13 +7409,13 @@ impl ApplePayData {
 // Structs for keys and the main decryptor
 pub struct GooglePayTokenDecryptor {
     root_signing_keys: Vec<GooglePayRootSigningKey>,
-    recipient_id: hyperswitch_masking::Secret<String>,
+    recipient_id: orbix_masking::Secret<String>,
     private_key: PKey<openssl::pkey::Private>,
     /// Tokenization type the merchant configured on its MCA. `INTERNAL_GATEWAY` tokens get the
     /// additional `gatewayMerchantId` check after decryption; every other type keeps today's
     /// behaviour.
     tokenization_type: api_models::payments::GooglePayTokenizationType,
-    /// Hyperswitch merchant id that was sent to Google as `gateway_merchant_id`. Set for
+    /// Orbix Gateway merchant id that was sent to Google as `gateway_merchant_id`. Set for
     /// `INTERNAL_GATEWAY` only, and checked against the decrypted token.
     gateway_merchant_id: Option<String>,
 }
@@ -7434,31 +7434,31 @@ pub struct EncryptedData {
 #[serde(rename_all = "camelCase")]
 pub struct GooglePaySignedMessage {
     #[serde(with = "common_utils::Base64Serializer")]
-    encrypted_message: hyperswitch_masking::Secret<Vec<u8>>,
+    encrypted_message: orbix_masking::Secret<Vec<u8>>,
     #[serde(with = "common_utils::Base64Serializer")]
-    ephemeral_public_key: hyperswitch_masking::Secret<Vec<u8>>,
+    ephemeral_public_key: orbix_masking::Secret<Vec<u8>>,
     #[serde(with = "common_utils::Base64Serializer")]
-    tag: hyperswitch_masking::Secret<Vec<u8>>,
+    tag: orbix_masking::Secret<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IntermediateSigningKey {
-    signed_key: hyperswitch_masking::Secret<String>,
-    signatures: Vec<hyperswitch_masking::Secret<String>>,
+    signed_key: orbix_masking::Secret<String>,
+    signatures: Vec<orbix_masking::Secret<String>>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GooglePaySignedKey {
-    key_value: hyperswitch_masking::Secret<String>,
+    key_value: orbix_masking::Secret<String>,
     key_expiration: String,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GooglePayRootSigningKey {
-    key_value: hyperswitch_masking::Secret<String>,
+    key_value: orbix_masking::Secret<String>,
     key_expiration: String,
     protocol_version: GooglePayProtocolVersion,
 }
@@ -7522,9 +7522,9 @@ fn filter_root_signing_keys(
 
 impl GooglePayTokenDecryptor {
     pub fn new(
-        root_keys: hyperswitch_masking::Secret<String>,
-        recipient_id: hyperswitch_masking::Secret<String>,
-        private_key: hyperswitch_masking::Secret<String>,
+        root_keys: orbix_masking::Secret<String>,
+        recipient_id: orbix_masking::Secret<String>,
+        private_key: orbix_masking::Secret<String>,
         tokenization_type: api_models::payments::GooglePayTokenizationType,
         gateway_merchant_id: Option<String>,
     ) -> CustomResult<Self, errors::GooglePayDecryptionError> {
@@ -7564,7 +7564,7 @@ impl GooglePayTokenDecryptor {
         data: String,
         should_verify_signature: bool,
     ) -> CustomResult<
-        hyperswitch_domain_models::router_data::GooglePayPredecryptDataInternal,
+        orbix_domain_models::router_data::GooglePayPredecryptDataInternal,
         errors::GooglePayDecryptionError,
     > {
         // parse the encrypted data
@@ -7596,7 +7596,7 @@ impl GooglePayTokenDecryptor {
         // decrypt the message
         let decrypted = self.decrypt_message(symmetric_encryption_key, encrypted_message)?;
         // parse the decrypted data
-        let decrypted_data: hyperswitch_domain_models::router_data::GooglePayPredecryptDataInternal =
+        let decrypted_data: orbix_domain_models::router_data::GooglePayPredecryptDataInternal =
             decrypted
                 .parse_struct("GooglePayPredecryptDataInternal")
                 .change_context(errors::GooglePayDecryptionError::DeserializationFailed)?;
@@ -7627,11 +7627,11 @@ impl GooglePayTokenDecryptor {
     ///
     /// Under `INTERNAL_GATEWAY` every merchant's card is encrypted to the same gateway key, so the
     /// key alone no longer separates one merchant from another. `gateway_merchant_id` is what
-    /// does: Google echoes back the Hyperswitch merchant id that was sent in the session response,
+    /// does: Google echoes back the Orbix Gateway merchant id that was sent in the session response,
     /// and a mismatch means the token belongs to a different merchant's payment.
     fn verify_internal_gateway_merchant_id(
         &self,
-        decrypted_data: &hyperswitch_domain_models::router_data::GooglePayPredecryptDataInternal,
+        decrypted_data: &orbix_domain_models::router_data::GooglePayPredecryptDataInternal,
     ) -> CustomResult<(), errors::GooglePayDecryptionError> {
         let expected_gateway_merchant_id = self
             .gateway_merchant_id
@@ -8000,8 +8000,8 @@ impl GooglePayTokenDecryptor {
 
 pub fn decrypt_paze_token(
     paze_wallet_data: PazeWalletData,
-    paze_private_key: hyperswitch_masking::Secret<String>,
-    paze_private_key_passphrase: hyperswitch_masking::Secret<String>,
+    paze_private_key: orbix_masking::Secret<String>,
+    paze_private_key_passphrase: orbix_masking::Secret<String>,
 ) -> CustomResult<serde_json::Value, errors::PazeDecryptionError> {
     let decoded_paze_private_key = BASE64_ENGINE
         .decode(paze_private_key.expose().as_bytes())
@@ -8060,7 +8060,7 @@ pub fn decrypt_paze_token(
 pub struct JwsBody {
     pub payload_id: String,
     pub session_id: String,
-    pub secured_payload: hyperswitch_masking::Secret<String>,
+    pub secured_payload: orbix_masking::Secret<String>,
 }
 
 pub fn get_key_params_for_surcharge_details(
@@ -8237,7 +8237,7 @@ pub async fn get_gsm_record(
     connector_error_message: Option<String>,
     issuer_error_code: Option<String>,
     card_network: Option<common_enums::CardNetwork>,
-) -> Option<hyperswitch_domain_models::gsm::GatewayStatusMap> {
+) -> Option<orbix_domain_models::gsm::GatewayStatusMap> {
     // Priority 1: Try issuer_code lookup (requires both card_network and issuer_error_code)
     let issuer_result =
         if let (Some(network), Some(issuer_code)) = (&card_network, &issuer_error_code) {
@@ -8280,7 +8280,7 @@ pub async fn get_gsm_record_for_error_response<F, Req, Res>(
     state: &SessionState,
     router_data: &RouterData<F, Req, Res>,
     payment_attempt: &PaymentAttempt,
-) -> Option<hyperswitch_domain_models::gsm::GatewayStatusMap> {
+) -> Option<orbix_domain_models::gsm::GatewayStatusMap> {
     let error = router_data.response.as_ref().err()?;
     let sub_flow = crate::core::utils::get_flow_name::<F>()
         .inspect_err(|err| logger::error!(?err, "Failed to get flow name for GSM lookup"))
@@ -8306,7 +8306,7 @@ async fn perform_gsm_lookup(
     connector_name: String,
     flow: &str,
     sub_flow: &str,
-) -> Option<hyperswitch_domain_models::gsm::GatewayStatusMap> {
+) -> Option<orbix_domain_models::gsm::GatewayStatusMap> {
     let get_gsm = || async {
         state.store.find_gsm_rule(
                 connector_name.clone(),
@@ -8504,7 +8504,7 @@ pub fn get_connector_data_with_token(
 
 /// Decides the session token flow based on payment method type
 pub fn decide_session_token_flow(
-    connector: &hyperswitch_interfaces::connector_integration_interface::ConnectorEnum,
+    connector: &orbix_interfaces::connector_integration_interface::ConnectorEnum,
     payment_method_type: api_models::enums::PaymentMethodType,
     connector_name: String,
 ) -> api::GetToken {
@@ -8782,7 +8782,7 @@ pub async fn get_payment_method_data_and_encrypted_payment_method_data(
 ) -> CustomResult<
     (
         Option<serde_json::Value>,
-        Option<Encryptable<hyperswitch_masking::Secret<serde_json::Value>>>,
+        Option<Encryptable<orbix_masking::Secret<serde_json::Value>>>,
     ),
     errors::ApiErrorResponse,
 > {
@@ -8868,14 +8868,14 @@ pub async fn get_payment_method_details_from_payment_token(
     platform: &domain::Platform,
     storage_scheme: enums::MerchantStorageScheme,
 ) -> RouterResult<Option<(domain::PaymentMethodData, enums::PaymentMethod)>> {
-    let hyperswitch_token = if let Some(token) = payment_attempt.payment_token.clone() {
+    let orbix_token = if let Some(token) = payment_attempt.payment_token.clone() {
         let redis_conn = state
             .store
             .get_redis_conn()
             .change_context(errors::ApiErrorResponse::InternalServerError)
             .attach_printable("Failed to get redis connection")?;
         let key = format!(
-            "pm_token_{}_{}_hyperswitch",
+            "pm_token_{}_{}_orbix",
             token,
             payment_attempt
                 .payment_method
@@ -8896,7 +8896,7 @@ pub async fn get_payment_method_details_from_payment_token(
             .clone()
             .parse_struct("PaymentTokenData")
             .change_context(errors::ApiErrorResponse::InternalServerError)
-            .attach_printable("failed to deserialize hyperswitch token data");
+            .attach_printable("failed to deserialize orbix token data");
         let token_data = match token_data_result {
             Ok(data) => data,
             Err(e) => {
@@ -8913,9 +8913,9 @@ pub async fn get_payment_method_details_from_payment_token(
     } else {
         None
     };
-    let token = hyperswitch_token
+    let token = orbix_token
         .ok_or(errors::ApiErrorResponse::InternalServerError)
-        .attach_printable("missing hyperswitch_token")?;
+        .attach_printable("missing orbix_token")?;
     match token {
         storage::PaymentTokenData::TemporaryGeneric(generic_token) => {
             retrieve_payment_method_with_temporary_token(
@@ -9008,7 +9008,7 @@ pub enum UnifiedAuthenticationServiceFlow {
     ClickToPayInitiate,
     ExternalAuthenticationInitiate {
         acquirer_details: Option<authentication::types::AcquirerDetails>,
-        card: Box<hyperswitch_domain_models::payment_method_data::Card>,
+        card: Box<orbix_domain_models::payment_method_data::Card>,
         token: String,
     },
     ExternalAuthenticationPostAuthenticate {
@@ -9078,7 +9078,7 @@ pub async fn decide_action_for_unified_authentication_service<F: Clone>(
 pub enum PaymentExternalAuthenticationFlow {
     PreAuthenticationFlow {
         acquirer_details: Option<authentication::types::AcquirerDetails>,
-        card: Box<hyperswitch_domain_models::payment_method_data::Card>,
+        card: Box<orbix_domain_models::payment_method_data::Card>,
         token: String,
     },
     PostAuthenticationFlow {

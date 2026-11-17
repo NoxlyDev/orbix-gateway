@@ -78,7 +78,7 @@ pub fn grpc_args(
 /// Splits a raw gRPC message-stream body into its length-prefixed messages
 /// (`[compressed: u8][len: u32 BE][payload]`*). Returns `None` on malformed
 /// framing or any compressed frame (canonicalization cannot see inside
-/// compressed bytes; hyperswitch clients never negotiate compression).
+/// compressed bytes; orbix clients never negotiate compression).
 pub fn unframe_messages(body: &[u8]) -> Option<Vec<&[u8]>> {
     let mut out = Vec::new();
     let mut rest = body;

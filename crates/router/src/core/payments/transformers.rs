@@ -37,7 +37,7 @@ use diesel_models::{
     payment_attempt::PaymentAttempt as DieselPaymentAttempt, PaymentIntent as DieselPaymentIntent,
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates,
     mandates::{ConnectorMandateReferenceId, MandateIds},
     payments::payment_intent::CustomerData,
@@ -45,20 +45,20 @@ use hyperswitch_domain_models::{
     sdk_auth::SdkAuthorization,
 };
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_data_v2::{flow_common_types, RouterDataV2},
     ApiModelToDieselModelConvertor,
 };
 #[cfg(feature = "v1")]
-use hyperswitch_interfaces::api::ConnectorCommon;
-use hyperswitch_interfaces::api::ConnectorRedirectResponse;
+use orbix_interfaces::api::ConnectorCommon;
+use orbix_interfaces::api::ConnectorRedirectResponse;
 #[cfg(feature = "v2")]
-use hyperswitch_interfaces::api::ConnectorSpecifications;
+use orbix_interfaces::api::ConnectorSpecifications;
 #[cfg(feature = "v2")]
-use hyperswitch_interfaces::connector_integration_interface::RouterDataConversion;
+use orbix_interfaces::connector_integration_interface::RouterDataConversion;
 #[cfg(feature = "v2")]
-use hyperswitch_masking::ExposeOptionInterface;
-use hyperswitch_masking::{ExposeInterface, Maskable, PeekInterface, Secret};
+use orbix_masking::ExposeOptionInterface;
+use orbix_masking::{ExposeInterface, Maskable, PeekInterface, Secret};
 use router_env::instrument;
 
 use super::{
@@ -212,7 +212,7 @@ where
         connector_meta_data: None,
         connector_wallets_details: None,
         request: T::try_from(additional_data)?,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         amount_captured: None,
         minor_amount_captured: None,
         access_token: None,
@@ -273,21 +273,21 @@ pub async fn construct_external_vault_proxy_router_data_v2(
     state: &SessionState,
     merchant_account: &domain::MerchantAccount,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
-    payment_data: &hyperswitch_domain_models::payments::PaymentConfirmData<api::ExternalVaultProxy>,
+    payment_data: &orbix_domain_models::payments::PaymentConfirmData<api::ExternalVaultProxy>,
     request: types::ExternalVaultProxyPaymentsData,
     connector_request_reference_id: String,
     connector_customer_id: Option<String>,
     customer_id: Option<common_utils::id_type::CustomerId>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResult<
     RouterDataV2<
         api::ExternalVaultProxy,
-        hyperswitch_domain_models::router_data_v2::ExternalVaultProxyFlowData,
+        orbix_domain_models::router_data_v2::ExternalVaultProxyFlowData,
         types::ExternalVaultProxyPaymentsData,
         types::PaymentsResponseData,
     >,
 > {
-    use hyperswitch_domain_models::router_data_v2::{ExternalVaultProxyFlowData, RouterDataV2};
+    use orbix_domain_models::router_data_v2::{ExternalVaultProxyFlowData, RouterDataV2};
 
     let auth_type = merchant_connector_account
         .get_connector_account_details()
@@ -345,7 +345,7 @@ pub async fn construct_external_vault_proxy_router_data_v2(
         resource_common_data: external_vault_proxy_flow_data,
         connector_auth_type: auth_type,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
     };
 
     Ok(router_data_v2)
@@ -356,16 +356,16 @@ pub async fn construct_external_vault_proxy_router_data_v2(
 #[allow(clippy::too_many_arguments)]
 pub async fn construct_payment_router_data_for_authorize<'a>(
     state: &'a SessionState,
-    payment_data: hyperswitch_domain_models::payments::PaymentConfirmData<api::Authorize>,
+    payment_data: orbix_domain_models::payments::PaymentConfirmData<api::Authorize>,
     connector_id: &str,
     processor: &domain::Processor,
     customer: &'a Option<domain::Customer>,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
     connector_callback_urls: &'a mut ConnectorCallbackUrls,
 ) -> RouterResult<types::PaymentsAuthorizeRouterData> {
-    use hyperswitch_masking::ExposeOptionInterface;
+    use orbix_masking::ExposeOptionInterface;
 
     fp_utils::when(merchant_connector_account.is_disabled(), || {
         Err(errors::ApiErrorResponse::MerchantConnectorAccountDisabled)
@@ -613,7 +613,7 @@ pub async fn construct_payment_router_data_for_authorize<'a>(
         connector_meta_data: merchant_connector_account.get_metadata(),
         connector_wallets_details: None,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         amount_captured: payment_data
             .payment_intent
             .amount_captured
@@ -626,7 +626,7 @@ pub async fn construct_payment_router_data_for_authorize<'a>(
         payment_method_token: None,
         connector_customer: connector_customer_id,
         recurring_mandate_payment_data: is_off_session.unwrap_or(false).then(|| {
-            hyperswitch_domain_models::router_data::RecurringMandatePaymentData {
+            orbix_domain_models::router_data::RecurringMandatePaymentData {
                 payment_method_type: payment_data.payment_attempt.payment_method_subtype,
                 original_payment_authorized_amount: None,
                 original_payment_authorized_currency: None,
@@ -679,16 +679,16 @@ pub async fn construct_payment_router_data_for_authorize<'a>(
 #[allow(clippy::too_many_arguments)]
 pub async fn construct_external_vault_proxy_payment_router_data<'a>(
     state: &'a SessionState,
-    payment_data: hyperswitch_domain_models::payments::PaymentConfirmData<api::ExternalVaultProxy>,
+    payment_data: orbix_domain_models::payments::PaymentConfirmData<api::ExternalVaultProxy>,
     connector_id: &str,
     processor: &domain::Processor,
     customer: &'a Option<domain::Customer>,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
     connector_callback_urls: &'a mut ConnectorCallbackUrls,
 ) -> RouterResult<types::ExternalVaultProxyPaymentsRouterData> {
-    use hyperswitch_masking::ExposeOptionInterface;
+    use orbix_masking::ExposeOptionInterface;
 
     fp_utils::when(merchant_connector_account.is_disabled(), || {
         Err(errors::ApiErrorResponse::MerchantConnectorAccountDisabled)
@@ -861,7 +861,7 @@ pub async fn construct_external_vault_proxy_payment_router_data_v1(
     processor: &domain::Processor,
     merchant_connector_account: &helpers::MerchantConnectorAccountType,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
     connector_callback_urls: &mut ConnectorCallbackUrls,
 ) -> RouterResult<types::ExternalVaultProxyPaymentsRouterData> {
     fp_utils::when(merchant_connector_account.is_disabled(), || {
@@ -1042,7 +1042,7 @@ pub async fn construct_external_vault_proxy_payment_router_data_v1(
         connector_meta_data: merchant_connector_account.get_metadata(),
         connector_wallets_details: None,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         amount_captured: payment_data
             .payment_intent
             .amount_captured
@@ -1117,15 +1117,15 @@ pub async fn construct_external_vault_proxy_payment_router_data_v1(
 #[allow(clippy::too_many_arguments)]
 pub async fn construct_payment_router_data_for_capture<'a>(
     state: &'a SessionState,
-    payment_data: hyperswitch_domain_models::payments::PaymentCaptureData<api::Capture>,
+    payment_data: orbix_domain_models::payments::PaymentCaptureData<api::Capture>,
     connector_id: &str,
     processor: &domain::Processor,
     customer: &'a Option<domain::Customer>,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResult<types::PaymentsCaptureRouterData> {
-    use hyperswitch_masking::ExposeOptionInterface;
+    use orbix_masking::ExposeOptionInterface;
 
     fp_utils::when(merchant_connector_account.is_disabled(), || {
         Err(errors::ApiErrorResponse::MerchantConnectorAccountDisabled)
@@ -1240,12 +1240,12 @@ pub async fn construct_payment_router_data_for_capture<'a>(
             .map(|description| description.get_string_repr())
             .map(ToOwned::to_owned),
         // TODO: Create unified address
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: payment_data.payment_attempt.authentication_type,
         connector_meta_data: None,
         connector_wallets_details: None,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         amount_captured: None,
         minor_amount_captured: None,
         access_token: None,
@@ -1302,15 +1302,15 @@ pub async fn construct_payment_router_data_for_capture<'a>(
 #[allow(clippy::too_many_arguments)]
 pub async fn construct_router_data_for_psync<'a>(
     state: &'a SessionState,
-    payment_data: hyperswitch_domain_models::payments::PaymentStatusData<api::PSync>,
+    payment_data: orbix_domain_models::payments::PaymentStatusData<api::PSync>,
     connector_id: &str,
     processor: &domain::Processor,
     customer: &'a Option<domain::Customer>,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResult<types::PaymentsSyncRouterData> {
-    use hyperswitch_masking::ExposeOptionInterface;
+    use orbix_masking::ExposeOptionInterface;
 
     fp_utils::when(merchant_connector_account.is_disabled(), || {
         Err(errors::ApiErrorResponse::MerchantConnectorAccountDisabled)
@@ -1385,12 +1385,12 @@ pub async fn construct_router_data_for_psync<'a>(
             .map(|description| description.get_string_repr())
             .map(ToOwned::to_owned),
         // TODO: Create unified address
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: attempt.authentication_type,
         connector_meta_data: None,
         connector_wallets_details: None,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         amount_captured: None,
         minor_amount_captured: None,
         access_token: None,
@@ -1449,12 +1449,12 @@ pub async fn construct_cancel_router_data_v2(
     state: &SessionState,
     merchant_account: &domain::MerchantAccount,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
-    payment_data: &hyperswitch_domain_models::payments::PaymentCancelData<api::Void>,
+    payment_data: &orbix_domain_models::payments::PaymentCancelData<api::Void>,
     request: types::PaymentsCancelData,
     connector_request_reference_id: String,
     customer_id: Option<common_utils::id_type::CustomerId>,
     connector_id: &str,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResult<
     RouterDataV2<
         api::Void,
@@ -1491,7 +1491,7 @@ pub async fn construct_cancel_router_data_v2(
             .as_ref()
             .map(|description| description.get_string_repr())
             .map(ToOwned::to_owned),
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: payment_data.payment_attempt.authentication_type,
         connector_meta_data: merchant_connector_account.get_metadata(),
         amount_captured: None,
@@ -1519,7 +1519,7 @@ pub async fn construct_cancel_router_data_v2(
         resource_common_data: payment_cancel_data,
         connector_auth_type: auth_type,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
     };
 
     Ok(router_data_v2)
@@ -1530,15 +1530,15 @@ pub async fn construct_cancel_router_data_v2(
 #[allow(clippy::too_many_arguments)]
 pub async fn construct_router_data_for_cancel<'a>(
     state: &'a SessionState,
-    payment_data: hyperswitch_domain_models::payments::PaymentCancelData<
-        hyperswitch_domain_models::router_flow_types::Void,
+    payment_data: orbix_domain_models::payments::PaymentCancelData<
+        orbix_domain_models::router_flow_types::Void,
     >,
     connector_id: &str,
     processor: &domain::Processor,
     customer: &'a Option<domain::Customer>,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResult<types::PaymentsCancelRouterData> {
     fp_utils::when(merchant_connector_account.is_disabled(), || {
         Err(errors::ApiErrorResponse::MerchantConnectorAccountDisabled)
@@ -1611,13 +1611,13 @@ pub async fn construct_router_data_for_cancel<'a>(
 #[allow(clippy::too_many_arguments)]
 pub async fn construct_payment_router_data_for_sdk_session<'a>(
     state: &'a SessionState,
-    payment_data: hyperswitch_domain_models::payments::PaymentIntentData<api::Session>,
+    payment_data: orbix_domain_models::payments::PaymentIntentData<api::Session>,
     connector_id: &str,
     processor: &domain::Processor,
     customer: &'a Option<domain::Customer>,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResult<types::PaymentsSessionRouterData> {
     fp_utils::when(merchant_connector_account.is_disabled(), || {
         Err(errors::ApiErrorResponse::MerchantConnectorAccountDisabled)
@@ -1748,7 +1748,7 @@ pub async fn construct_payment_router_data_for_sdk_session<'a>(
             .map(|description| description.get_string_repr())
             .map(ToOwned::to_owned),
         // TODO: Create unified address
-        address: hyperswitch_domain_models::payment_address::PaymentAddress::default(),
+        address: orbix_domain_models::payment_address::PaymentAddress::default(),
         auth_type: payment_data
             .payment_intent
             .authentication_type
@@ -1756,7 +1756,7 @@ pub async fn construct_payment_router_data_for_sdk_session<'a>(
         connector_meta_data: merchant_connector_account.get_metadata(),
         connector_wallets_details: None,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         amount_captured: None,
         minor_amount_captured: None,
         access_token: None,
@@ -1813,13 +1813,13 @@ pub async fn construct_payment_router_data_for_sdk_session<'a>(
 #[allow(clippy::too_many_arguments)]
 pub async fn construct_payment_router_data_for_setup_mandate<'a>(
     state: &'a SessionState,
-    payment_data: hyperswitch_domain_models::payments::PaymentConfirmData<api::SetupMandate>,
+    payment_data: orbix_domain_models::payments::PaymentConfirmData<api::SetupMandate>,
     connector_id: &str,
     processor: &domain::Processor,
     customer: &'a Option<domain::Customer>,
     merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
     _merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
     connector_callback_urls: &'a mut ConnectorCallbackUrls,
 ) -> RouterResult<types::SetupMandateRouterData> {
     fp_utils::when(merchant_connector_account.is_disabled(), || {
@@ -2008,7 +2008,7 @@ pub async fn construct_payment_router_data_for_setup_mandate<'a>(
         connector_meta_data: None,
         connector_wallets_details: None,
         request,
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
         amount_captured: None,
         minor_amount_captured: None,
         access_token: None,
@@ -2071,7 +2071,7 @@ pub async fn construct_payment_router_data<'a, F, T>(
     business_profile: &domain::Profile,
     merchant_connector_account: &helpers::MerchantConnectorAccountType,
     merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
     payment_method: Option<common_enums::PaymentMethod>,
     payment_method_type: Option<common_enums::PaymentMethodType>,
     connector_callback_urls: &'a mut ConnectorCallbackUrls,
@@ -2432,7 +2432,7 @@ pub async fn construct_payment_router_data_for_update_metadata(
     business_profile: &domain::Profile,
     merchant_connector_account: &helpers::MerchantConnectorAccountType,
     merchant_recipient_data: Option<types::MerchantRecipientData>,
-    header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
     connector_callback_urls: &mut ConnectorCallbackUrls,
 ) -> RouterResult<
     types::RouterData<
@@ -2462,7 +2462,7 @@ pub async fn construct_payment_router_data_for_update_metadata(
         .get_required_value("payment_method_type")?;
 
     // [#44]: why should response be filled during request
-    let response = Err(hyperswitch_domain_models::router_data::ErrorResponse {
+    let response = Err(orbix_domain_models::router_data::ErrorResponse {
         code: "IR_20".to_string(),
         message: "Update metadata is not implemented for this connector".to_string(),
         reason: None,
@@ -2854,7 +2854,7 @@ where
 
 #[cfg(feature = "v2")]
 impl<F> GenerateResponse<api_models::payments::PaymentsCaptureResponse>
-    for hyperswitch_domain_models::payments::PaymentCaptureData<F>
+    for orbix_domain_models::payments::PaymentCaptureData<F>
 where
     F: Clone,
 {
@@ -2899,7 +2899,7 @@ where
 
 #[cfg(feature = "v2")]
 impl<F> GenerateResponse<api_models::payments::PaymentsCancelResponse>
-    for hyperswitch_domain_models::payments::PaymentCancelData<F>
+    for orbix_domain_models::payments::PaymentCancelData<F>
 where
     F: Clone,
 {
@@ -3298,7 +3298,7 @@ where
 
 #[cfg(feature = "v2")]
 impl<F> GenerateResponse<api_models::payments::PaymentsResponse>
-    for hyperswitch_domain_models::payments::PaymentConfirmData<F>
+    for orbix_domain_models::payments::PaymentConfirmData<F>
 where
     F: Clone,
 {
@@ -3604,7 +3604,7 @@ impl GenerateResponse<api_models::payments::PaymentsResponse>
 
 #[cfg(feature = "v2")]
 impl<F> GenerateResponse<api_models::payments::PaymentsResponse>
-    for hyperswitch_domain_models::payments::PaymentStatusData<F>
+    for orbix_domain_models::payments::PaymentStatusData<F>
 where
     F: Clone,
 {
@@ -3732,7 +3732,7 @@ where
 
 #[cfg(feature = "v2")]
 impl<F> GenerateResponse<api_models::payments::PaymentAttemptResponse>
-    for hyperswitch_domain_models::payments::PaymentAttemptRecordData<F>
+    for orbix_domain_models::payments::PaymentAttemptRecordData<F>
 where
     F: Clone,
 {
@@ -3757,7 +3757,7 @@ where
 
 #[cfg(feature = "v2")]
 impl<F> GenerateResponse<api_models::payments::PaymentAttemptRecordResponse>
-    for hyperswitch_domain_models::payments::PaymentAttemptRecordData<F>
+    for orbix_domain_models::payments::PaymentAttemptRecordData<F>
 where
     F: Clone,
 {
@@ -4077,7 +4077,7 @@ where
 {
     use std::ops::Not;
 
-    use hyperswitch_interfaces::consts::{NO_ERROR_CODE, NO_ERROR_MESSAGE};
+    use orbix_interfaces::consts::{NO_ERROR_CODE, NO_ERROR_MESSAGE};
 
     let payment_attempt = payment_data.get_payment_attempt().clone();
     let payment_intent = payment_data.get_payment_intent().clone();
@@ -5784,7 +5784,7 @@ impl<F: Clone> TryFrom<PaymentAdditionalData<'_, F>> for types::PaymentsAuthoriz
     type Error = error_stack::Report<errors::ApiErrorResponse>;
 
     fn try_from(additional_data: PaymentAdditionalData<'_, F>) -> Result<Self, Self::Error> {
-        use hyperswitch_domain_models::router_request_types::UcsAuthenticationData;
+        use orbix_domain_models::router_request_types::UcsAuthenticationData;
 
         let payment_data = additional_data.payment_data.clone();
         let router_base_url = &additional_data.router_base_url;
@@ -6272,7 +6272,7 @@ impl<F: Clone> TryFrom<PaymentAdditionalData<'_, F>> for types::PaymentsCaptureD
     type Error = error_stack::Report<errors::ApiErrorResponse>;
 
     fn try_from(additional_data: PaymentAdditionalData<'_, F>) -> Result<Self, Self::Error> {
-        use hyperswitch_masking::ExposeOptionInterface;
+        use orbix_masking::ExposeOptionInterface;
 
         let payment_data = additional_data.payment_data;
         let connector = api::ConnectorData::get_connector_by_name(
@@ -8116,14 +8116,14 @@ impl ForeignFrom<CustomerDetails> for router_request_types::CustomerDetails {
 #[cfg(feature = "v2")]
 impl
     ForeignFrom<(
-        &hyperswitch_domain_models::payments::AmountDetails,
-        &hyperswitch_domain_models::payments::payment_attempt::AttemptAmountDetails,
+        &orbix_domain_models::payments::AmountDetails,
+        &orbix_domain_models::payments::payment_attempt::AttemptAmountDetails,
     )> for api_models::payments::PaymentAmountDetailsResponse
 {
     fn foreign_from(
         (intent_amount_details, attempt_amount_details): (
-            &hyperswitch_domain_models::payments::AmountDetails,
-            &hyperswitch_domain_models::payments::payment_attempt::AttemptAmountDetails,
+            &orbix_domain_models::payments::AmountDetails,
+            &orbix_domain_models::payments::payment_attempt::AttemptAmountDetails,
         ),
     ) -> Self {
         Self {
@@ -8148,14 +8148,14 @@ impl
 #[cfg(feature = "v2")]
 impl
     ForeignFrom<(
-        &hyperswitch_domain_models::payments::AmountDetails,
-        Option<&hyperswitch_domain_models::payments::payment_attempt::AttemptAmountDetails>,
+        &orbix_domain_models::payments::AmountDetails,
+        Option<&orbix_domain_models::payments::payment_attempt::AttemptAmountDetails>,
     )> for api_models::payments::PaymentAmountDetailsResponse
 {
     fn foreign_from(
         (intent_amount_details, attempt_amount_details): (
-            &hyperswitch_domain_models::payments::AmountDetails,
-            Option<&hyperswitch_domain_models::payments::payment_attempt::AttemptAmountDetails>,
+            &orbix_domain_models::payments::AmountDetails,
+            Option<&orbix_domain_models::payments::payment_attempt::AttemptAmountDetails>,
         ),
     ) -> Self {
         Self {
@@ -8192,11 +8192,11 @@ impl
 }
 
 #[cfg(feature = "v2")]
-impl ForeignFrom<&hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt>
+impl ForeignFrom<&orbix_domain_models::payments::payment_attempt::PaymentAttempt>
     for api_models::payments::PaymentAttemptResponse
 {
     fn foreign_from(
-        attempt: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt,
+        attempt: &orbix_domain_models::payments::payment_attempt::PaymentAttempt,
     ) -> Self {
         let payment_method_data: Option<
             api_models::payments::PaymentMethodDataResponseWithBilling,
@@ -8244,11 +8244,11 @@ impl ForeignFrom<&hyperswitch_domain_models::payments::payment_attempt::PaymentA
 }
 
 #[cfg(feature = "v2")]
-impl ForeignFrom<&hyperswitch_domain_models::payments::payment_attempt::AttemptAmountDetails>
+impl ForeignFrom<&orbix_domain_models::payments::payment_attempt::AttemptAmountDetails>
     for api_models::payments::PaymentAttemptAmountDetails
 {
     fn foreign_from(
-        amount: &hyperswitch_domain_models::payments::payment_attempt::AttemptAmountDetails,
+        amount: &orbix_domain_models::payments::payment_attempt::AttemptAmountDetails,
     ) -> Self {
         Self {
             net_amount: amount.get_net_amount(),
@@ -8295,11 +8295,11 @@ impl ForeignFrom<&diesel_models::types::BillingConnectorPaymentMethodDetails>
 }
 
 #[cfg(feature = "v2")]
-impl ForeignFrom<&hyperswitch_domain_models::payments::payment_attempt::ErrorDetails>
+impl ForeignFrom<&orbix_domain_models::payments::payment_attempt::ErrorDetails>
     for api_models::payments::ErrorDetails
 {
     fn foreign_from(
-        error_details: &hyperswitch_domain_models::payments::payment_attempt::ErrorDetails,
+        error_details: &orbix_domain_models::payments::payment_attempt::ErrorDetails,
     ) -> Self {
         Self {
             code: error_details.code.to_owned(),
@@ -8317,11 +8317,11 @@ impl ForeignFrom<&hyperswitch_domain_models::payments::payment_attempt::ErrorDet
 #[cfg(feature = "v2")]
 impl
     ForeignFrom<
-        &hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptFeatureMetadata,
+        &orbix_domain_models::payments::payment_attempt::PaymentAttemptFeatureMetadata,
     > for api_models::payments::PaymentAttemptFeatureMetadata
 {
     fn foreign_from(
-        feature_metadata: &hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptFeatureMetadata,
+        feature_metadata: &orbix_domain_models::payments::payment_attempt::PaymentAttemptFeatureMetadata,
     ) -> Self {
         let revenue_recovery = feature_metadata.revenue_recovery.as_ref().map(|recovery| {
             api_models::payments::PaymentAttemptRevenueRecoveryData {
@@ -8423,10 +8423,10 @@ impl ForeignFrom<&diesel_models::types::FeatureMetadata> for api_models::payment
 }
 
 #[cfg(feature = "v2")]
-impl ForeignFrom<hyperswitch_domain_models::payments::AmountDetails>
+impl ForeignFrom<orbix_domain_models::payments::AmountDetails>
     for api_models::payments::AmountDetailsResponse
 {
-    fn foreign_from(amount_details: hyperswitch_domain_models::payments::AmountDetails) -> Self {
+    fn foreign_from(amount_details: orbix_domain_models::payments::AmountDetails) -> Self {
         Self {
             order_amount: amount_details.order_amount,
             currency: amount_details.currency,
@@ -8743,8 +8743,8 @@ impl From<pm_types::TokenResponse> for domain::NetworkTokenData {
         }
     }
 }
-impl ForeignFrom<&hyperswitch_domain_models::router_data::ErrorResponse> for DieselNetworkDetails {
-    fn foreign_from(err: &hyperswitch_domain_models::router_data::ErrorResponse) -> Self {
+impl ForeignFrom<&orbix_domain_models::router_data::ErrorResponse> for DieselNetworkDetails {
+    fn foreign_from(err: &orbix_domain_models::router_data::ErrorResponse) -> Self {
         Self {
             network_advice_code: err.network_advice_code.clone(),
         }
@@ -8831,7 +8831,7 @@ pub async fn construct_payment_router_data_for_update_post_confirm(
         .get_required_value("payment_method_type")?;
 
     // why should response be filled during request
-    let response = Err(hyperswitch_domain_models::router_data::ErrorResponse {
+    let response = Err(orbix_domain_models::router_data::ErrorResponse {
         code: "IR_20".to_string(),
         message: "UpdatePostConfirm Flow is not implemented for this connector".to_string(),
         reason: None,

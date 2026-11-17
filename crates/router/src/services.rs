@@ -21,10 +21,10 @@ use std::sync::Arc;
 
 use common_utils::types::{keymanager, TenantConfig};
 use error_stack::ResultExt;
-pub use hyperswitch_interfaces::connector_integration_v2::{
+pub use orbix_interfaces::connector_integration_v2::{
     BoxedConnectorIntegrationV2, ConnectorIntegrationAnyV2, ConnectorIntegrationV2,
 };
-use hyperswitch_masking::{ExposeInterface, StrongSecret};
+use orbix_masking::{ExposeInterface, StrongSecret};
 #[cfg(feature = "kv_store")]
 use storage_impl::kv_router_store::KVRouterStore;
 use storage_impl::{

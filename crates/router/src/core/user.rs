@@ -21,7 +21,7 @@ use diesel_models::{
     user_authentication_method::{UserAuthenticationMethodNew, UserAuthenticationMethodUpdate},
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::{env, instrument, logger};
 use storage_impl::errors::StorageError;
 #[cfg(feature = "v1")]
@@ -2490,7 +2490,7 @@ pub async fn update_totp(
                 totp_status: None,
                 totp_secret: Some(Some(
                     // TODO: Impl conversion trait for User and move this there
-                    domain::types::crypto_operation::<String, hyperswitch_masking::WithType>(
+                    domain::types::crypto_operation::<String, orbix_masking::WithType>(
                         &(&state).into(),
                         type_name!(storage_user::User),
                         domain::types::CryptoOperation::Encrypt(totp.get_secret_base32().into()),

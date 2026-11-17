@@ -5,10 +5,10 @@ use diesel_models::{
     enums::DashboardMetadata as DBEnum, user::dashboard_metadata::DashboardMetadata,
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_interfaces::crm::CrmPayload;
+use orbix_interfaces::crm::CrmPayload;
 #[cfg(feature = "email")]
-use hyperswitch_masking::ExposeInterface;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::ExposeInterface;
+use orbix_masking::{PeekInterface, Secret};
 use router_env::logger;
 
 use crate::{

@@ -1,5 +1,5 @@
 use common_utils::{consts, errors::CustomResult, request::Request};
-use hyperswitch_interfaces::{errors::HttpClientError, types::Proxy};
+use orbix_interfaces::{errors::HttpClientError, types::Proxy};
 use quick_xml::{
     events::{BytesDecl, BytesText, Event},
     Writer,
@@ -83,7 +83,7 @@ pub fn serialize_to_xml_bytes<T: serde::Serialize>(
         correlation = boundary::request_id(&request),
         // The deja handoff: expose the Secret-wrapped payload so the tape
         // records full fidelity (Secret only redacts Debug/log output).
-        args = hyperswitch_masking::ExposeInterface::expose(boundary::request_args(&request, option_timeout_secs)),
+        args = orbix_masking::ExposeInterface::expose(boundary::request_args(&request, option_timeout_secs)),
         // Rebuild the recorded reqwest::Response (status+headers+body) so the
         // outgoing call (e.g. Stripe) is served from the lookup table with no
         // network. A recorded value this build cannot reconstruct fail-stops the

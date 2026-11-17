@@ -12,7 +12,7 @@ use common_utils::{
 };
 use diesel_models::process_tracker::business_status;
 use error_stack::ResultExt;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use router_env::tracing::instrument;
 use scheduler::{
     consumer::{self, workflows::ProcessTrackerWorkflow},
@@ -650,7 +650,7 @@ async fn get_outgoing_webhook_content_and_event_type(
                 CallConnectorAction::Avoid,
                 None,
                 None,
-                hyperswitch_domain_models::payments::HeaderPayload::default(),
+                orbix_domain_models::payments::HeaderPayload::default(),
                 None,
             ))
             .await?

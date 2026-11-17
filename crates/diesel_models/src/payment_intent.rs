@@ -40,8 +40,8 @@ pub struct PaymentIntent {
     pub last_synced: Option<PrimitiveDateTime>,
     pub setup_future_usage: Option<storage_enums::FutureUsage>,
     pub active_attempt_id: Option<common_utils::id_type::GlobalAttemptId>,
-    #[diesel(deserialize_as = super::OptionalDieselArray<hyperswitch_masking::Secret<OrderDetailsWithAmount>>)]
-    pub order_details: Option<Vec<hyperswitch_masking::Secret<OrderDetailsWithAmount>>>,
+    #[diesel(deserialize_as = super::OptionalDieselArray<orbix_masking::Secret<OrderDetailsWithAmount>>)]
+    pub order_details: Option<Vec<orbix_masking::Secret<OrderDetailsWithAmount>>>,
     pub allowed_payment_method_types: Option<pii::SecretSerdeValue>,
     pub connector_metadata: Option<pii::SecretSerdeValue>,
     pub feature_metadata: Option<FeatureMetadata>,
@@ -403,8 +403,8 @@ pub struct PaymentIntentNew {
     pub last_synced: Option<PrimitiveDateTime>,
     pub setup_future_usage: Option<storage_enums::FutureUsage>,
     pub active_attempt_id: Option<common_utils::id_type::GlobalAttemptId>,
-    #[diesel(deserialize_as = super::OptionalDieselArray<hyperswitch_masking::Secret<OrderDetailsWithAmount>>)]
-    pub order_details: Option<Vec<hyperswitch_masking::Secret<OrderDetailsWithAmount>>>,
+    #[diesel(deserialize_as = super::OptionalDieselArray<orbix_masking::Secret<OrderDetailsWithAmount>>)]
+    pub order_details: Option<Vec<orbix_masking::Secret<OrderDetailsWithAmount>>>,
     pub allowed_payment_method_types: Option<pii::SecretSerdeValue>,
     pub connector_metadata: Option<pii::SecretSerdeValue>,
     pub feature_metadata: Option<FeatureMetadata>,
@@ -599,7 +599,7 @@ pub enum PaymentIntentUpdate {
         fingerprint_id: Option<String>,
         updated_by: String,
         incremental_authorization_allowed: Option<bool>,
-        feature_metadata: Option<hyperswitch_masking::Secret<serde_json::Value>>,
+        feature_metadata: Option<orbix_masking::Secret<serde_json::Value>>,
     },
     MetadataUpdate {
         metadata: Option<serde_json::Value>,
@@ -629,7 +629,7 @@ pub enum PaymentIntentUpdate {
         status: storage_enums::IntentStatus,
         updated_by: String,
         incremental_authorization_allowed: Option<bool>,
-        feature_metadata: Option<hyperswitch_masking::Secret<serde_json::Value>>,
+        feature_metadata: Option<orbix_masking::Secret<serde_json::Value>>,
     },
     PaymentAttemptAndAttemptCountUpdate {
         active_attempt_id: String,
@@ -809,7 +809,7 @@ pub struct PaymentIntentUpdateInternal {
     pub setup_future_usage: Option<storage_enums::FutureUsage>,
     pub apply_mit_exemption: Option<bool>,
     pub statement_descriptor: Option<common_utils::types::StatementDescriptor>,
-    pub order_details: Option<Vec<hyperswitch_masking::Secret<OrderDetailsWithAmount>>>,
+    pub order_details: Option<Vec<orbix_masking::Secret<OrderDetailsWithAmount>>>,
     pub allowed_payment_method_types: Option<pii::SecretSerdeValue>,
     pub metadata: Option<pii::SecretSerdeValue>,
     pub connector_metadata: Option<pii::SecretSerdeValue>,

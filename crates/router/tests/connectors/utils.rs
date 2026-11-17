@@ -3,8 +3,8 @@ use std::{fmt::Debug, marker::PhantomData, str::FromStr, sync::Arc, time::Durati
 use async_trait::async_trait;
 use common_utils::{id_type::GenerateId, pii::Email};
 use error_stack::Report;
-use hyperswitch_domain_models::router_data_v2::flow_common_types::PaymentFlowData;
-use hyperswitch_masking::Secret;
+use orbix_domain_models::router_data_v2::flow_common_types::PaymentFlowData;
+use orbix_masking::Secret;
 use router::{
     configs::settings::Settings,
     core::{errors::ConnectorError, payments},
@@ -76,8 +76,8 @@ impl PaymentInfo {
             address: Some(PaymentAddress::new(
                 None,
                 None,
-                Some(hyperswitch_domain_models::address::Address {
-                    address: Some(hyperswitch_domain_models::address::AddressDetails {
+                Some(orbix_domain_models::address::Address {
+                    address: Some(orbix_domain_models::address::AddressDetails {
                         first_name: Some(Secret::new("John".to_string())),
                         last_name: Some(Secret::new("Doe".to_string())),
                         ..Default::default()
@@ -1168,7 +1168,7 @@ impl Default for CustomerType {
                 CCardType::default().0,
             )),
             description: None,
-            email: Email::from_str("test@juspay.in").ok(),
+            email: Email::from_str("test@orbix.example").ok(),
             phone: None,
             name: None,
             preprocessing_id: None,

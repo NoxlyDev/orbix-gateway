@@ -26,7 +26,7 @@ deja-diesel = { path = "../deja-diesel", optional = true }
 # live next to the wire type (the orphan rule permits it — the target type is
 # ours), so capture and replay in a vendor call `.into()`/`.try_into()` instead
 # of maintaining a private twin enum coupled to ours by serde variant-name
-# agreement. Versions track hyperswitch's pins (fred 8.0.6 / redis 1.2.0);
+# agreement. Versions track orbix's pins (fred 8.0.6 / redis 1.2.0);
 # the consumer's single lockfile keeps the client resolved once, so the
 # adapter and the vendor's own client are always the same crate version.
 # `default-features = false`: only the value-type layer is used here.

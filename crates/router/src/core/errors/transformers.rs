@@ -1,5 +1,5 @@
 use common_utils::errors::ErrorSwitch;
-use hyperswitch_domain_models::errors::api_error_response::ApiErrorResponse;
+use orbix_domain_models::errors::api_error_response::ApiErrorResponse;
 
 use super::{CustomersErrorResponse, StorageError};
 

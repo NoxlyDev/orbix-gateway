@@ -3,7 +3,7 @@ use std::{fmt::Debug, str::FromStr};
 pub use common_enums::enums::CallConnectorAction;
 use common_utils::id_type;
 use error_stack::ResultExt;
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     mandates::MandateData,
     payment_address::PaymentAddress,
     payments::{HeaderPayload, PaymentIntentData},
@@ -13,11 +13,11 @@ pub use hyperswitch_domain_models::{
     router_request_types::CustomerDetails,
     types::{VaultRouterData, VaultRouterDataV2},
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::Connector as ConnectorTrait,
     connector_integration_v2::{ConnectorIntegrationV2, ConnectorV2},
 };
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use router_env::{env::Env, instrument, tracing};
 
 use crate::{

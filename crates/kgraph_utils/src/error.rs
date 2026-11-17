@@ -12,7 +12,7 @@ pub enum KgraphError {
     #[error("Error in domain creation")]
     DomainCreationError,
     #[error("There was an error constructing the graph: {0}")]
-    GraphConstructionError(hyperswitch_constraint_graph::GraphError<dir::DirValue>),
+    GraphConstructionError(orbix_constraint_graph::GraphError<dir::DirValue>),
     #[error("There was an error constructing the context")]
     ContextConstructionError(Box<AnalysisErrorType>),
     #[error("there was an unprecedented indexing error")]

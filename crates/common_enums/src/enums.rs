@@ -20,7 +20,7 @@ use diesel::{
     serialize::{Output, ToSql},
     sql_types::Text,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 pub use payments::ProductType;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use smithy::SmithyModel;
@@ -147,7 +147,7 @@ impl From<std::io::Error> for ApplicationError {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum AttemptStatus {
     Started,
     AuthenticationFailed,
@@ -351,7 +351,7 @@ pub enum ApplePayPaymentMethodType {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum CardDiscovery {
     #[default]
     Manual,
@@ -407,7 +407,7 @@ pub enum RevenueRecoveryAlgorithmType {
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum RevenueRecoveryTriggerModel {
-    /// Hyperswitch triggers the retries through the billing and payment merchant connector
+    /// Orbix Gateway triggers the retries through the billing and payment merchant connector
     /// accounts the transactions are recorded against.
     #[default]
     InternalTriggers,
@@ -658,7 +658,7 @@ pub enum StandardisedCode {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum AuthenticationType {
     /// If the card is enrolled for 3DS authentication, the 3DS based authentication will be activated. The liability of chargeback shift to the issuer
     ThreeDs,
@@ -737,7 +737,7 @@ pub enum PreFrmFailureMode {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum CaptureStatus {
     // Capture request initiated
     #[default]
@@ -773,7 +773,7 @@ impl CaptureStatus {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum AuthorizationStatus {
     Success,
     Failure,
@@ -861,7 +861,7 @@ pub enum BlockReason {
     Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize, SmithyModel, ToSchema,
 )]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BlockReasonCode {
     BlockedBin,
     BlockedCardInfoUnavailable,
@@ -943,7 +943,7 @@ impl BlockReason {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum CaptureMethod {
     /// Post the payment authorization, the capture will be executed on the full amount immediately.
     #[default]
@@ -1089,7 +1089,7 @@ pub enum IncomingWebhookEventType {
     feature = "diesel",
     router_derive::diesel_enum(storage_type = "db_enum")
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum Currency {
     AED,
     AFN,
@@ -2304,7 +2304,7 @@ pub enum MerchantStorageScheme {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum IntentStatus {
     /// The payment has succeeded. Refunds and disputes can be initiated.
     /// Manual retries are not allowed to be performed.
@@ -2485,7 +2485,7 @@ pub enum RecoveryStatus {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum FutureUsage {
     OffSession,
     #[default]
@@ -2559,7 +2559,7 @@ pub enum PaymentMethodIssuerCode {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentMethodStatus {
     /// Indicates that the payment method is active and can be used for payments.
     Active,
@@ -2643,7 +2643,7 @@ impl PaymentMethodStatus {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentExperience {
     /// The URL to which the customer needs to be redirected for completing the payment.
     #[default]
@@ -2724,7 +2724,7 @@ pub enum SamsungPayCardBrand {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentMethodType {
     Ach,
     Affirm,
@@ -3018,7 +3018,7 @@ impl PaymentMethodType {
     }
 }
 
-impl hyperswitch_masking::SerializableSecret for PaymentMethodType {}
+impl orbix_masking::SerializableSecret for PaymentMethodType {}
 
 /// Indicates the type of payment method. Eg: 'card', 'wallet', etc.
 #[derive(
@@ -3043,7 +3043,7 @@ impl hyperswitch_masking::SerializableSecret for PaymentMethodType {}
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentMethod {
     #[default]
     Card,
@@ -3204,7 +3204,7 @@ pub enum ExecutionPath {
 }
 
 impl ExecutionPath {
-    /// Checks if the execution path is through Direct Gateway (Hyperswitch Direct)
+    /// Checks if the execution path is through Direct Gateway (Orbix Gateway Direct)
     pub fn is_direct_gateway(&self) -> bool {
         match self {
             Self::Direct | Self::ShadowUnifiedConnectorService => true,
@@ -3350,7 +3350,7 @@ pub enum ConnectorIntegrationType {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentType {
     #[default]
     Normal,
@@ -3381,7 +3381,7 @@ pub enum PaymentType {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum ScaExemptionType {
     #[default]
     LowValue,
@@ -3409,7 +3409,7 @@ pub enum ScaExemptionType {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Describes the channel through which the payment was initiated.
 pub enum PaymentChannel {
     #[default]
@@ -3437,7 +3437,7 @@ pub enum PaymentChannel {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum CtpServiceProvider {
     #[strum(serialize = "ctp_visa")]
     Visa,
@@ -3629,7 +3629,7 @@ pub enum FrmTransactionType {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum MandateStatus {
     #[default]
     Active,
@@ -3655,7 +3655,7 @@ pub enum MandateStatus {
     ToSchema,
 )]
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum CardNetwork {
     #[serde(alias = "VISA")]
     #[strum(to_string = "Visa", serialize = "VISA")]
@@ -4030,7 +4030,7 @@ pub enum CoBadgedCardNetwork {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum DisputeStage {
     PreDispute,
     #[default]
@@ -4063,7 +4063,7 @@ pub enum DisputeStage {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum DisputeStatus {
     #[default]
     DisputeOpened,
@@ -4281,7 +4281,7 @@ pub struct MerchantCategoryCodeWithName {
 )]
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "db_enum"))]
 #[rustfmt::skip]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum CountryAlpha2 {
     AF, AX, AL, DZ, AS, AD, AO, AI, AQ, AG, AR, AM, AW, AU, AT,
     AZ, BS, BH, BD, BB, BY, BE, BZ, BJ, BM, BT, BO, BQ, BA, BW,
@@ -9620,7 +9620,7 @@ pub enum MerchantDecision {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum TaxStatus {
     Taxable,
     Exempt,
@@ -9696,7 +9696,7 @@ pub enum AuthenticationConnectors {
     Gpayments,
     CtpMastercard,
     UnifiedAuthenticationService,
-    Juspaythreedsserver,
+    Orbixthreedsserver,
     CtpVisa,
     Cardinal,
 }
@@ -9708,7 +9708,7 @@ impl AuthenticationConnectors {
             | Self::Netcetera
             | Self::CtpMastercard
             | Self::UnifiedAuthenticationService
-            | Self::Juspaythreedsserver
+            | Self::Orbixthreedsserver
             | Self::CtpVisa
             | Self::Cardinal => false,
             Self::Gpayments => true,
@@ -9721,7 +9721,7 @@ impl AuthenticationConnectors {
             | Self::Netcetera
             | Self::CtpMastercard
             | Self::UnifiedAuthenticationService
-            | Self::Juspaythreedsserver
+            | Self::Orbixthreedsserver
             | Self::CtpVisa
             | Self::Gpayments => false,
             Self::Cardinal => true,
@@ -9754,7 +9754,7 @@ impl AuthenticationConnectors {
 #[strum(serialize_all = "snake_case")]
 pub enum VaultSdk {
     VgsSdk,
-    HyperswitchSdk,
+    OrbixSdk,
 }
 
 /// The type of tokenization to use for the payment method
@@ -9799,7 +9799,7 @@ pub enum Tokenization {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum AuthenticationStatus {
     #[default]
     Started,
@@ -9843,7 +9843,7 @@ impl AuthenticationStatus {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum DecoupledAuthenticationType {
     #[default]
     Challenge,
@@ -10170,7 +10170,7 @@ pub enum PermissionScope {
     Write = 1,
 }
 
-/// Name of banks supported by Hyperswitch
+/// Name of banks supported by Orbix Gateway
 #[derive(
     Clone,
     Copy,
@@ -10187,7 +10187,7 @@ pub enum PermissionScope {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankNames {
     Absa,
     AccessBank,
@@ -11019,7 +11019,7 @@ impl BankNames {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankType {
     Checking,
     Savings,
@@ -11046,7 +11046,7 @@ pub enum BankType {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum BankHolderType {
     Personal,
     Business,
@@ -11659,7 +11659,7 @@ pub enum UnifiedCode {
     Hash,
     SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PaymentChargeType {
     #[serde(untagged)]
     #[smithy(value_type = "StripeChargeType")]
@@ -11682,7 +11682,7 @@ pub enum PaymentChargeType {
 )]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum StripeChargeType {
     #[default]
     Direct,
@@ -11724,7 +11724,7 @@ pub enum AuthenticationProduct {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-pub enum HyperswitchConnectorCategory {
+pub enum OrbixConnectorCategory {
     PaymentGateway,
     AlternativePaymentMethod,
     BankAcquirer,
@@ -11846,7 +11846,7 @@ pub enum GooglePayAuthMethod {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum FingerprintType {
     /// Device PAN used by tokenized wallets such as Apple Pay and Google Pay.
     Dpan,
@@ -11868,7 +11868,7 @@ pub enum FingerprintType {
 )]
 #[strum(serialize_all = "PascalCase")]
 #[serde(rename_all = "PascalCase")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum AdyenSplitType {
     /// Books split amount to the specified account.
     BalanceAccount,
@@ -11951,7 +11951,7 @@ pub enum TriggeredBy {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 /// Specifies the category of a Merchant Initiated Transaction (MIT). In the case of MIT, `mit_category` tells what kind of MIT is being processed. In the case of CIT, it tells the future intended MIT type.
 pub enum MitCategory {
     /// A fixed purchase amount split into multiple scheduled payments until the total is paid.
@@ -12221,7 +12221,7 @@ pub enum ExternalVaultEnabled {
     Eq, PartialEq, Clone, Debug, serde::Deserialize, serde::Serialize, ToSchema, SmithyModel,
 )]
 #[serde(rename_all = "UPPERCASE")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum GooglePayCardFundingSource {
     Credit,
     Debit,
@@ -12666,7 +12666,7 @@ pub enum WebhookSecretGenerationStatus {
 #[cfg_attr(feature = "diesel", router_derive::diesel_enum(storage_type = "text"))]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PostCaptureVoidStatus {
     Succeeded,
     #[default]
@@ -12784,7 +12784,7 @@ pub enum BatchBlocklistJobType {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum PayshapProxyType {
     Cellphone,
     #[default]

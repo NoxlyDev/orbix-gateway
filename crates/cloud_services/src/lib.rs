@@ -1,4 +1,4 @@
-//! Cloud provider clients shared across Hyperswitch services.
+//! Cloud provider clients shared across Orbix Gateway services.
 //!
 //! Each backend sits behind its own Cargo feature, so a service only compiles the providers it
 //! uses:

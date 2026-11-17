@@ -6,11 +6,11 @@ use common_utils::{
     request::{Method, RequestContent},
     types::MinorUnit,
 };
-use hyperswitch_domain_models::payment_method_data::{
+use orbix_domain_models::payment_method_data::{
     BankDebitData, BankRedirectData, PaymentMethodData,
 };
-use hyperswitch_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
-use hyperswitch_masking::Secret;
+use orbix_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
@@ -30,12 +30,12 @@ pub struct CreatePaymentMethodV1Request {
     /// The payment method data for the normal create flow. `None` for the external vault proxy
     /// flow, where `proxy_card_data` is set instead.
     pub payment_method_data: Option<PaymentMethodData>,
-    pub billing: Option<hyperswitch_domain_models::address::Address>,
+    pub billing: Option<orbix_domain_models::address::Address>,
     pub network_tokenization: Option<common_types::payment_methods::NetworkTokenization>,
     pub storage_type: Option<common_enums::StorageType>,
     pub modular_service_prefix: String,
     /// When set, overrides `payment_method_data` and creates a ProxyCard payment method.
-    pub proxy_card_data: Option<hyperswitch_domain_models::payment_method_data::ExternalVaultCard>,
+    pub proxy_card_data: Option<orbix_domain_models::payment_method_data::ExternalVaultCard>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -122,7 +122,7 @@ pub struct ModularPaymentMethodResponse {
     pub connector_tokens: Option<Vec<ConnectorTokenDetails>>,
     pub network_token: Option<api_models::payment_methods::NetworkTokenResponse>,
     pub storage_type: Option<common_enums::StorageType>,
-    pub billing: Option<hyperswitch_domain_models::address::Address>,
+    pub billing: Option<orbix_domain_models::address::Address>,
 }
 
 #[derive(Clone, Debug)]
@@ -139,7 +139,7 @@ pub struct CreatePaymentMethodResponse {
     pub payment_method_data: Option<PaymentMethodResponseData>,
     pub connector_tokens: Option<Vec<ConnectorTokenDetails>>,
     pub network_token: Option<api_models::payment_methods::NetworkTokenResponse>,
-    pub billing: Option<hyperswitch_domain_models::address::Address>,
+    pub billing: Option<orbix_domain_models::address::Address>,
     pub storage_type: Option<common_enums::StorageType>,
 }
 
@@ -225,7 +225,7 @@ impl TryFrom<PaymentMethodData> for PaymentMethodCreateData {
                 }),
             },
             PaymentMethodData::Wallet(wallet_data) => match wallet_data {
-                hyperswitch_domain_models::payment_method_data::WalletData::ApplePay(apple_pay) => {
+                orbix_domain_models::payment_method_data::WalletData::ApplePay(apple_pay) => {
                     let wallet_info = api_models::payment_methods::PaymentMethodDataWalletInfo {
                         last4: Some(
                             apple_pay
@@ -262,7 +262,7 @@ impl TryFrom<PaymentMethodData> for PaymentMethodCreateData {
                         ),
                     }
                 }
-                hyperswitch_domain_models::payment_method_data::WalletData::GooglePay(
+                orbix_domain_models::payment_method_data::WalletData::GooglePay(
                     google_pay,
                 ) => {
                     let wallet_info = api_models::payment_methods::PaymentMethodDataWalletInfo {
@@ -290,7 +290,7 @@ impl TryFrom<PaymentMethodData> for PaymentMethodCreateData {
                         ),
                     }
                 }
-                hyperswitch_domain_models::payment_method_data::WalletData::PaypalRedirect(
+                orbix_domain_models::payment_method_data::WalletData::PaypalRedirect(
                     paypal,
                 ) => Ok(Self::Wallet(WalletPaymentMethodData::PayPal(Box::new(
                     payments::PaypalRedirection {
@@ -315,10 +315,10 @@ impl TryFrom<PaymentMethodData> for PaymentMethodCreateData {
     }
 }
 
-impl From<hyperswitch_domain_models::payment_method_data::ExternalVaultCard>
+impl From<orbix_domain_models::payment_method_data::ExternalVaultCard>
     for PaymentMethodCreateData
 {
-    fn from(vault_card: hyperswitch_domain_models::payment_method_data::ExternalVaultCard) -> Self {
+    fn from(vault_card: orbix_domain_models::payment_method_data::ExternalVaultCard) -> Self {
         Self::ProxyCard(ProxyCardDetail {
             card_number: vault_card.card_number,
             card_exp_month: vault_card.card_exp_month,
@@ -407,7 +407,7 @@ impl CreatePaymentMethod {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     CreatePaymentMethod,
     method = Method::Post,
     path = "/{prefix}/payment-methods",

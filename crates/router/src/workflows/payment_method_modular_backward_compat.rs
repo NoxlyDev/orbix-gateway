@@ -7,7 +7,7 @@ use common_utils::{
     id_type,
 };
 use error_stack::ResultExt;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use scheduler::{
     consumer::types::process_data, utils as pt_utils, workflows::ProcessTrackerWorkflow,
 };
@@ -416,7 +416,7 @@ impl BackwardCompatWorkflowBuilder<BackwardDbCompatPrepared> {
                     payment_method_utils::get_should_trigger_fingerprint_migration(
                         state,
                         Some(&customer_id),
-                        hyperswitch_domain_models::platform::ProviderMerchantId::new(
+                        orbix_domain_models::platform::ProviderMerchantId::new(
                             merchant_id.clone(),
                         ),
                     )
@@ -448,7 +448,7 @@ impl BackwardCompatWorkflowBuilder<BackwardDbCompatPrepared> {
                     "Failed to parse generic locker retrieve response in backward compatibility PT",
                 )?;
                 let locker_card_detail =
-                    if let hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(card) =
+                    if let orbix_domain_models::vault::PaymentMethodVaultingData::Card(card) =
                         stored_pm_resp.data
                     {
                         card
@@ -694,7 +694,7 @@ impl BackwardCompatWorkflowBuilder<BackwardDbCompatPrepared> {
                 )?;
                 if !matches!(
                     stored_pm_resp.data,
-                    hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(_)
+                    orbix_domain_models::vault::PaymentMethodVaultingData::Card(_)
                 ) {
                     Err(
                     error_stack::report!(errors::ApiErrorResponse::InternalServerError)

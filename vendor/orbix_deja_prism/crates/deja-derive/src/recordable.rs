@@ -34,7 +34,7 @@ pub fn generate(trait_def: ItemTrait, local: bool, opaque: bool) -> TokenStream 
         format_ident!("delegate_{}_with_replay", to_snake_case(&trait_name_str));
 
     // NOTE: We deliberately omit the trait's where clause from the generated impl.
-    // The where clauses on Hyperswitch traits constrain concrete types (e.g.,
+    // The where clauses on Orbix Gateway traits constrain concrete types (e.g.,
     // `MerchantConnectorAccount: behaviour::Conversion<...>`), which the compiler
     // can verify from existing impls. Emitting them in the macro would require
     // module paths (like `storage::`, `storage_types::`) that only resolve in

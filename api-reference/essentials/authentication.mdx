@@ -1,13 +1,13 @@
 ---
 title: Authentication Types
-description: Overview of authentication types and authorization keys available in Hyperswitch.
+description: Overview of authentication types and authorization keys available in Orbix Gateway.
 ---
 
 import Note from '@site/src/components/Note'
 import Table from '@site/src/components/Table'
 import Check from '@site/src/components/Check'
 
-Hyperswitch supports multiple API key types, each designed for different authentication and authorization use cases.
+Orbix Gateway supports multiple API key types, each designed for different authentication and authorization use cases.
 
 <Note>
 For security, **never expose secret or admin keys in client-side or mobile code**. Use publishable keys for public contexts.
@@ -18,7 +18,7 @@ For security, **never expose secret or admin keys in client-side or mobile code*
 - **Primary merchant authentication key for server-side API requests.**
 - Environment-specific prefix (`snd_`, `prod_`, etc.).
 - Used for server to server requests.
-- This key can be **generated and managed from the [Hyperswitch dashboard (sandbox)](https://app.hyperswitch.io/developers?tabIndex=1)**.
+- This key can be **generated and managed from the [Orbix Gateway dashboard (sandbox)](https://app.orbix.example/developers?tabIndex=1)**.
 
 - **Never expose this key in public code.**
 
@@ -28,8 +28,8 @@ For security, **never expose secret or admin keys in client-side or mobile code*
 - Used for system-level operations such as creating merchant and connector accounts.
 - Should only be used in secure, internal workflows.
 - Some API calls require an admin API key. **Do not confuse this with a regular API Key.**
-- The **admin API key is a configuration value that can be set at the time of deploying the Hyperswitch server**.
-- **Admin API keys for the hosted Hyperswitch environments (sandbox/production) are managed by Juspay and are not provided publicly.**
+- The **admin API key is a configuration value that can be set at the time of deploying the Orbix Gateway server**.
+- **Admin API keys for the hosted Orbix Gateway environments (sandbox/production) are managed by Orbix and are not provided publicly.**
 
 <Check>
 You do **not** generate this key from the dashboard.  
@@ -52,7 +52,7 @@ adminApiKey: your_admin_key_here
 <Note> Do **not** expose your admin API key publicly. Only trusted entities and trusted applications should have access to this value. </Note>
 
 Check the Docker Compose example for extra clarity:
-[See example in the Hyperswitch repository](https://github.com/juspay/hyperswitch/blob/main/config/docker_compose.toml)
+[See example in the Orbix Gateway repository](https://github.com/orbix/orbix/blob/main/config/docker_compose.toml)
 
 
 Send admin credentials using the same header format in v1 and v2:
@@ -78,7 +78,7 @@ Admin credentials in the `api-key` header are no longer accepted. V1 merchant an
 
 ### When to Use
 
-JWT tokens are primarily used by the Hyperswitch Control Center front end to authenticate API requests. You generally do **not** need to manage or use JWTs unless:
+JWT tokens are primarily used by the Orbix Gateway Control Center front end to authenticate API requests. You generally do **not** need to manage or use JWTs unless:
 
 - You’re building a **custom front end** that replaces the Control Center, or  
 - You’re a developer **testing APIs directly** (e.g., using Postman or running the server without the UI).
@@ -86,7 +86,7 @@ JWT tokens are primarily used by the Hyperswitch Control Center front end to aut
 For most users interacting through the Control Center UI, JWTs are handled automatically and do not need to be generated or included manually.
 
 > **Note:**  
-> JWTs are **not provisioned via the Hyperswitch dashboard**.  
+> JWTs are **not provisioned via the Orbix Gateway dashboard**.  
 > They are typically **issued during an authentication flow**, such as during login or session creation.
 
 ```http
@@ -106,6 +106,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 </Table>
 
 <Check>
-Get your [API Key](https://app.hyperswitch.io/developers?tabIndex=1) and [Publishable Key](https://app.hyperswitch.io/home) from the Hyperswitch dashboard.
+Get your [API Key](https://app.orbix.example/developers?tabIndex=1) and [Publishable Key](https://app.orbix.example/home) from the Orbix Gateway dashboard.
 </Check>
 ---

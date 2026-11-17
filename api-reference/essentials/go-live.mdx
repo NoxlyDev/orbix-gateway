@@ -5,22 +5,22 @@ title: Go-live Checklist
 Refer to this checklist for a seamless transition as you prepare to go live with your integration.
 
 <Warning>
-The connector configurations set up in the sandbox need to be replicated on the Hyperswitch production account.
+The connector configurations set up in the sandbox need to be replicated on the Orbix Gateway production account.
 </Warning>
 
-### Signing of Hyperswitch services agreement
+### Signing of Orbix Gateway services agreement
 
-- [ ] Ensure that the Hyperswitch services agreement is signed and shared with the Hyperswitch team. In case you need any help, please drop an email to biz@hyperswitch.io.
+- [ ] Ensure that the Orbix Gateway services agreement is signed and shared with the Orbix Gateway team. In case you need any help, please drop an email to biz@orbix.example.
 
 <Warning>
-The Hyperswitch team will share your production Hyperswitch credentials once the above process is completed.
+The Orbix Gateway team will share your production Orbix Gateway credentials once the above process is completed.
 </Warning>
 
 ### Connector Configurations
 
-- [ ] Configure all the required connectors using production credentials on the Hyperswitch production dashboard and enable the required payment methods.
+- [ ] Configure all the required connectors using production credentials on the Orbix Gateway production dashboard and enable the required payment methods.
 - [ ] Ensure that the payment methods are enabled on the connector (payment processor) dashboard.
-- [ ] Enable raw card processing for each connector. Some connectors offer this as a dashboard toggle feature. Some processors might need you to share a PCI Attestation of Compliance over email to enable this. Drop an email to biz@hyperswitch.io if you need any support with PCI AOC.
+- [ ] Enable raw card processing for each connector. Some connectors offer this as a dashboard toggle feature. Some processors might need you to share a PCI Attestation of Compliance over email to enable this. Drop an email to biz@orbix.example if you need any support with PCI AOC.
 
 ### Secure your api-keys
 
@@ -29,8 +29,8 @@ The Hyperswitch team will share your production Hyperswitch credentials once the
 
 ### Set up Webhooks
 
-- [ ] [Configure your webhook endpoint](https://juspay-78.mintlify.app/essentials/webhooks#configuring-webhooks) on our dashboard to receive notifications for different events.
-- [ ] Update Hyperswitch's webhook endpoints on your connector's Dashboard. [Refer here](https://juspay-78.mintlify.app/essentials/webhooks#configuring-webhooks) for detailed instructions.
+- [ ] [Configure your webhook endpoint](https://orbix-78.mintlify.app/essentials/webhooks#configuring-webhooks) on our dashboard to receive notifications for different events.
+- [ ] Update Orbix Gateway's webhook endpoints on your connector's Dashboard. [Refer here](https://orbix-78.mintlify.app/essentials/webhooks#configuring-webhooks) for detailed instructions.
 - [ ] Update the connector secret key in our dashboard for us to authenticate webhooks sent by your connector.
 
 ### Secure your Payments
@@ -40,11 +40,11 @@ The Hyperswitch team will share your production Hyperswitch credentials once the
 
 ### Error Handling
 
-- [ ] Make sure your API integration is set up to handle all the possible error scenarios (refer this [link](https://juspay-78.mintlify.app/essentials/error_codes)).
-- [ ] Ensure your Unified Checkout (SDK) integration is set up to handle all the possible error scenarios (refer this [link](https://hyperswitch.io/docs/sdkIntegrations/unifiedCheckoutWeb/errorCodes)).
+- [ ] Make sure your API integration is set up to handle all the possible error scenarios (refer this [link](https://orbix-78.mintlify.app/essentials/error_codes)).
+- [ ] Ensure your Unified Checkout (SDK) integration is set up to handle all the possible error scenarios (refer this [link](https://orbix.example/docs/sdkIntegrations/unifiedCheckoutWeb/errorCodes)).
 - [ ] Ensure that your integration can handle the entire payments lifecycle and test various scenarios using actual payment details.
 
 ### Customize and sanity check the payment experience
 
 - [ ] Ensure the pay button is properly highlighted to the customer.
-- [ ] Ensure a blended look and feel of the payment experience using the [styling APIs](https://hyperswitch.io/docs/sdkIntegrations/unifiedCheckoutWeb/customization) of Unified Checkout.
+- [ ] Ensure a blended look and feel of the payment experience using the [styling APIs](https://orbix.example/docs/sdkIntegrations/unifiedCheckoutWeb/customization) of Unified Checkout.

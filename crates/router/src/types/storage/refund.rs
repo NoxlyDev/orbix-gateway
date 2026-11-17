@@ -13,7 +13,7 @@ use diesel_models::{
     refund::Refund,
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::refunds;
+use orbix_domain_models::refunds;
 
 use crate::connection::DatabaseConnectionWithContext;
 

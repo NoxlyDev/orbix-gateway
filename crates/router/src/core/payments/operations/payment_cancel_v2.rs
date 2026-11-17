@@ -34,12 +34,12 @@ type BoxedCancelOperation<'b, F> = BoxedOperation<
     'b,
     F,
     api::PaymentsCancelRequest,
-    hyperswitch_domain_models::payments::PaymentCancelData<F>,
+    orbix_domain_models::payments::PaymentCancelData<F>,
 >;
 
 // Manual Operation trait implementation for V2
 impl<F: Send + Clone + Sync> Operation<F, api::PaymentsCancelRequest> for &PaymentsCancel {
-    type Data = hyperswitch_domain_models::payments::PaymentCancelData<F>;
+    type Data = orbix_domain_models::payments::PaymentCancelData<F>;
 
     fn to_validate_request(
         &self,
@@ -69,7 +69,7 @@ impl<F: Send + Clone + Sync> Operation<F, api::PaymentsCancelRequest> for &Payme
 
 #[automatically_derived]
 impl<F: Send + Clone + Sync> Operation<F, api::PaymentsCancelRequest> for PaymentsCancel {
-    type Data = hyperswitch_domain_models::payments::PaymentCancelData<F>;
+    type Data = orbix_domain_models::payments::PaymentCancelData<F>;
 
     fn to_validate_request(
         &self,
@@ -102,7 +102,7 @@ impl<F: Send + Clone + Sync>
     ValidateRequest<
         F,
         api::PaymentsCancelRequest,
-        hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        orbix_domain_models::payments::PaymentCancelData<F>,
     > for PaymentsCancel
 {
     #[instrument(skip_all)]
@@ -124,7 +124,7 @@ impl<F: Send + Clone + Sync>
 impl<F: Send + Clone + Sync>
     GetTracker<
         F,
-        hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        orbix_domain_models::payments::PaymentCancelData<F>,
         api::PaymentsCancelRequest,
     > for PaymentsCancel
 {
@@ -136,9 +136,9 @@ impl<F: Send + Clone + Sync>
         request: &api::PaymentsCancelRequest,
         platform: &domain::Platform,
         profile: &domain::Profile,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<
-        operations::GetTrackerResponse<hyperswitch_domain_models::payments::PaymentCancelData<F>>,
+        operations::GetTrackerResponse<orbix_domain_models::payments::PaymentCancelData<F>>,
     > {
         let db = &*state.store;
 
@@ -173,7 +173,7 @@ impl<F: Send + Clone + Sync>
             .to_not_found_response(errors::ApiErrorResponse::PaymentNotFound)
             .attach_printable("Failed to find payment attempt for cancellation")?;
 
-        let mut payment_data = hyperswitch_domain_models::payments::PaymentCancelData {
+        let mut payment_data = orbix_domain_models::payments::PaymentCancelData {
             flow: PhantomData,
             payment_intent,
             payment_attempt,
@@ -192,7 +192,7 @@ impl<F: Send + Clone + Sync>
 impl<F: Clone + Send + Sync>
     UpdateTracker<
         F,
-        hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        orbix_domain_models::payments::PaymentCancelData<F>,
         api::PaymentsCancelRequest,
     > for PaymentsCancel
 {
@@ -202,13 +202,13 @@ impl<F: Clone + Send + Sync>
         state: &'b SessionState,
         req_state: ReqState,
         processor: &domain::Processor,
-        mut payment_data: hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        mut payment_data: orbix_domain_models::payments::PaymentCancelData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(
         BoxedCancelOperation<'b, F>,
-        hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        orbix_domain_models::payments::PaymentCancelData<F>,
     )>
     where
         F: 'b + Send,
@@ -217,7 +217,7 @@ impl<F: Clone + Send + Sync>
         let storage_scheme = processor.get_storage_scheme();
         let merchant_key_store = processor.get_key_store();
 
-        let payment_attempt_update = hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptUpdate::VoidUpdate {
+        let payment_attempt_update = orbix_domain_models::payments::payment_attempt::PaymentAttemptUpdate::VoidUpdate {
             status: enums::AttemptStatus::VoidInitiated,
             cancellation_reason: payment_data.payment_attempt.cancellation_reason.clone(),
             updated_by: storage_scheme.inner().to_string(),
@@ -242,13 +242,13 @@ impl<F: Clone + Send + Sync>
 #[cfg(feature = "v2")]
 #[async_trait]
 impl<F: Send + Clone + Sync>
-    Domain<F, api::PaymentsCancelRequest, hyperswitch_domain_models::payments::PaymentCancelData<F>>
+    Domain<F, api::PaymentsCancelRequest, orbix_domain_models::payments::PaymentCancelData<F>>
     for PaymentsCancel
 {
     async fn get_customer_details<'a>(
         &'a self,
         _state: &SessionState,
-        _payment_data: &mut hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        _payment_data: &mut orbix_domain_models::payments::PaymentCancelData<F>,
         _merchant_key_store: &domain::MerchantKeyStore,
         _storage_scheme: enums::MerchantStorageScheme,
     ) -> CustomResult<(BoxedCancelOperation<'a, F>, Option<domain::Customer>), errors::StorageError>
@@ -259,7 +259,7 @@ impl<F: Send + Clone + Sync>
     async fn make_pm_data<'a>(
         &'a self,
         _state: &'a SessionState,
-        _payment_data: &mut hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        _payment_data: &mut orbix_domain_models::payments::PaymentCancelData<F>,
         _storage_scheme: enums::MerchantStorageScheme,
         _platform: &domain::Platform,
         _business_profile: &domain::Profile,
@@ -277,7 +277,7 @@ impl<F: Send + Clone + Sync>
         _platform: &domain::Platform,
         _business_profile: &domain::Profile,
         state: &SessionState,
-        payment_data: &mut hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        payment_data: &mut orbix_domain_models::payments::PaymentCancelData<F>,
     ) -> RouterResult<api::ConnectorCallType> {
         let payment_attempt = &payment_data.payment_attempt;
         let connector = payment_attempt

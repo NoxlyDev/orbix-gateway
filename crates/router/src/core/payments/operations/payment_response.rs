@@ -19,16 +19,16 @@ use common_utils::{
 use error_stack::{report, ResultExt};
 use futures::FutureExt;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::payments::payment_intent::CustomerData;
+use orbix_domain_models::payments::payment_intent::CustomerData;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::{
+use orbix_domain_models::payments::{
     PaymentConfirmData, PaymentIntentData, PaymentStatusData,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates::{self, ConnectorMandateReferenceId, MandateActivation, MandateReferenceId},
     payments::payment_attempt::PaymentAttempt,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_masking::{ExposeInterface, PeekInterface};
 use router_derive;
 use router_env::{instrument, logger, tracing};
 use storage_impl::behaviour::Conversion;
@@ -152,9 +152,9 @@ fn combine_payment_method_updates(
 fn get_additional_payment_method_data_from_psync(
     status: common_enums::AttemptStatus,
     connector_returned_payment_method_details: Option<
-        &hyperswitch_domain_models::payment_method_data::PaymentMethodData,
+        &orbix_domain_models::payment_method_data::PaymentMethodData,
     >,
-) -> Option<&hyperswitch_domain_models::payment_method_data::PaymentMethodData> {
+) -> Option<&orbix_domain_models::payment_method_data::PaymentMethodData> {
     if status.should_update_payment_method() {
         connector_returned_payment_method_details
     } else {
@@ -279,7 +279,7 @@ where
                                                 .currency,
                                             metadata: mandate_reference.mandate_metadata,
                                             connector_customer_id: connector_customer_id.clone(),
-                                            token: hyperswitch_masking::Secret::new(
+                                            token: orbix_masking::Secret::new(
                                                 connector_mandate_id,
                                             ),
                                         }
@@ -328,7 +328,7 @@ where
                         payment_method_data,
                         connector_token_details,
                         network_transaction_id: network_transaction_id
-                            .map(hyperswitch_masking::Secret::new),
+                            .map(orbix_masking::Secret::new),
                         acknowledgement_status,
                         customer_acceptance: payment_data
                             .payment_attempt
@@ -1187,7 +1187,7 @@ impl<F: Clone> PostUpdateTracker<F, PaymentData<F>, types::PaymentsIncrementalAu
                     (
                         Some(
                             storage::PaymentAttemptUpdate::IncrementalAuthorizationAmountUpdate {
-                                net_amount: hyperswitch_domain_models::payments::payment_attempt::NetAmount::new(
+                                net_amount: orbix_domain_models::payments::payment_attempt::NetAmount::new(
                                     // Internally, `NetAmount` is computed as (order_amount + additional_amount), so we subtract here to avoid double-counting.
                                     incremental_authorization_details.total_amount - payment_data.payment_attempt.net_amount.get_additional_amount(),
                                     None,
@@ -1594,7 +1594,7 @@ impl<F: Clone> PostUpdateTracker<F, PaymentData<F>, types::SdkPaymentsSessionUpd
                             )
                             .await?;
 
-                        let payment_intent_update = hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::SessionResponseUpdate {
+                        let payment_intent_update = orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::SessionResponseUpdate {
                     tax_details: payment_data.payment_intent.tax_details.clone().ok_or(errors::ApiErrorResponse::InternalServerError).attach_printable("payment_intent.tax_details not found")?,
                     shipping_address_id: shipping_address.map(|address| address.address_id),
                     updated_by: payment_data.payment_intent.updated_by.clone(),
@@ -1752,7 +1752,7 @@ impl<F: Clone> PostUpdateTracker<F, PaymentData<F>, types::PaymentsUpdateMetadat
                     let m_db = db.clone().store;
                     let payment_intent = payment_data.payment_intent.clone();
                     let payment_intent_update =
-                        hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::MetadataUpdate {
+                        orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::MetadataUpdate {
                             metadata: payment_data
                                 .payment_intent
                                 .metadata
@@ -2616,10 +2616,10 @@ async fn payment_response_update_tracker<F: Clone, T: types::Capturable>(
     let additional_payment_data = payment_data.payment_attempt.get_payment_method_data();
 
     let additional_payment_method_data_intermediate = match payment_data.payment_method_data.clone() {
-        Some(hyperswitch_domain_models::payment_method_data::PaymentMethodData::NetworkToken(_))
-        | Some(hyperswitch_domain_models::payment_method_data::PaymentMethodData::CardDetailsForNetworkTransactionId(_))
-        | Some(hyperswitch_domain_models::payment_method_data::PaymentMethodData::DecryptedWalletTokenDetailsForNetworkTransactionId(_))
-        | Some(hyperswitch_domain_models::payment_method_data::PaymentMethodData::NetworkTokenDetailsForNetworkTransactionId(_)) => {
+        Some(orbix_domain_models::payment_method_data::PaymentMethodData::NetworkToken(_))
+        | Some(orbix_domain_models::payment_method_data::PaymentMethodData::CardDetailsForNetworkTransactionId(_))
+        | Some(orbix_domain_models::payment_method_data::PaymentMethodData::DecryptedWalletTokenDetailsForNetworkTransactionId(_))
+        | Some(orbix_domain_models::payment_method_data::PaymentMethodData::NetworkTokenDetailsForNetworkTransactionId(_)) => {
             payment_data.payment_attempt.payment_method_data.clone()
         }
         _ => {
@@ -3371,7 +3371,7 @@ async fn payment_response_update_tracker<F: Clone, T: types::Capturable>(
         let key_manager_state: KeyManagerState = state.into();
         payment_data.authentication = match payment_data.authentication {
             Some(mut authentication_store) => {
-                let authentication_update = hyperswitch_domain_models::authentication::AuthenticationUpdate::PostAuthorizationUpdate {
+                let authentication_update = orbix_domain_models::authentication::AuthenticationUpdate::PostAuthorizationUpdate {
                 authentication_lifecycle_status: enums::AuthenticationLifecycleStatus::Used,
                 updated_by: processor.get_account().storage_scheme.to_string(),
             };
@@ -3817,7 +3817,7 @@ pub(crate) async fn insert_deferred_payment_method(
     customer_acceptance: common_utils::pii::SecretSerdeValue,
     payment_method: Option<enums::PaymentMethod>,
     payment_method_type: Option<enums::PaymentMethodType>,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
+    billing_address: Option<orbix_domain_models::address::Address>,
     // Absent for instruments that are recognised by fingerprint alone and never vaulted.
     locker_id: Option<String>,
     locker_fingerprint_id: Option<String>,
@@ -4007,7 +4007,7 @@ async fn create_or_update_payment_method_from_payment_response<F: Clone>(
     organization_id: &common_utils::id_type::OrganizationId,
     initiator: Option<&domain::Initiator>,
     connector_returned_payment_method_details: Option<
-        &hyperswitch_domain_models::payment_method_data::PaymentMethodData,
+        &orbix_domain_models::payment_method_data::PaymentMethodData,
     >,
     merchant_connector_id: Option<common_utils::id_type::MerchantConnectorAccountId>,
     platform: &domain::Platform,
@@ -4300,7 +4300,7 @@ impl<F: Send + Clone> Operation<F, types::PaymentsAuthorizeData> for PaymentResp
 
 #[cfg(feature = "v2")]
 impl<F: Send + Clone> Operation<F, types::PaymentsCaptureData> for PaymentResponse {
-    type Data = hyperswitch_domain_models::payments::PaymentCaptureData<F>;
+    type Data = orbix_domain_models::payments::PaymentCaptureData<F>;
     fn to_post_update_tracker(
         &self,
     ) -> RouterResult<
@@ -4315,7 +4315,7 @@ impl<F: Send + Clone> Operation<F, types::PaymentsCaptureData> for PaymentRespon
 impl<F: Clone>
     PostUpdateTracker<
         F,
-        hyperswitch_domain_models::payments::PaymentCaptureData<F>,
+        orbix_domain_models::payments::PaymentCaptureData<F>,
         types::PaymentsCaptureData,
     > for PaymentResponse
 {
@@ -4324,19 +4324,19 @@ impl<F: Clone>
         state: &'b SessionState,
         processor: &domain::Processor,
         _initiator: Option<&domain::Initiator>,
-        mut payment_data: hyperswitch_domain_models::payments::PaymentCaptureData<F>,
+        mut payment_data: orbix_domain_models::payments::PaymentCaptureData<F>,
         response: types::RouterData<F, types::PaymentsCaptureData, types::PaymentsResponseData>,
-    ) -> RouterResult<hyperswitch_domain_models::payments::PaymentCaptureData<F>>
+    ) -> RouterResult<orbix_domain_models::payments::PaymentCaptureData<F>>
     where
         F: 'b + Send + Sync,
         types::RouterData<F, types::PaymentsCaptureData, types::PaymentsResponseData>:
-            hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<
+            orbix_domain_models::router_data::TrackerPostUpdateObjects<
                 F,
                 types::PaymentsCaptureData,
-                hyperswitch_domain_models::payments::PaymentCaptureData<F>,
+                orbix_domain_models::payments::PaymentCaptureData<F>,
             >,
     {
-        use hyperswitch_domain_models::router_data::TrackerPostUpdateObjects;
+        use orbix_domain_models::router_data::TrackerPostUpdateObjects;
 
         let db = &*state.store;
 
@@ -4402,13 +4402,13 @@ impl<F: Clone> PostUpdateTracker<F, PaymentConfirmData<F>, types::PaymentsAuthor
     where
         F: 'b + Send + Sync,
         types::RouterData<F, types::PaymentsAuthorizeData, types::PaymentsResponseData>:
-            hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<
+            orbix_domain_models::router_data::TrackerPostUpdateObjects<
                 F,
                 types::PaymentsAuthorizeData,
                 PaymentConfirmData<F>,
             >,
     {
-        use hyperswitch_domain_models::router_data::TrackerPostUpdateObjects;
+        use orbix_domain_models::router_data::TrackerPostUpdateObjects;
 
         let db = &*state.store;
 
@@ -4580,13 +4580,13 @@ impl<F: Clone> PostUpdateTracker<F, PaymentStatusData<F>, types::PaymentsSyncDat
     where
         F: 'b + Send + Sync,
         types::RouterData<F, types::PaymentsSyncData, types::PaymentsResponseData>:
-            hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<
+            orbix_domain_models::router_data::TrackerPostUpdateObjects<
                 F,
                 types::PaymentsSyncData,
                 PaymentStatusData<F>,
             >,
     {
-        use hyperswitch_domain_models::router_data::TrackerPostUpdateObjects;
+        use orbix_domain_models::router_data::TrackerPostUpdateObjects;
 
         let db = &*state.store;
 
@@ -4673,16 +4673,16 @@ impl<F: Send + Clone> Operation<F, types::SetupMandateRequestData> for &PaymentR
 #[cfg(feature = "v1")]
 impl
     Operation<
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy,
         types::ExternalVaultProxyPaymentsData,
     > for &PaymentResponse
 {
-    type Data = PaymentData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>;
+    type Data = PaymentData<orbix_domain_models::router_flow_types::ExternalVaultProxy>;
     fn to_post_update_tracker(
         &self,
     ) -> RouterResult<
         &(dyn PostUpdateTracker<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
             Self::Data,
             types::ExternalVaultProxyPaymentsData,
         > + Send
@@ -4695,16 +4695,16 @@ impl
 #[cfg(feature = "v1")]
 impl
     Operation<
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy,
         types::ExternalVaultProxyPaymentsData,
     > for PaymentResponse
 {
-    type Data = PaymentData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>;
+    type Data = PaymentData<orbix_domain_models::router_flow_types::ExternalVaultProxy>;
     fn to_post_update_tracker(
         &self,
     ) -> RouterResult<
         &(dyn PostUpdateTracker<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
             Self::Data,
             types::ExternalVaultProxyPaymentsData,
         > + Send
@@ -4718,8 +4718,8 @@ impl
 #[async_trait]
 impl
     PostUpdateTracker<
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
-        PaymentData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy,
+        PaymentData<orbix_domain_models::router_flow_types::ExternalVaultProxy>,
         types::ExternalVaultProxyPaymentsData,
     > for PaymentResponse
 {
@@ -4729,9 +4729,9 @@ impl
         processor: &domain::Processor,
         provider: &domain::Provider,
         customer: Option<&domain::Customer>,
-        payment_data: PaymentData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>,
+        payment_data: PaymentData<orbix_domain_models::router_flow_types::ExternalVaultProxy>,
         router_data: types::RouterData<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
             types::ExternalVaultProxyPaymentsData,
             types::PaymentsResponseData,
         >,
@@ -4741,9 +4741,9 @@ impl
         >,
         #[cfg(all(feature = "v1", feature = "dynamic_routing"))] business_profile: &domain::Profile,
         _dimensions: &DimensionsWithProcessorAndProviderMerchantId,
-    ) -> RouterResult<PaymentData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>>
+    ) -> RouterResult<PaymentData<orbix_domain_models::router_flow_types::ExternalVaultProxy>>
     where
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy: 'b + Send + Sync,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy: 'b + Send + Sync,
     {
         Box::pin(payment_response_update_tracker(
             state,
@@ -4768,20 +4768,20 @@ impl
         &self,
         state: &SessionState,
         resp: &types::RouterData<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
             types::ExternalVaultProxyPaymentsData,
             types::PaymentsResponseData,
         >,
         _platform: &domain::Platform,
         payment_data: &mut PaymentData<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
         >,
         _business_profile: &domain::Profile,
         request_payment_method_data: Option<&domain::PaymentMethodData>,
         _dimensions: &DimensionsWithProcessorAndProviderMerchantId,
     ) -> CustomResult<(), errors::ApiErrorResponse>
     where
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy: 'b + Clone + Send + Sync,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy: 'b + Clone + Send + Sync,
     {
         update_modular_pm_and_mandate_impl(state, resp, request_payment_method_data, payment_data)
             .await
@@ -4805,19 +4805,19 @@ impl<F: Send + Clone> Operation<F, types::SetupMandateRequestData> for PaymentRe
 #[cfg(feature = "v2")]
 impl
     Operation<
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
-        hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy,
+        orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
     > for PaymentResponse
 {
     type Data =
-        PaymentConfirmData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>;
+        PaymentConfirmData<orbix_domain_models::router_flow_types::ExternalVaultProxy>;
     fn to_post_update_tracker(
         &self,
     ) -> RouterResult<
         &(dyn PostUpdateTracker<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
             Self::Data,
-            hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+            orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
         > + Send
               + Sync),
     > {
@@ -4828,19 +4828,19 @@ impl
 #[cfg(feature = "v2")]
 impl
     Operation<
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
-        hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy,
+        orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
     > for &PaymentResponse
 {
     type Data =
-        PaymentConfirmData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>;
+        PaymentConfirmData<orbix_domain_models::router_flow_types::ExternalVaultProxy>;
     fn to_post_update_tracker(
         &self,
     ) -> RouterResult<
         &(dyn PostUpdateTracker<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
             Self::Data,
-            hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+            orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
         > + Send
               + Sync),
     > {
@@ -4852,9 +4852,9 @@ impl
 #[async_trait]
 impl
     PostUpdateTracker<
-        hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
-        PaymentConfirmData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>,
-        hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+        orbix_domain_models::router_flow_types::ExternalVaultProxy,
+        PaymentConfirmData<orbix_domain_models::router_flow_types::ExternalVaultProxy>,
+        orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
     > for PaymentResponse
 {
     async fn update_tracker<'b>(
@@ -4863,28 +4863,28 @@ impl
         processor: &domain::Processor,
         _initiator: Option<&domain::Initiator>,
         mut payment_data: PaymentConfirmData<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
         >,
         response: types::RouterData<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
-            hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
             types::PaymentsResponseData,
         >,
     ) -> RouterResult<
-        PaymentConfirmData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>,
+        PaymentConfirmData<orbix_domain_models::router_flow_types::ExternalVaultProxy>,
     >
     where
         types::RouterData<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
-            hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
             types::PaymentsResponseData,
-        >: hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<
-            hyperswitch_domain_models::router_flow_types::ExternalVaultProxy,
-            hyperswitch_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
-            PaymentConfirmData<hyperswitch_domain_models::router_flow_types::ExternalVaultProxy>,
+        >: orbix_domain_models::router_data::TrackerPostUpdateObjects<
+            orbix_domain_models::router_flow_types::ExternalVaultProxy,
+            orbix_domain_models::router_request_types::ExternalVaultProxyPaymentsData,
+            PaymentConfirmData<orbix_domain_models::router_flow_types::ExternalVaultProxy>,
         >,
     {
-        use hyperswitch_domain_models::router_data::TrackerPostUpdateObjects;
+        use orbix_domain_models::router_data::TrackerPostUpdateObjects;
         let db = &*state.store;
 
         let response_router_data = response;
@@ -4950,13 +4950,13 @@ impl<F: Clone> PostUpdateTracker<F, PaymentConfirmData<F>, types::SetupMandateRe
     where
         F: 'b + Send + Sync,
         types::RouterData<F, types::SetupMandateRequestData, types::PaymentsResponseData>:
-            hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<
+            orbix_domain_models::router_data::TrackerPostUpdateObjects<
                 F,
                 types::SetupMandateRequestData,
                 PaymentConfirmData<F>,
             >,
     {
-        use hyperswitch_domain_models::router_data::TrackerPostUpdateObjects;
+        use orbix_domain_models::router_data::TrackerPostUpdateObjects;
 
         let db = &*state.store;
 
@@ -5076,7 +5076,7 @@ impl<F: Clone> PostUpdateTracker<F, PaymentConfirmData<F>, types::SetupMandateRe
                         original_payment_authorized_currency: Some(currency),
                         metadata: None,
                         connector_customer_id: None,
-                        token: hyperswitch_masking::Secret::new(token),
+                        token: orbix_masking::Secret::new(token),
                         token_type: common_enums::TokenizationType::MultiUse,
                     };
 
@@ -5089,7 +5089,7 @@ impl<F: Clone> PostUpdateTracker<F, PaymentConfirmData<F>, types::SetupMandateRe
                         ),
                         network_transaction_id: payments_response
                             .get_network_transaction_id()
-                            .map(hyperswitch_masking::Secret::new),
+                            .map(orbix_masking::Secret::new),
                         customer_acceptance: payment_data
                             .payment_attempt
                             .customer_acceptance
@@ -5102,7 +5102,7 @@ impl<F: Clone> PostUpdateTracker<F, PaymentConfirmData<F>, types::SetupMandateRe
                     };
 
                 let payment_method_update_request =
-                    hyperswitch_domain_models::payment_methods::PaymentMethodUpdate::from(
+                    orbix_domain_models::payment_methods::PaymentMethodUpdate::from(
                         payment_method_update_request,
                     );
 
@@ -5131,7 +5131,7 @@ impl<F: Clone> PostUpdateTracker<F, PaymentConfirmData<F>, types::SetupMandateRe
 #[cfg(feature = "v1")]
 fn update_connector_mandate_details_for_the_flow<F: Clone>(
     connector_mandate_id: Option<String>,
-    mandate_metadata: Option<hyperswitch_masking::Secret<serde_json::Value>>,
+    mandate_metadata: Option<orbix_masking::Secret<serde_json::Value>>,
     connector_mandate_request_reference_id: Option<String>,
     payment_data: &mut PaymentData<F>,
 ) -> RouterResult<()> {
@@ -5265,7 +5265,7 @@ fn get_total_amount_captured<F: Clone, T: types::Capturable>(
 
 #[cfg(feature = "v2")]
 impl<F: Send + Clone + Sync> Operation<F, types::PaymentsCancelData> for PaymentResponse {
-    type Data = hyperswitch_domain_models::payments::PaymentCancelData<F>;
+    type Data = orbix_domain_models::payments::PaymentCancelData<F>;
     fn to_post_update_tracker(
         &self,
     ) -> RouterResult<
@@ -5280,7 +5280,7 @@ impl<F: Send + Clone + Sync> Operation<F, types::PaymentsCancelData> for Payment
 impl<F: Clone + Send + Sync>
     PostUpdateTracker<
         F,
-        hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        orbix_domain_models::payments::PaymentCancelData<F>,
         types::PaymentsCancelData,
     > for PaymentResponse
 {
@@ -5289,21 +5289,21 @@ impl<F: Clone + Send + Sync>
         state: &'b SessionState,
         processor: &domain::Processor,
         _initiator: Option<&domain::Initiator>,
-        mut payment_data: hyperswitch_domain_models::payments::PaymentCancelData<F>,
+        mut payment_data: orbix_domain_models::payments::PaymentCancelData<F>,
         router_data: types::RouterData<F, types::PaymentsCancelData, types::PaymentsResponseData>,
-    ) -> RouterResult<hyperswitch_domain_models::payments::PaymentCancelData<F>>
+    ) -> RouterResult<orbix_domain_models::payments::PaymentCancelData<F>>
     where
         F: 'b + Send + Sync,
         types::RouterData<F, types::PaymentsCancelData, types::PaymentsResponseData>:
-            hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<
+            orbix_domain_models::router_data::TrackerPostUpdateObjects<
                 F,
                 types::PaymentsCancelData,
-                hyperswitch_domain_models::payments::PaymentCancelData<F>,
+                orbix_domain_models::payments::PaymentCancelData<F>,
             >,
     {
         let db = &*state.store;
 
-        use hyperswitch_domain_models::router_data::TrackerPostUpdateObjects;
+        use orbix_domain_models::router_data::TrackerPostUpdateObjects;
 
         let payment_intent_update = router_data
             .get_payment_intent_update(&payment_data, processor.get_account().storage_scheme);
@@ -5526,7 +5526,7 @@ impl<F: Clone + Send + Sync>
                                 let updated_feature_metadata =
                                     changed_feature_metadata.merge(existing_feature_metadata);
 
-                                fields.feature_metadata = Some(hyperswitch_masking::Secret::new(
+                                fields.feature_metadata = Some(orbix_masking::Secret::new(
                                     Encode::encode_to_value(&updated_feature_metadata)
                                         .change_context(
                                             errors::ApiErrorResponse::InternalServerError,

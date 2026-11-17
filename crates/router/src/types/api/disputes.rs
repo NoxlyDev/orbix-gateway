@@ -1,10 +1,10 @@
-pub use hyperswitch_interfaces::{
+pub use orbix_interfaces::{
     api::disputes::{
         AcceptDispute, DefendDispute, Dispute, DisputeSync, FetchDisputes, SubmitEvidence,
     },
     disputes::DisputePayload,
 };
-use hyperswitch_masking::{Deserialize, Serialize};
+use orbix_masking::{Deserialize, Serialize};
 
 use crate::types;
 
@@ -19,7 +19,7 @@ pub struct DisputeFetchQueryData {
     pub fetch_till: String,
 }
 
-pub use hyperswitch_domain_models::router_flow_types::dispute::{
+pub use orbix_domain_models::router_flow_types::dispute::{
     Accept, Defend, Dsync, Evidence, Fetch,
 };
 

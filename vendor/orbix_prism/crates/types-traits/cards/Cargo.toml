@@ -14,7 +14,7 @@ bytes = { workspace = true }
 prost = { workspace = true }
 
 # First party crates
-hyperswitch_masking = { version = "0.0.1", default-features = false, features = ["alloc", "serde", "time"] }
+orbix_masking = { path = "../../../../orbix_framework/crates/orbix_masking", default-features = false, features = ["alloc", "serde", "time"] }
 common_utils = { path = "../../common/common_utils", package = "ucs_common_utils" }
 
 

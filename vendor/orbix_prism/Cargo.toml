@@ -85,7 +85,3 @@ use_self = "warn"
 # Lints to allow
 option_map_unit_fn = "allow"
 
-# TODO: Remove this override after a hyperswitch_masking release
-# containing the relaxed Serde constraint is published.
-[patch.crates-io]
-hyperswitch_masking = { path = "../orbix_framework/crates/hyperswitch_masking" }

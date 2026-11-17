@@ -5,7 +5,7 @@ use api_models::authentication::{
     AuthenticationSyncRequest, AuthenticationSyncResponse,
 };
 use common_utils::request::{Headers, Method, RequestContent};
-use hyperswitch_interfaces::{impl_microservice_flow, micro_service::MicroserviceClient};
+use orbix_interfaces::{impl_microservice_flow, micro_service::MicroserviceClient};
 use payment_methods::configs::AuthenticationServiceConfig;
 use router_env::RequestIdentifier;
 use serde::{Deserialize, Serialize};
@@ -21,13 +21,13 @@ impl<'a> AuthenticationServiceClient<'a> {
     pub fn new(
         config: &'a AuthenticationServiceConfig,
         trace: &'a RequestIdentifier,
-    ) -> Result<Self, hyperswitch_interfaces::micro_service::MicroserviceClientError> {
+    ) -> Result<Self, orbix_interfaces::micro_service::MicroserviceClientError> {
         let base_url = config.base_url.0.clone();
 
         let mut parent_headers = Headers::new();
         parent_headers.insert((
             "api-key".to_string(),
-            hyperswitch_masking::Maskable::new_masked(config.api_key.clone()),
+            orbix_masking::Maskable::new_masked(config.api_key.clone()),
         ));
 
         Ok(Self {
@@ -62,14 +62,14 @@ pub struct AuthCreateReq(pub AuthenticationCreateRequest);
 pub struct AuthCreateResp(pub AuthenticationResponse);
 
 impl TryFrom<&AuthenticationCreateRequest> for AuthCreateReq {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(req: &AuthenticationCreateRequest) -> Result<Self, Self::Error> {
         Ok(Self(req.clone()))
     }
 }
 
 impl TryFrom<AuthCreateResp> for AuthenticationResponse {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(resp: AuthCreateResp) -> Result<Self, Self::Error> {
         Ok(resp.0)
     }
@@ -99,14 +99,14 @@ pub struct AuthEligibilityReq(pub AuthenticationEligibilityRequest);
 pub struct AuthEligibilityResp(pub AuthenticationEligibilityResponse);
 
 impl TryFrom<&(AuthenticationEligibilityRequest, String)> for AuthEligibilityReq {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(req: &(AuthenticationEligibilityRequest, String)) -> Result<Self, Self::Error> {
         Ok(Self(req.0.clone()))
     }
 }
 
 impl TryFrom<AuthEligibilityResp> for AuthenticationEligibilityResponse {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(resp: AuthEligibilityResp) -> Result<Self, Self::Error> {
         Ok(resp.0)
     }
@@ -137,14 +137,14 @@ pub struct AuthAuthenticateReq(pub AuthenticationAuthenticateRequest);
 pub struct AuthAuthenticateResp(pub AuthenticationAuthenticateResponse);
 
 impl TryFrom<&AuthenticationAuthenticateRequest> for AuthAuthenticateReq {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(req: &AuthenticationAuthenticateRequest) -> Result<Self, Self::Error> {
         Ok(Self(req.clone()))
     }
 }
 
 impl TryFrom<AuthAuthenticateResp> for AuthenticationAuthenticateResponse {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(resp: AuthAuthenticateResp) -> Result<Self, Self::Error> {
         Ok(resp.0)
     }
@@ -175,14 +175,14 @@ pub struct AuthSyncPostUpdateReq(pub AuthenticationSyncPostUpdateRequest);
 pub struct AuthSyncResp(pub AuthenticationSyncResponse);
 
 impl TryFrom<&(AuthenticationSyncPostUpdateRequest, String)> for AuthSyncPostUpdateReq {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(req: &(AuthenticationSyncPostUpdateRequest, String)) -> Result<Self, Self::Error> {
         Ok(Self(req.0.clone()))
     }
 }
 
 impl TryFrom<AuthSyncResp> for AuthenticationSyncResponse {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(resp: AuthSyncResp) -> Result<Self, Self::Error> {
         Ok(resp.0)
     }
@@ -213,7 +213,7 @@ pub struct AuthenticationSyncFlow;
 pub struct AuthSyncReq(pub AuthenticationSyncRequest);
 
 impl TryFrom<&(AuthenticationSyncRequest, String)> for AuthSyncReq {
-    type Error = hyperswitch_interfaces::micro_service::MicroserviceClientError;
+    type Error = orbix_interfaces::micro_service::MicroserviceClientError;
     fn try_from(req: &(AuthenticationSyncRequest, String)) -> Result<Self, Self::Error> {
         Ok(Self(req.0.clone()))
     }

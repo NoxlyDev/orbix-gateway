@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use common_enums;
 use common_utils::ext_traits::AsyncExt;
 use error_stack::ResultExt;
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api::{ConnectorSpecifications, ConnectorValidation},
     consts as interfaces_consts,
 };
@@ -127,7 +127,7 @@ pub async fn add_access_token<
     router_data: &types::RouterData<F, Req, Res>,
     creds_identifier: Option<&str>,
     gateway_context: &gateway_context::RouterGatewayContext,
-    current_flow: Option<hyperswitch_domain_models::router_request_types::CurrentFlowInfo>,
+    current_flow: Option<orbix_domain_models::router_request_types::CurrentFlowInfo>,
 ) -> RouterResult<types::AddAccessTokenResult> {
     if connector
         .connector_name
@@ -365,7 +365,7 @@ async fn fetch_access_token_from_ucs(
     ));
     #[cfg(feature = "v2")]
     let mca_type =
-        hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails::MerchantConnectorAccount(Box::new(
+        orbix_domain_models::merchant_connector_account::MerchantConnectorAccountTypeDetails::MerchantConnectorAccount(Box::new(
             merchant_connector_account.clone(),
         ));
 

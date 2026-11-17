@@ -3,7 +3,7 @@ use std::sync::Arc;
 use actix_web::http::StatusCode;
 use common_utils::{errors::ParsingError, ext_traits::AsyncExt};
 use error_stack::{report, Report, ResultExt};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use router_env::logger;
 use time::PrimitiveDateTime;
 
@@ -56,10 +56,10 @@ pub struct ClickhouseConfig {
 impl ClickhouseConfig {
     pub(crate) async fn decrypt_credentials(
         self,
-        client: &dyn hyperswitch_interfaces::secrets_interface::SecretManagementInterface,
+        client: &dyn orbix_interfaces::secrets_interface::SecretManagementInterface,
     ) -> common_utils::errors::CustomResult<
         Self,
-        hyperswitch_interfaces::secrets_interface::SecretsManagementError,
+        orbix_interfaces::secrets_interface::SecretsManagementError,
     > {
         let primary_password = self
             .primary_password

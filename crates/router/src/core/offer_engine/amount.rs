@@ -4,7 +4,7 @@ use rust_decimal::{prelude::ToPrimitive, Decimal};
 
 use super::types::OfferEngineError;
 
-/// Convert Hyperswitch minor units to an Offer Engine decimal string.
+/// Convert Orbix Gateway minor units to an Offer Engine decimal string.
 pub fn to_offer_engine_amount(
     amount: MinorUnit,
     currency: common_enums::Currency,
@@ -15,7 +15,7 @@ pub fn to_offer_engine_amount(
         .attach_printable("Failed to convert minor units to Offer Engine amount string")
 }
 
-/// Convert an Offer Engine decimal string into Hyperswitch minor units.
+/// Convert an Offer Engine decimal string into Orbix Gateway minor units.
 pub fn from_offer_engine_amount(
     amount: &StringMajorUnit,
     currency: common_enums::Currency,

@@ -1,4 +1,4 @@
-// Copyright (c) Juspay Technologies. All rights reserved.
+// Copyright (c) Orbix Technologies. All rights reserved.
 //
 // Package: ucs.v2
 // File: payment.proto
@@ -52,7 +52,7 @@ import "common_types.proto";
 import "domain.proto";
 import "payment_methods.proto";
 
-option go_package = "github.com/juspay/connector-service/crates/types-traits/grpc-api-types/proto;proto";
+option go_package = "github.com/orbix/connector-service/crates/types-traits/grpc-api-types/proto;proto";
 
 // ============================================================================
 // CORE DATA TYPES
@@ -643,7 +643,7 @@ enum Connector {
   IATAPAY = 41;
   ITAUBANK = 42;
   JPMORGAN = 43;
-  JUSPAYTHREEDSSERVER = 44;
+  ORBIXTHREEDSSERVER = 44;
   KLARNA = 45;
   MIFINITY = 46;
   MOLLIE = 47;
@@ -721,11 +721,11 @@ enum Connector {
   AXISBANK = 119;
   EASEBUZZ = 120;
   TWOC_TWOP_PACO = 121;
-  JUSPAY = 122;
+  ORBIX = 122;
   TAMARA = 123;
   PAYCONEX = 124;
   QWIKCILVER = 125;
-  HYPERSWITCH = 126;
+  ORBIX = 126;
   TSYS_TRANSIT = 127;
   KOUNT = 128;
   FLYWIRE = 129;
@@ -5057,7 +5057,7 @@ message CheckoutConfig {
   // The secret key (`sk_...`) — the Bearer credential on every request.
   SecretString api_secret = 2;
   SecretString processing_channel_id = 3;
-  // Optional Checkout client ID sourced from Hyperswitch MCA metadata.
+  // Optional Checkout client ID sourced from Orbix Gateway MCA metadata.
   // Used to derive the optional account-specific API subdomain for payment and payout requests.
   optional SecretString connector_client_id = 4;
   // Optional Checkout currency account (`ca_...`) used as the payout `source.id`.
@@ -5131,7 +5131,7 @@ message PaysafeCardAccountId {
 message PaysafeAchAccountId { optional SecretString account_id = 1; }
 
 // Dedicated Apple Pay processing account, split by token flow.
-// Mirrors hyperswitch's `ApplePayAccountDetails`: `encrypt` is used for the
+// Mirrors orbix's `ApplePayAccountDetails`: `encrypt` is used for the
 // encrypted PKPaymentToken flow, `decrypt` for the decrypted-token flow.
 message PaysafeApplePayAccountId {
   optional SecretString encrypt = 1;
@@ -5139,12 +5139,12 @@ message PaysafeApplePayAccountId {
 }
 
 // Interac e-Transfer processing account. Native metadata key `three_ds`
-// (mirrors hyperswitch `RedirectAccountId`) so the same MCA metadata is portable
+// (mirrors orbix `RedirectAccountId`) so the same MCA metadata is portable
 // between the native and UCS paths.
 message PaysafeInteracAccountId { optional SecretString three_ds = 1; }
 
 // Redirect-APM processing account (Skrill, paysafecard). Native metadata key
-// `three_ds` (mirrors hyperswitch `RedirectAccountId`).
+// `three_ds` (mirrors orbix `RedirectAccountId`).
 message PaysafeRedirectAccountId { optional SecretString three_ds = 1; }
 
 message PaysafePaymentMethodDetails {
@@ -5618,9 +5618,9 @@ message GivepaymentsConfig {
 
 message AxisbankConfig {
   SecretString merchant_kid = 3;
-  SecretString juspay_kid = 4;
+  SecretString orbix_kid = 4;
   SecretString merchant_private_key = 5;
-  SecretString juspay_public_key = 6;
+  SecretString orbix_public_key = 6;
   optional string base_url = 50;
 }
 
@@ -5717,11 +5717,11 @@ message InterpaymentsConfig {
   optional string base_url = 50;
 }
 
-message JuspayConfig {
+message OrbixConfig {
   SecretString api_key = 1;
   SecretString merchant_id = 2;
 
-  optional SecretString juspay_encryption_public_key = 3;
+  optional SecretString orbix_encryption_public_key = 3;
   optional SecretString response_decryption_private_key = 4;
   optional SecretString card_sync_key_id = 5;
 
@@ -5791,7 +5791,7 @@ message ClearsaleBrConfig {
   optional string base_url = 50;
 }
 
-message HyperswitchConfig {
+message OrbixConfig {
   SecretString api_key = 1;
   optional string base_url = 50;
 }
@@ -6295,8 +6295,8 @@ message ConnectorSpecificConfig {
     // INTERPAYMENTS = 126
     InterpaymentsConfig interpayments = 126;
 
-    // JUSPAY = 122
-    JuspayConfig juspay = 127;
+    // ORBIX = 122
+    OrbixConfig orbix = 127;
     // TAMARA = 123
     TamaraConfig tamara = 128;
 
@@ -6307,8 +6307,8 @@ message ConnectorSpecificConfig {
     QwikcilverConfig qwikcilver = 130;
     // CHECKOUT = 126
     CheckoutConfig checkout = 131;
-    // HYPERSWITCH = 126
-    HyperswitchConfig hyperswitch = 132;
+    // ORBIX = 126
+    OrbixConfig orbix = 132;
     // TSYS_TRANSIT = 127
     TsysTransitConfig tsys_transit = 133;
     // KOUNT = 128

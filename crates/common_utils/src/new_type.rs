@@ -1,5 +1,5 @@
 //! Contains new types with restrictions
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 
 use crate::{
     consts::{MAX_ALLOWED_CARD_ISSUER_NAME_LENGTH, MAX_ALLOWED_MERCHANT_NAME_LENGTH},
@@ -13,7 +13,7 @@ use crate::{
 )]
 pub struct MerchantName(String);
 
-impl hyperswitch_masking::SerializableSecret for MerchantName {}
+impl orbix_masking::SerializableSecret for MerchantName {}
 
 #[nutype::nutype(
     derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq, Hash),
@@ -21,7 +21,7 @@ impl hyperswitch_masking::SerializableSecret for MerchantName {}
 )]
 pub struct CardIssuerName(String);
 
-impl hyperswitch_masking::SerializableSecret for CardIssuerName {}
+impl orbix_masking::SerializableSecret for CardIssuerName {}
 
 /// Function for masking alphanumeric characters in a string.
 ///
@@ -187,7 +187,7 @@ impl<const UNMASKED_CHAR_COUNT: usize, const MIN_MASKED_CHAR_COUNT: usize> From<
 
 /// Masked card number, revealing the first six and last four digits.
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct MaskedCardNumber(hyperswitch_masking::StrongSecret<String>);
+pub struct MaskedCardNumber(orbix_masking::StrongSecret<String>);
 impl From<String> for MaskedCardNumber {
     fn from(src: String) -> Self {
         const UNMASKED_PREFIX_LEN: usize = 6;
@@ -211,7 +211,7 @@ impl From<String> for MaskedCardNumber {
                 })
                 .collect()
         };
-        Self(hyperswitch_masking::StrongSecret::new(masked_value))
+        Self(orbix_masking::StrongSecret::new(masked_value))
     }
 }
 impl From<Secret<String>> for MaskedCardNumber {
@@ -353,7 +353,7 @@ impl From<Secret<String>> for MaskedPspToken {
 
 #[cfg(test)]
 mod apply_mask_fn_test {
-    use hyperswitch_masking::PeekInterface;
+    use orbix_masking::PeekInterface;
 
     use crate::new_type::{
         apply_mask, MaskedBankAccount, MaskedIban, MaskedRoutingNumber, MaskedSortCode,

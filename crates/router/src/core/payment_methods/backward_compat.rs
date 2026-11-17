@@ -1,6 +1,6 @@
 use common_utils::{ext_traits::StringExt, id_type};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::platform::ProviderMerchantId;
+use orbix_domain_models::platform::ProviderMerchantId;
 
 use super::{add_payment_method_modular_backward_compat_task, utils};
 use crate::{

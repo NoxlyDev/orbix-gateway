@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router::types::{self, api, domain, storage::enums};
 use test_utils::connector_auth;
 
@@ -41,8 +41,8 @@ fn get_default_payment_info() -> Option<utils::PaymentInfo> {
         address: Some(types::PaymentAddress::new(
             None,
             None,
-            Some(hyperswitch_domain_models::address::Address {
-                address: Some(hyperswitch_domain_models::address::AddressDetails {
+            Some(orbix_domain_models::address::Address {
+                address: Some(orbix_domain_models::address::AddressDetails {
                     country: Some(common_enums::CountryAlpha2::US),
                     city: Some("New York".to_string()),
                     zip: Some(Secret::new("10001".to_string())),
@@ -54,7 +54,7 @@ fn get_default_payment_info() -> Option<utils::PaymentInfo> {
                     last_name: Some(Secret::new("Doe".to_string())),
                     origin_zip: None,
                 }),
-                phone: Some(hyperswitch_domain_models::address::PhoneDetails {
+                phone: Some(orbix_domain_models::address::PhoneDetails {
                     number: Some(Secret::new("1234567890".to_string())),
                     country_code: Some("+1".to_string()),
                 }),

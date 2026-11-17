@@ -1,12 +1,12 @@
 //! SMTP email client.
 //!
-//! Hyperswitch adapter over the shared [`cloud_services::email::smtp`] client. The configuration
+//! Orbix Gateway adapter over the shared [`cloud_services::email::smtp`] client. The configuration
 //! stays here so its credentials remain masked [`Secret`]s.
 
 pub use cloud_services::email::smtp::{SmtpConnection, SmtpError};
 use cloud_services::email::{smtp as shared, EmailMessage};
 use common_utils::{errors::CustomResult, ext_traits::AsyncExt, pii};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 
 use crate::{
     email::{
@@ -73,8 +73,8 @@ impl SmtpServerConfig {
     #[allow(missing_docs)]
     pub async fn decrypt_credentials(
         self,
-        client: &dyn hyperswitch_interfaces::secrets_interface::SecretManagementInterface,
-    ) -> CustomResult<Self, hyperswitch_interfaces::secrets_interface::SecretsManagementError> {
+        client: &dyn orbix_interfaces::secrets_interface::SecretManagementInterface,
+    ) -> CustomResult<Self, orbix_interfaces::secrets_interface::SecretsManagementError> {
         let primary_password = self
             .primary_password
             .async_map(|secret| async move {
@@ -100,7 +100,7 @@ impl SmtpServerConfig {
                 Ok::<
                     _,
                     error_stack::Report<
-                        hyperswitch_interfaces::secrets_interface::SecretsManagementError,
+                        orbix_interfaces::secrets_interface::SecretsManagementError,
                     >,
                 >(Socks5Config {
                     primary_password,

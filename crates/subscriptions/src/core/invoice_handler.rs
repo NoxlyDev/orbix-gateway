@@ -6,8 +6,8 @@ use api_models::{
 use common_enums::connector_enums;
 use common_utils::{pii, types::MinorUnit};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::router_response_types::subscriptions as subscription_response_types;
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::router_response_types::subscriptions as subscription_response_types;
+use orbix_masking::PeekInterface;
 
 use super::errors;
 use crate::{
@@ -16,19 +16,19 @@ use crate::{
 };
 
 pub struct InvoiceHandler {
-    pub subscription: hyperswitch_domain_models::subscription::Subscription,
-    pub merchant_account: hyperswitch_domain_models::merchant_account::MerchantAccount,
-    pub profile: hyperswitch_domain_models::business_profile::Profile,
-    pub merchant_key_store: hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+    pub subscription: orbix_domain_models::subscription::Subscription,
+    pub merchant_account: orbix_domain_models::merchant_account::MerchantAccount,
+    pub profile: orbix_domain_models::business_profile::Profile,
+    pub merchant_key_store: orbix_domain_models::merchant_key_store::MerchantKeyStore,
 }
 
 #[allow(clippy::todo)]
 impl InvoiceHandler {
     pub fn new(
-        subscription: hyperswitch_domain_models::subscription::Subscription,
-        merchant_account: hyperswitch_domain_models::merchant_account::MerchantAccount,
-        profile: hyperswitch_domain_models::business_profile::Profile,
-        merchant_key_store: hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
+        subscription: orbix_domain_models::subscription::Subscription,
+        merchant_account: orbix_domain_models::merchant_account::MerchantAccount,
+        profile: orbix_domain_models::business_profile::Profile,
+        merchant_key_store: orbix_domain_models::merchant_key_store::MerchantKeyStore,
     ) -> Self {
         Self {
             subscription,
@@ -49,8 +49,8 @@ impl InvoiceHandler {
         provider_name: connector_enums::Connector,
         metadata: Option<pii::SecretSerdeValue>,
         connector_invoice_id: Option<common_utils::id_type::InvoiceId>,
-    ) -> errors::SubscriptionResult<hyperswitch_domain_models::invoice::Invoice> {
-        let invoice_new = hyperswitch_domain_models::invoice::Invoice::to_invoice(
+    ) -> errors::SubscriptionResult<orbix_domain_models::invoice::Invoice> {
+        let invoice_new = orbix_domain_models::invoice::Invoice::to_invoice(
             self.subscription.id.to_owned(),
             self.subscription.merchant_id.to_owned(),
             self.subscription.profile_id.to_owned(),
@@ -82,9 +82,9 @@ impl InvoiceHandler {
         &self,
         state: &SessionState,
         invoice_id: common_utils::id_type::InvoiceId,
-        update_request: hyperswitch_domain_models::invoice::InvoiceUpdateRequest,
-    ) -> errors::SubscriptionResult<hyperswitch_domain_models::invoice::Invoice> {
-        let update_invoice: hyperswitch_domain_models::invoice::InvoiceUpdate =
+        update_request: orbix_domain_models::invoice::InvoiceUpdateRequest,
+    ) -> errors::SubscriptionResult<orbix_domain_models::invoice::Invoice> {
+        let update_invoice: orbix_domain_models::invoice::InvoiceUpdate =
             update_request.into();
         state
             .store
@@ -231,7 +231,7 @@ impl InvoiceHandler {
     pub async fn get_latest_invoice(
         &self,
         state: &SessionState,
-    ) -> errors::SubscriptionResult<hyperswitch_domain_models::invoice::Invoice> {
+    ) -> errors::SubscriptionResult<orbix_domain_models::invoice::Invoice> {
         state
             .store
             .get_latest_invoice_for_subscription(
@@ -249,7 +249,7 @@ impl InvoiceHandler {
         &self,
         state: &SessionState,
         invoice_id: common_utils::id_type::InvoiceId,
-    ) -> errors::SubscriptionResult<hyperswitch_domain_models::invoice::Invoice> {
+    ) -> errors::SubscriptionResult<orbix_domain_models::invoice::Invoice> {
         state
             .store
             .find_invoice_by_invoice_id(
@@ -268,7 +268,7 @@ impl InvoiceHandler {
         state: &SessionState,
         subscription_id: common_utils::id_type::SubscriptionId,
         connector_invoice_id: common_utils::id_type::InvoiceId,
-    ) -> errors::SubscriptionResult<Option<hyperswitch_domain_models::invoice::Invoice>> {
+    ) -> errors::SubscriptionResult<Option<orbix_domain_models::invoice::Invoice>> {
         state
             .store
             .find_invoice_by_subscription_id_connector_invoice_id(
@@ -286,7 +286,7 @@ impl InvoiceHandler {
     pub async fn create_invoice_sync_job(
         &self,
         state: &SessionState,
-        invoice: &hyperswitch_domain_models::invoice::Invoice,
+        invoice: &orbix_domain_models::invoice::Invoice,
         connector_invoice_id: Option<common_utils::id_type::InvoiceId>,
         connector_name: connector_enums::Connector,
     ) -> errors::SubscriptionResult<()> {

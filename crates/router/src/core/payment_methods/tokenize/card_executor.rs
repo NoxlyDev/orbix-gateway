@@ -11,8 +11,8 @@ use common_utils::{
     types::keymanager::{Identifier, KeyManagerState, ToEncryptable},
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::type_encryption::{crypto_operation, CryptoOperation};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, SwitchStrategy};
+use orbix_domain_models::type_encryption::{crypto_operation, CryptoOperation};
+use orbix_masking::{ExposeInterface, PeekInterface, SwitchStrategy};
 use router_env::logger;
 
 use super::{
@@ -200,7 +200,7 @@ impl<'a> NetworkTokenizationBuilder<'a, CustomerAssigned> {
         &self,
     ) -> (
         Option<domain::CardDetail>,
-        Option<hyperswitch_masking::Secret<String>>,
+        Option<orbix_masking::Secret<String>>,
     ) {
         (self.card.clone(), self.card_cvc.clone())
     }

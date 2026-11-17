@@ -2,7 +2,7 @@ use common_utils::{
     errors::{CustomResult, ValidationError},
     types::keymanager::{Identifier, KeyManagerState},
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 #[async_trait::async_trait]
 pub trait Conversion {

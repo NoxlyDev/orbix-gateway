@@ -1,4 +1,4 @@
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 fn callback_forms() -> [super::RedirectForm; 9] {
     [

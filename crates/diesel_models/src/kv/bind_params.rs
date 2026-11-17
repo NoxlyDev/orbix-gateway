@@ -1,6 +1,6 @@
 use base64::Engine;
 use common_utils::consts::BASE64_ENGINE;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::SecretBinaryData;

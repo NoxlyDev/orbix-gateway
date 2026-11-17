@@ -1,8 +1,8 @@
-//! This module has common utilities for payout method data in HyperSwitch
+//! This module has common utilities for payout method data in Orbix Gateway
 
 #[cfg(feature = "diesel")]
 use diesel::{sql_types::Jsonb, AsExpression, FromSqlRow};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

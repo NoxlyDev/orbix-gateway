@@ -9,8 +9,8 @@
       devShells = {
         default =
           pkgs.mkShell {
-            name = "hyperswitch-shell";
-            meta.description = "Environment for Hyperswitch development";
+            name = "orbix-shell";
+            meta.description = "Environment for Orbix Gateway development";
             inputsFrom = [ config.pre-commit.devShell ];
             packages = with pkgs; [
               diesel-cli
@@ -23,8 +23,8 @@
             ];
           };
         dev = pkgs.mkShell {
-          name = "hyperswitch-dev-shell";
-          meta.description = "Environment for Hyperswitch development with additional tools";
+          name = "orbix-dev-shell";
+          meta.description = "Environment for Orbix Gateway development with additional tools";
           inputsFrom = [ self'.devShells.default ];
           packages = with pkgs; [
             cargo-watch
@@ -33,15 +33,15 @@
             swagger-cli
           ];
           shellHook = ''
-            echo 1>&2 "Ready to work on hyperswitch!"
+            echo 1>&2 "Ready to work on orbix!"
             rustc --version
             export OPENSSL_DIR="${pkgs.openssl.dev}"
             export OPENSSL_LIB_DIR="${pkgs.openssl.out}/lib"
           '';
         };
         qa = pkgs.mkShell {
-          name = "hyperswitch-qa-shell";
-          meta.description = "Environment for Hyperswitch QA";
+          name = "orbix-qa-shell";
+          meta.description = "Environment for Orbix Gateway QA";
           inputsFrom = [ self'.devShells.dev ];
           packages = with pkgs; [
             cypress

@@ -8,7 +8,7 @@ use common_utils::{
     types::keymanager::ToEncryptable,
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     business_profile,
     errors::api_error_response::ApiErrorResponse,
     ext_traits::OptionExt,
@@ -20,8 +20,8 @@ use hyperswitch_domain_models::{
     },
     type_encryption::AsyncLift,
 };
-use hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails;
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_interfaces::webhooks::IncomingWebhookRequestDetails;
+use orbix_masking::{ExposeInterface, PeekInterface};
 
 use super::types::{
     IRRELEVANT_ATTEMPT_ID_IN_AUTHENTICATION_FLOW,
@@ -162,20 +162,20 @@ pub fn construct_uas_router_data<F: Clone, Req, Res>(
 pub async fn external_authentication_update_trackers<F: Clone, Req>(
     state: &SessionState,
     router_data: RouterData<F, Req, UasAuthenticationResponseData>,
-    authentication: hyperswitch_domain_models::authentication::Authentication,
+    authentication: orbix_domain_models::authentication::Authentication,
     acquirer_details: Option<
-        hyperswitch_domain_models::router_request_types::authentication::AcquirerDetails,
+        orbix_domain_models::router_request_types::authentication::AcquirerDetails,
     >,
-    merchant_key_store: &hyperswitch_domain_models::merchant_key_store::MerchantKeyStore,
-    billing_address: Option<hyperswitch_domain_models::address::Address>,
-    shipping_address: Option<hyperswitch_domain_models::address::Address>,
+    merchant_key_store: &orbix_domain_models::merchant_key_store::MerchantKeyStore,
+    billing_address: Option<orbix_domain_models::address::Address>,
+    shipping_address: Option<orbix_domain_models::address::Address>,
     email: Option<common_utils::pii::Email>,
     browser_info: Option<BrowserInformation>,
     device_details: Option<api_models::payments::DeviceDetails>,
     merchant_category_code: Option<common_enums::MerchantCategoryCode>,
     merchant_country_code: Option<common_types::payments::MerchantCountryCode>,
     storage_scheme: diesel_models::enums::MerchantStorageScheme,
-) -> RouterResult<hyperswitch_domain_models::authentication::Authentication> {
+) -> RouterResult<orbix_domain_models::authentication::Authentication> {
     let key_state = state.into();
     let authentication_update = match router_data.response {
         Ok(response) => match response {
@@ -186,7 +186,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
                     .clone()
                     .map(|billing| {
                         common_utils::ext_traits::Encode::encode_to_value(&billing)
-                            .map(hyperswitch_masking::Secret::<serde_json::Value>::new)
+                            .map(orbix_masking::Secret::<serde_json::Value>::new)
                     })
                     .transpose()
                     .change_context(ApiErrorResponse::InternalServerError)
@@ -196,7 +196,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
                     .clone()
                     .map(|shipping| {
                         common_utils::ext_traits::Encode::encode_to_value(&shipping)
-                            .map(hyperswitch_masking::Secret::<serde_json::Value>::new)
+                            .map(orbix_masking::Secret::<serde_json::Value>::new)
                     })
                     .transpose()
                     .change_context(ApiErrorResponse::InternalServerError)
@@ -204,10 +204,10 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
 
                 let encrypted_data = domain::types::crypto_operation(
         &key_state,
-        common_utils::type_name!(hyperswitch_domain_models::authentication::Authentication),
+        common_utils::type_name!(orbix_domain_models::authentication::Authentication),
         domain::types::CryptoOperation::BatchEncrypt(
-            hyperswitch_domain_models::authentication::UpdateEncryptableAuthentication::to_encryptable(
-                hyperswitch_domain_models::authentication::UpdateEncryptableAuthentication {
+            orbix_domain_models::authentication::UpdateEncryptableAuthentication::to_encryptable(
+                orbix_domain_models::authentication::UpdateEncryptableAuthentication {
                     billing_address: billing_details_encoded,
                     shipping_address: shipping_details_encoded,
                 },
@@ -225,7 +225,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
     .change_context(ApiErrorResponse::InternalServerError)
     .attach_printable("Unable to encrypt authentication data".to_string())?;
 
-                let encrypted_data = hyperswitch_domain_models::authentication::FromRequestEncryptableAuthentication::from_encryptable(encrypted_data)
+                let encrypted_data = orbix_domain_models::authentication::FromRequestEncryptableAuthentication::from_encryptable(encrypted_data)
         .change_context(ApiErrorResponse::InternalServerError)
         .attach_printable("Unable to get encrypted data for authentication after encryption")?;
 
@@ -235,7 +235,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
                         domain::types::crypto_operation(
                             &key_state,
                             common_utils::type_name!(
-                                hyperswitch_domain_models::authentication::Authentication
+                                orbix_domain_models::authentication::Authentication
                             ),
                             domain::types::CryptoOperation::EncryptOptional(
                                 inner.map(|inner| inner.expose()),
@@ -260,7 +260,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
                         field_name: "browser_information".into(),
                     })?;
                 Ok(
-                    hyperswitch_domain_models::authentication::AuthenticationUpdate::PreAuthenticationUpdate {
+                    orbix_domain_models::authentication::AuthenticationUpdate::PreAuthenticationUpdate {
                         earliest_supported_version:authentication_details.maximum_supported_3ds_version.clone(),
                         latest_supported_version: authentication_details.maximum_supported_3ds_version.clone(),
                         threeds_server_transaction_id: authentication_details
@@ -346,7 +346,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
                     .await
                     .transpose()?;
                 Ok(
-                    hyperswitch_domain_models::authentication::AuthenticationUpdate::AuthenticationUpdate {
+                    orbix_domain_models::authentication::AuthenticationUpdate::AuthenticationUpdate {
                         trans_status: authentication_details.trans_status,
                         acs_url: authentication_details.authn_flow_type.get_acs_url(),
                         challenge_request: authentication_details
@@ -418,7 +418,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
                     .await
                     .transpose()?;
                 Ok(
-                    hyperswitch_domain_models::authentication::AuthenticationUpdate::PostAuthenticationUpdate {
+                    orbix_domain_models::authentication::AuthenticationUpdate::PostAuthenticationUpdate {
                         authentication_status: common_enums::AuthenticationStatus::foreign_from(
                             trans_status.clone(),
                         ),
@@ -441,7 +441,7 @@ pub async fn external_authentication_update_trackers<F: Clone, Req>(
             }
         },
         Err(error) => Ok(
-            hyperswitch_domain_models::authentication::AuthenticationUpdate::ErrorUpdate {
+            orbix_domain_models::authentication::AuthenticationUpdate::ErrorUpdate {
                 connector_authentication_id: error.connector_transaction_id,
                 authentication_status: common_enums::AuthenticationStatus::Failed,
                 error_message: error
@@ -485,7 +485,7 @@ pub fn get_checkout_event_status_and_reason(
 
 pub fn authenticate_authentication_client_secret_and_check_expiry(
     req_client_secret: &String,
-    authentication: &hyperswitch_domain_models::authentication::Authentication,
+    authentication: &orbix_domain_models::authentication::Authentication,
 ) -> RouterResult<()> {
     let stored_client_secret = authentication
         .authentication_client_secret
@@ -578,13 +578,13 @@ pub async fn get_auth_multi_token_from_external_vault<F, Req>(
 #[cfg(feature = "v1")]
 fn get_vault_details(
     auth_details: PostAuthenticationDetails,
-) -> RouterResult<hyperswitch_domain_models::vault::PaymentMethodVaultingData> {
+) -> RouterResult<orbix_domain_models::vault::PaymentMethodVaultingData> {
     // if raw card details are present, it have the highest priority
     // if network_token details are present, then it is returned if raw card details are not present
     // throw error if both are not present
     match (auth_details.raw_card_details, auth_details.token_details) {
         (Some(card_details), _) => Ok(
-            hyperswitch_domain_models::vault::PaymentMethodVaultingData::Card(
+            orbix_domain_models::vault::PaymentMethodVaultingData::Card(
                 api_models::payment_methods::CardDetail {
                     card_number: card_details.pan.clone(),
                     card_exp_month: card_details.expiration_month,
@@ -609,8 +609,8 @@ fn get_vault_details(
                 .and_then(|dynamic_data| dynamic_data.dynamic_data_value);
 
             Ok(
-                hyperswitch_domain_models::vault::PaymentMethodVaultingData::NetworkToken(
-                    hyperswitch_domain_models::payment_method_data::NetworkTokenDetails {
+                orbix_domain_models::vault::PaymentMethodVaultingData::NetworkToken(
+                    orbix_domain_models::payment_method_data::NetworkTokenDetails {
                         network_token: token_data.payment_token.clone(),
                         network_token_exp_month: token_data.token_expiration_month.clone(),
                         network_token_exp_year: token_data.token_expiration_year.clone(),

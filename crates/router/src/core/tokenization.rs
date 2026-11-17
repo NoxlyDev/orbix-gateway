@@ -67,7 +67,7 @@ pub async fn create_vault_token_core(
         .attach_printable("Failed to parse data into AddVaultResponse")?;
 
     // Create new tokenization record
-    let tokenization_new = hyperswitch_domain_models::tokenization::Tokenization {
+    let tokenization_new = orbix_domain_models::tokenization::Tokenization {
         id: id_type::GlobalTokenId::generate(&state.conf.cell_information.id),
         merchant_id: provider.get_account().get_id().clone(),
         customer_id: customer_id.clone(),
@@ -86,7 +86,7 @@ pub async fn create_vault_token_core(
         .attach_printable("Failed to insert tokenization record")?;
 
     // Convert to TokenizationResponse
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         api_models::tokenization::GenericTokenizationResponse {
             id: tokenization.id,
             created_at: tokenization.created_at,
@@ -143,7 +143,7 @@ pub async fn delete_tokenized_data_core(
     .attach_printable("Failed to delete payment method from vault")?;
 
     //update the status with Disabled
-    let tokenization_update = hyperswitch_domain_models::tokenization::TokenizationUpdate::DeleteTokenizationRecordUpdate {
+    let tokenization_update = orbix_domain_models::tokenization::TokenizationUpdate::DeleteTokenizationRecordUpdate {
         flag: Some(enums::TokenizationFlag::Disabled),
     };
     db.update_tokenization_record(
@@ -155,7 +155,7 @@ pub async fn delete_tokenized_data_core(
     .change_context(errors::ApiErrorResponse::InternalServerError)
     .attach_printable("Failed to update tokenization record")?;
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         api_models::tokenization::DeleteTokenDataResponse {
             id: token_id.clone(),
         },
@@ -187,7 +187,7 @@ pub async fn get_token_vault_core(
 
     let vault_request = pm_types::VaultRetrieveRequest {
         entity_id: tokenization_record.customer_id.clone(),
-        vault_id: hyperswitch_domain_models::payment_methods::VaultId::generate(
+        vault_id: orbix_domain_models::payment_methods::VaultId::generate(
             tokenization_record.locker_id.clone(),
         ),
     };

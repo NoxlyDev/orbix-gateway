@@ -11,7 +11,7 @@ use common_utils::{
     id_type,
 };
 use error_stack::ResultExt;
-use hyperswitch_interfaces::secrets_interface::secret_state::RawSecret;
+use orbix_interfaces::secrets_interface::secret_state::RawSecret;
 
 use super::errors;
 use crate::{
@@ -29,7 +29,7 @@ pub async fn list_payment_methods(
     profile: domain::Profile,
     payment_id: id_type::GlobalPaymentId,
     req: api_models::payments::ListMethodsForPaymentsRequest,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
 ) -> errors::RouterResponse<api_models::payments::PaymentMethodListResponseForPayments> {
     let db = &*state.store;
 
@@ -68,7 +68,7 @@ pub async fn list_payment_methods(
     };
 
     let response =
-        FlattenedPaymentMethodsEnabled(hyperswitch_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled::from_payment_connectors_list(payment_connector_accounts))
+        FlattenedPaymentMethodsEnabled(orbix_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled::from_payment_connectors_list(payment_connector_accounts))
             .perform_filtering(
                 &state,
                 &platform,
@@ -83,7 +83,7 @@ pub async fn list_payment_methods(
             .populate_pm_subtype_specific_data(&state.conf.bank_config)
             .generate_response(customer_payment_methods);
 
-    Ok(hyperswitch_domain_models::api::ApplicationResponse::Json(
+    Ok(orbix_domain_models::api::ApplicationResponse::Json(
         response,
     ))
 }
@@ -136,12 +136,12 @@ impl GetRequiredFields for settings::RequiredFields {
 }
 
 struct FlattenedPaymentMethodsEnabled(
-    hyperswitch_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled,
+    orbix_domain_models::merchant_connector_account::FlattenedPaymentMethodsEnabled,
 );
 
 /// Container for the filtered payment methods
 struct FilteredPaymentMethodsEnabled(
-    Vec<hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector>,
+    Vec<orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector>,
 );
 
 impl FilteredPaymentMethodsEnabled {
@@ -495,14 +495,14 @@ impl FlattenedPaymentMethodsEnabled {
         platform: &domain::Platform,
         profile_id: &id_type::ProfileId,
         req: &api_models::payments::ListMethodsForPaymentsRequest,
-        payment_intent: &hyperswitch_domain_models::payments::PaymentIntent,
+        payment_intent: &orbix_domain_models::payments::PaymentIntent,
     ) -> errors::RouterResult<FilteredPaymentMethodsEnabled> {
         let billing_address = payment_intent
             .billing_address
             .clone()
             .and_then(|address| address.into_inner().address);
 
-        let mut response: Vec<hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector> = vec![];
+        let mut response: Vec<orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector> = vec![];
 
         for payment_method_enabled_details in self.0.payment_methods_enabled {
             filter_payment_methods(
@@ -524,13 +524,13 @@ impl FlattenedPaymentMethodsEnabled {
 #[cfg(feature = "v2")]
 #[allow(clippy::too_many_arguments)]
 pub async fn filter_payment_methods(
-    payment_method_type_details: hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
+    payment_method_type_details: orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
     req: &api_models::payments::ListMethodsForPaymentsRequest,
     resp: &mut Vec<
-        hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
+        orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
     >,
     payment_intent: Option<&storage::PaymentIntent>,
-    address: Option<&hyperswitch_domain_models::address::AddressDetails>,
+    address: Option<&orbix_domain_models::address::AddressDetails>,
     configs: &settings::Settings<RawSecret>,
 ) -> errors::CustomResult<(), errors::ApiErrorResponse> {
     let payment_method = payment_method_type_details.payment_method;
@@ -588,7 +588,7 @@ pub async fn filter_payment_methods(
 // filter based on country supported by payment method type
 // return true if the intent's country is null or if the country is in the accepted countries list
 fn filter_country_based(
-    address: Option<&hyperswitch_domain_models::address::AddressDetails>,
+    address: Option<&orbix_domain_models::address::AddressDetails>,
     pm: &common_types::payment_methods::RequestPaymentMethodTypes,
 ) -> bool {
     address.is_none_or(|address| {
@@ -710,7 +710,7 @@ fn filter_amount_based(
 fn filter_zero_mandate_based(
     configs: &settings::Settings<RawSecret>,
     payment_intent: &storage::PaymentIntent,
-    payment_method_type_details: &hyperswitch_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
+    payment_method_type_details: &orbix_domain_models::merchant_connector_account::PaymentMethodsEnabledForConnector,
 ) -> bool {
     if payment_intent.setup_future_usage == common_enums::FutureUsage::OffSession
         && payment_intent.amount_details.calculate_net_amount() == types::MinorUnit::zero()

@@ -1,5 +1,5 @@
 use common_utils::id_type;
-use hyperswitch_domain_models::card_issuer::CardIssuersInterface;
+use orbix_domain_models::card_issuer::CardIssuersInterface;
 use router_env::instrument;
 
 use crate::{

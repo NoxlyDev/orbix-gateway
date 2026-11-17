@@ -17,7 +17,7 @@ use actix_web::dev::Server;
 use common_utils::{id_type, signals::get_allowed_signals};
 use diesel_models::kv;
 use error_stack::ResultExt;
-use hyperswitch_interfaces::secrets_interface::secret_state::RawSecret;
+use orbix_interfaces::secrets_interface::secret_state::RawSecret;
 use router_env::{
     instrument,
     tracing::{self, Instrument},

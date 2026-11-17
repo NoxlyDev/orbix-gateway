@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use api_models::{self, enums as api_enums};
 use common_enums::{CaptureMethod, PaymentMethod, PreFrmFailureMode};
 use error_stack::ResultExt;
-use hyperswitch_masking::{ExposeInterface, PeekInterface};
+use orbix_masking::{ExposeInterface, PeekInterface};
 use router_env::{logger, tracing::instrument};
 
 use self::{
@@ -208,7 +208,7 @@ where
     let gateway_context = payments::gateway::context::RouterGatewayContext {
         creds_identifier: None,
         processor: platform.get_processor().clone(),
-        header_payload: hyperswitch_domain_models::payments::HeaderPayload::default(),
+        header_payload: orbix_domain_models::payments::HeaderPayload::default(),
         lineage_ids: external_services::grpc_client::LineageIds::new(
             platform.get_processor().get_account().get_id().clone(),
             frm_data.connector_details.profile_id.clone(),
@@ -394,7 +394,7 @@ pub async fn pre_payouts_frm_core(
             &applicability.frm_routing_algorithm.data,
         )?;
 
-        let mut router_data: hyperswitch_connectors::types::PoFrmRouterData = frm_data
+        let mut router_data: orbix_connectors::types::PoFrmRouterData = frm_data
             .construct_router_data_with_callbacks(
                 state,
                 &applicability.frm_routing_algorithm.data,
@@ -762,7 +762,7 @@ where
             // when the order_details are present within the meta_data, we need to take those to support backward compatibility
             payment_data.get_payment_intent().metadata.clone().and_then(|meta| {
                 let order_details = meta.get("order_details").to_owned();
-                order_details.map(|order| vec![hyperswitch_masking::Secret::new(order.to_owned())])
+                order_details.map(|order| vec![orbix_masking::Secret::new(order.to_owned())])
             }))
         .map(|order_details_value| {
             order_details_value

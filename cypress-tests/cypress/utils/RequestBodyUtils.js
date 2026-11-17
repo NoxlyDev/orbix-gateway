@@ -7,7 +7,7 @@ const keyPrefixes = {
     publishable_key: "pk_dev_",
     key_id: "dev_",
   },
-  hyperswitch: {
+  orbix: {
     publishable_key: "pk_snd_",
     key_id: "snd_",
   },

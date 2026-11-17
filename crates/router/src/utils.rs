@@ -34,12 +34,12 @@ use common_utils::{
     types::keymanager::{Identifier, ToEncryptable},
 };
 use error_stack::ResultExt;
-pub use hyperswitch_connectors::utils::QrImage;
-use hyperswitch_domain_models::payments::PaymentIntent;
+pub use orbix_connectors::utils::QrImage;
+use orbix_domain_models::payments::PaymentIntent;
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::type_encryption::{crypto_operation, CryptoOperation};
-use hyperswitch_interfaces::webhooks::WebhookResourceData;
-use hyperswitch_masking::{ExposeInterface, SwitchStrategy};
+use orbix_domain_models::type_encryption::{crypto_operation, CryptoOperation};
+use orbix_interfaces::webhooks::WebhookResourceData;
+use orbix_masking::{ExposeInterface, SwitchStrategy};
 use nanoid::nanoid;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -714,10 +714,10 @@ pub fn get_http_status_code_type(
 
 // Trims whitespace from a Secret string and returns None if empty
 pub fn trim_secret_string(
-    secret: hyperswitch_masking::Secret<String>,
-) -> Option<hyperswitch_masking::Secret<String>> {
+    secret: orbix_masking::Secret<String>,
+) -> Option<orbix_masking::Secret<String>> {
     let trimmed = secret.expose().trim().to_string();
-    (!trimmed.is_empty()).then(|| hyperswitch_masking::Secret::new(trimmed))
+    (!trimmed.is_empty()).then(|| orbix_masking::Secret::new(trimmed))
 }
 
 // Trims whitespace from a regular string and returns None if empty
@@ -821,7 +821,7 @@ impl CustomerAddress for api_models::customers::CustomerRequest {
             updated_by: storage_scheme.to_string(),
             email: encryptable_address.email.map(|email| {
                 let encryptable: Encryptable<
-                    hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                    orbix_masking::Secret<String, pii::EmailStrategy>,
                 > = Encryptable::new(
                     email.clone().into_inner().switch_strategy(),
                     email.into_encrypted(),
@@ -890,7 +890,7 @@ impl CustomerAddress for api_models::customers::CustomerRequest {
             updated_by: storage_scheme.to_string(),
             email: encryptable_address.email.map(|email| {
                 let encryptable: Encryptable<
-                    hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                    orbix_masking::Secret<String, pii::EmailStrategy>,
                 > = Encryptable::new(
                     email.clone().into_inner().switch_strategy(),
                     email.into_encrypted(),
@@ -962,7 +962,7 @@ impl CustomerAddress for api_models::customers::CustomerUpdateRequest {
             updated_by: storage_scheme.to_string(),
             email: encryptable_address.email.map(|email| {
                 let encryptable: Encryptable<
-                    hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                    orbix_masking::Secret<String, pii::EmailStrategy>,
                 > = Encryptable::new(
                     email.clone().into_inner().switch_strategy(),
                     email.into_encrypted(),
@@ -1030,7 +1030,7 @@ impl CustomerAddress for api_models::customers::CustomerUpdateRequest {
             updated_by: storage_scheme.to_string(),
             email: encryptable_address.email.map(|email| {
                 let encryptable: Encryptable<
-                    hyperswitch_masking::Secret<String, pii::EmailStrategy>,
+                    orbix_masking::Secret<String, pii::EmailStrategy>,
                 > = Encryptable::new(
                     email.clone().into_inner().switch_strategy(),
                     email.into_encrypted(),
@@ -1544,8 +1544,8 @@ pub async fn trigger_payouts_webhook(
 pub async fn trigger_subscriptions_outgoing_webhook(
     state: &SessionState,
     payment_response: subscription_types::PaymentResponseData,
-    invoice: &hyperswitch_domain_models::invoice::Invoice,
-    subscription: &hyperswitch_domain_models::subscription::Subscription,
+    invoice: &orbix_domain_models::invoice::Invoice,
+    subscription: &orbix_domain_models::subscription::Subscription,
     merchant_account: &domain::MerchantAccount,
     key_store: &domain::MerchantKeyStore,
     profile: &domain::Profile,

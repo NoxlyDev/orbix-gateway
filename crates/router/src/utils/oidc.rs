@@ -1,6 +1,6 @@
 use common_utils::ext_traits::StringExt;
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use url::Url;
 
 use crate::{

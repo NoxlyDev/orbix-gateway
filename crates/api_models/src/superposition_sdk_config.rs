@@ -1,5 +1,5 @@
 use common_utils::events::ApiEventMetric;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde_json::{Map, Value};
 use superposition_types::Config;
 

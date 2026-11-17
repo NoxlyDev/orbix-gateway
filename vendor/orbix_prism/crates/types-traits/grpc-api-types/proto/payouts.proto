@@ -6,7 +6,7 @@ import "common_types.proto";
 import "payment.proto";
 import "payment_methods.proto";
 
-option go_package = "github.com/juspay/connector-service/crates/types-traits/grpc-api-types/proto;proto";
+option go_package = "github.com/orbix/connector-service/crates/types-traits/grpc-api-types/proto;proto";
 
 // Merchant-supplied funds-transfer classification for card payouts. The value must be
 // assigned by the payment processor; UCS does not select or default it.
@@ -482,7 +482,7 @@ message PayoutServiceTransferRequest {
   // Merchant-supplied funds-transfer classification assigned by the payment processor.
   // Absence preserves the connector's null behavior; UCS never defaults this value.
   optional PayoutFundsTransferType funds_transfer_type = 20;
-  // Sender API input is normalized by Hyperswitch into the common vendor type.
+  // Sender API input is normalized by Orbix Gateway into the common vendor type.
   optional PayoutVendorAccountDetails vendor_account_details = 21;
 }
 
@@ -683,7 +683,7 @@ message PayoutServiceCreateRecipientRequest {
 }
 
 // Vendor account details required to onboard a recipient with a connector
-// (e.g. Stripe Connect) or the funding party in transfer. Hyperswitch normalizes
+// (e.g. Stripe Connect) or the funding party in transfer. Orbix Gateway normalizes
 // API sender input and legacy vendor metadata before sending this common type.
 message PayoutVendorAccountDetails {
   // Business / vendor details
@@ -713,7 +713,7 @@ message VendorDetails {
   // Whether the transfers capability is requested
   optional bool transfers_enabled = 9;
   // Additional corporate party fields; existing fields/tags remain unchanged.
-  // Corporate tax identifier; Hyperswitch populates this from merchant sender/KYC details.
+  // Corporate tax identifier; Orbix Gateway populates this from merchant sender/KYC details.
   optional SecretString company_tax_id = 10;
   // Corporate address and contact details; 
   optional Address address = 11;
@@ -746,7 +746,7 @@ message IndividualDetails {
   // Unix timestamp of the terms-of-service acceptance
   optional int64 tos_acceptance_date = 11;
   // Additional individual party fields; reuse phone = 3 for the phone number.
-  // Individual address and contact details; Hyperswitch populates this from merchant sender/KYC details.
+  // Individual address and contact details; Orbix Gateway populates this from merchant sender/KYC details.
   optional Address address = 12;
   // Merchant-created reference for the sending party, forwarded to the connector as the
   // sender reference (e.g. Checkout `sender.reference`).
@@ -861,7 +861,7 @@ message PayoutMethodEligibilityResponse {
 }
 
 // Classification of funds supplied by the payout funding party. Populated by the merchant
-// (via Hyperswitch `sender_details`); required by Visa Direct / Mastercard Send
+// (via Orbix Gateway `sender_details`); required by Visa Direct / Mastercard Send
 // money-movement compliance. Values mirror the Visa Direct `sender.sourceOfFunds` code set.
 enum PayoutSourceOfFunds {
   PAYOUT_SOURCE_OF_FUNDS_UNSPECIFIED = 0;

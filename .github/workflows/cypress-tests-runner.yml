@@ -51,8 +51,8 @@ jobs:
           # v3 refuses to run behind hypersage-runners' proxy without this.
           NODE_USE_ENV_PROXY: "1"
         with:
-          client-id: ${{ secrets.HYPERSWITCH_BOT_APP_ID }}
-          private-key: ${{ secrets.HYPERSWITCH_BOT_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.ORBIX_BOT_APP_ID }}
+          private-key: ${{ secrets.ORBIX_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository with token
         if: ${{ github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name }}
@@ -92,8 +92,8 @@ jobs:
           if ! git diff --exit-code --quiet -- cypress-tests; then
             echo "::notice::Cypress formatting and lint check failed"
 
-            git config --local user.name 'hyperswitch-bot[bot]'
-            git config --local user.email '148525504+hyperswitch-bot[bot]@users.noreply.github.com'
+            git config --local user.name 'orbix-bot[bot]'
+            git config --local user.email '148525504+orbix-bot[bot]@users.noreply.github.com'
 
             git add cypress-tests
             git commit --message 'chore(cypress): run formatter and address lints'
@@ -141,12 +141,12 @@ jobs:
             exit 1
           fi
 
-  build-hyperswitch:
-    name: Build hyperswitch server
+  build-orbix:
+    name: Build orbix server
     needs: [check-cypress-prerequisites]
     if: ${{ needs.check-cypress-prerequisites.outputs.run-checks == 'true' }}
-    # use hyperswitch-runners-merge for merge queue level checks
-    runs-on: ${{ case(github.event_name == 'merge_group', 'hyperswitch-runners-merge', 'hyperswitch-runners') }}
+    # use orbix-runners-merge for merge queue level checks
+    runs-on: ${{ case(github.event_name == 'merge_group', 'orbix-runners-merge', 'orbix-runners') }}
     env:
       # sccache on local disk, restored/saved as one archive instead of its
       # native S3 backend — avoids per-request round trips under load.
@@ -201,7 +201,7 @@ jobs:
         if: ${{ env.RUN_TESTS == 'true' }}
         continue-on-error: true
         shell: bash
-        run: .github/scripts/sccache-restore-s3.sh build-hyperswitch "${{ github.event.pull_request.number }}"
+        run: .github/scripts/sccache-restore-s3.sh build-orbix "${{ github.event.pull_request.number }}"
 
       - name: Build project
         if: ${{ env.RUN_TESTS == 'true' }}
@@ -221,7 +221,7 @@ jobs:
         if: ${{ env.RUN_TESTS == 'true' }}
         continue-on-error: true
         shell: bash
-        run: .github/scripts/sccache-save-s3.sh build-hyperswitch "${{ github.event.pull_request.number }}"
+        run: .github/scripts/sccache-save-s3.sh build-orbix "${{ github.event.pull_request.number }}"
 
       # Keyed by run id so concurrent runs (different PRs) never collide.
       - name: Upload binary to S3
@@ -236,8 +236,8 @@ jobs:
     name: Prepare Mandatory Connectors matrix to run cypress tests
     needs: [check-cypress-prerequisites]
     if: ${{ needs.check-cypress-prerequisites.outputs.run-checks == 'true' }}
-    # use hyperswitch-runners-merge for merge queue level checks
-    runs-on: ${{ case(github.event_name == 'merge_group', 'hyperswitch-runners-merge', 'hyperswitch-runners') }}
+    # use orbix-runners-merge for merge queue level checks
+    runs-on: ${{ case(github.event_name == 'merge_group', 'orbix-runners-merge', 'orbix-runners') }}
     outputs:
       mandatory-matrix: ${{ steps.set-mandatory-matrix.outputs.matrix }}
     steps:
@@ -271,11 +271,11 @@ jobs:
 
   mandatory-cypress-tests:
     name: Run mandatory Cypress tests
-    needs: [build-hyperswitch, prepare-mandatory-matrix]
+    needs: [build-orbix, prepare-mandatory-matrix]
     permissions:
       pull-requests: write
-    # use hyperswitch-runners-merge for merge queue level checks
-    runs-on: ${{ case(github.event_name == 'merge_group', 'hyperswitch-runners-merge', 'hyperswitch-runners') }}
+    # use orbix-runners-merge for merge queue level checks
+    runs-on: ${{ case(github.event_name == 'merge_group', 'orbix-runners-merge', 'orbix-runners') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-mandatory-matrix.outputs['mandatory-matrix']) }}
@@ -294,7 +294,7 @@ jobs:
         env:
           POSTGRES_USER: db_user
           POSTGRES_PASSWORD: db_pass
-          POSTGRES_DB: hyperswitch_db
+          POSTGRES_DB: orbix_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -303,7 +303,7 @@ jobs:
         ports:
           - 5432:5432
       superposition:
-        image: ghcr.io/juspay/superposition-demo:0.102.0
+        image: ghcr.io/orbix/superposition-demo:0.102.0
         env:
           API_HOSTNAME: http://localhost:8081
           REDIS_URL: redis://redis:6379
@@ -331,10 +331,10 @@ jobs:
         shell: bash
         run: .github/scripts/sccache-mask-s3-env.sh
 
-      - name: Download hyperswitch server binary from S3
+      - name: Download orbix server binary from S3
         if: ${{ env.RUN_TESTS == 'true' }}
         shell: bash
-        run: .github/scripts/download-hyperswitch-binary-s3.sh
+        run: .github/scripts/download-orbix-binary-s3.sh
 
       - name: Make server executable
         if: ${{ env.RUN_TESTS == 'true' }}
@@ -400,23 +400,23 @@ jobs:
         if: ${{ env.RUN_TESTS == 'true' }}
         shell: bash
         env:
-          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
+          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/orbix_db
         run: just migrate run --locked-schema
 
       - name: Configure enforced payment callbacks
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
 
       - name: Insert card info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Insert GSM info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Seed Superposition
         if: ${{ env.RUN_TESTS == 'true' }}
@@ -570,9 +570,9 @@ jobs:
 
   extended-cypress-tests:
     name: Run extended Cypress tests
-    needs: [build-hyperswitch, prepare-extended-matrix]
+    needs: [build-orbix, prepare-extended-matrix]
     if: false
-    runs-on: hyperswitch-runners
+    runs-on: orbix-runners
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-extended-matrix.outputs['extended-matrix']) }}
@@ -591,7 +591,7 @@ jobs:
         env:
           POSTGRES_USER: db_user
           POSTGRES_PASSWORD: db_pass
-          POSTGRES_DB: hyperswitch_db
+          POSTGRES_DB: orbix_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -614,9 +614,9 @@ jobs:
         shell: bash
         run: .github/scripts/sccache-mask-s3-env.sh
 
-      - name: Download hyperswitch server binary from S3
+      - name: Download orbix server binary from S3
         shell: bash
-        run: .github/scripts/download-hyperswitch-binary-s3.sh
+        run: .github/scripts/download-orbix-binary-s3.sh
 
       - name: Make server executable
         run: chmod +x target/debug/router
@@ -673,20 +673,20 @@ jobs:
       - name: Run database migrations
         shell: bash
         env:
-          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
+          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/orbix_db
         run: just migrate run --locked-schema
 
       - name: Configure enforced payment callbacks
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
 
       - name: Insert card info into the database
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Insert GSM info into the database
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Setup Local Server
         env:
@@ -836,8 +836,8 @@ jobs:
 
   mitm-cassette-replay-cypress-tests:
     name: Run MITM mock Cypress tests (${{ matrix.batch.name }})
-    needs: [build-hyperswitch, prepare-mock-matrix]
-    runs-on: ${{ case(github.event_name == 'merge_group', 'hyperswitch-runners-merge', 'hyperswitch-runners') }}
+    needs: [build-orbix, prepare-mock-matrix]
+    runs-on: ${{ case(github.event_name == 'merge_group', 'orbix-runners-merge', 'orbix-runners') }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-mock-matrix.outputs['mock-matrix']) }}
@@ -856,7 +856,7 @@ jobs:
         env:
           POSTGRES_USER: db_user
           POSTGRES_PASSWORD: db_pass
-          POSTGRES_DB: hyperswitch_db
+          POSTGRES_DB: orbix_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -865,7 +865,7 @@ jobs:
         ports:
           - 5432:5432
       superposition:
-        image: ghcr.io/juspay/superposition-demo:0.102.0
+        image: ghcr.io/orbix/superposition-demo:0.102.0
         env:
           API_HOSTNAME: http://localhost:8081
           REDIS_URL: redis://redis:6379
@@ -893,10 +893,10 @@ jobs:
         shell: bash
         run: .github/scripts/sccache-mask-s3-env.sh
 
-      - name: Download hyperswitch server binary from S3
+      - name: Download orbix server binary from S3
         if: ${{ env.RUN_TESTS == 'true' }}
         shell: bash
-        run: .github/scripts/download-hyperswitch-binary-s3.sh
+        run: .github/scripts/download-orbix-binary-s3.sh
 
       - name: Make server executable
         if: ${{ env.RUN_TESTS == 'true' }}
@@ -961,23 +961,23 @@ jobs:
         if: ${{ env.RUN_TESTS == 'true' }}
         shell: bash
         env:
-          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
+          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/orbix_db
         run: just migrate run --locked-schema
 
       - name: Configure enforced payment callbacks
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
 
       - name: Insert card info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Insert GSM info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Seed Superposition
         if: ${{ env.RUN_TESTS == 'true' }}
@@ -1242,7 +1242,7 @@ jobs:
   prepare-optional-matrix:
     name: Prepare Optional Connectors matrix to run cypress tests
     if: false
-    runs-on: hyperswitch-runners
+    runs-on: orbix-runners
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -1276,8 +1276,8 @@ jobs:
   runner-optional-connectors:
     name: Run Optional Connectors Cypress tests
     if: false
-    needs: [build-hyperswitch, prepare-optional-matrix]
-    runs-on: hyperswitch-runners
+    needs: [build-orbix, prepare-optional-matrix]
+    runs-on: orbix-runners
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-optional-matrix.outputs.matrix) }}
@@ -1296,7 +1296,7 @@ jobs:
         env:
           POSTGRES_USER: db_user
           POSTGRES_PASSWORD: db_pass
-          POSTGRES_DB: hyperswitch_db
+          POSTGRES_DB: orbix_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -1305,7 +1305,7 @@ jobs:
         ports:
           - 5432:5432
       superposition:
-        image: ghcr.io/juspay/superposition-demo:0.102.0
+        image: ghcr.io/orbix/superposition-demo:0.102.0
         env:
           API_HOSTNAME: http://localhost:8081
           REDIS_URL: redis://redis:6379
@@ -1326,9 +1326,9 @@ jobs:
         shell: bash
         run: .github/scripts/sccache-mask-s3-env.sh
 
-      - name: Download hyperswitch server binary from S3
+      - name: Download orbix server binary from S3
         shell: bash
-        run: .github/scripts/download-hyperswitch-binary-s3.sh
+        run: .github/scripts/download-orbix-binary-s3.sh
 
       - name: Make server executable
         run: chmod +x target/debug/router
@@ -1385,20 +1385,20 @@ jobs:
       - name: Run database migrations
         shell: bash
         env:
-          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
+          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/orbix_db
         run: just migrate run --locked-schema
 
       - name: Configure enforced payment callbacks
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
 
       - name: Insert card info into the database
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Insert GSM info into the database
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Seed Superposition
         env:
@@ -1468,9 +1468,9 @@ jobs:
 
   runner_alpha:
     name: Run optional Cypress tests for alpha connectors
-    needs: build-hyperswitch
+    needs: build-orbix
     if: false
-    runs-on: hyperswitch-runners
+    runs-on: orbix-runners
     services:
       redis:
         image: "public.ecr.aws/docker/library/redis:alpine"
@@ -1486,7 +1486,7 @@ jobs:
         env:
           POSTGRES_USER: db_user
           POSTGRES_PASSWORD: db_pass
-          POSTGRES_DB: hyperswitch_db
+          POSTGRES_DB: orbix_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -1495,7 +1495,7 @@ jobs:
         ports:
           - 5432:5432
       superposition:
-        image: ghcr.io/juspay/superposition-demo:0.102.0
+        image: ghcr.io/orbix/superposition-demo:0.102.0
         env:
           API_HOSTNAME: http://localhost:8081
           REDIS_URL: redis://redis:6379
@@ -1516,10 +1516,10 @@ jobs:
         shell: bash
         run: .github/scripts/sccache-mask-s3-env.sh
 
-      - name: Download hyperswitch server binary from S3
+      - name: Download orbix server binary from S3
         if: ${{ env.RUN_TESTS == 'true' }}
         shell: bash
-        run: .github/scripts/download-hyperswitch-binary-s3.sh
+        run: .github/scripts/download-orbix-binary-s3.sh
 
       - name: Make server executable
         if: ${{ env.RUN_TESTS == 'true' }}
@@ -1574,23 +1574,23 @@ jobs:
         if: ${{ env.RUN_TESTS == 'true' }}
         shell: bash
         env:
-          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
+          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/orbix_db
         run: just migrate run --locked-schema
 
       - name: Configure enforced payment callbacks
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
 
       - name: Insert card info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Insert GSM info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Seed Superposition
         if: ${{ env.RUN_TESTS == 'true' }}
@@ -1690,18 +1690,18 @@ jobs:
     name: Run Cypress tests on v2 and generate coverage report
     needs: [check-cypress-prerequisites]
     if: ${{ needs.check-cypress-prerequisites.outputs.run-checks == 'true' }}
-    runs-on: hyperswitch-runners
+    runs-on: orbix-runners
     permissions:
       pull-requests: write
       contents: read
     env:
       CODECOV_FILE: "lcov.info"
       # sccache on local disk, restored/saved as one archive instead of its
-      # native S3 backend — see build-hyperswitch for why.
+      # native S3 backend — see build-orbix for why.
       RUSTC_WRAPPER: sccache
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
       SCCACHE_CACHE_SIZE: "4G"
-      # See build-hyperswitch for why.
+      # See build-orbix for why.
       SCCACHE_IDLE_TIMEOUT: "0"
 
     services:
@@ -1719,7 +1719,7 @@ jobs:
         env:
           POSTGRES_USER: db_user
           POSTGRES_PASSWORD: db_pass
-          POSTGRES_DB: hyperswitch_db
+          POSTGRES_DB: orbix_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -1728,7 +1728,7 @@ jobs:
         ports:
           - 5432:5432
       superposition:
-        image: ghcr.io/juspay/superposition-demo:0.102.0
+        image: ghcr.io/orbix/superposition-demo:0.102.0
         env:
           API_HOSTNAME: http://localhost:8081
           REDIS_URL: redis://redis:6379
@@ -1847,23 +1847,23 @@ jobs:
         if: ${{ env.RUN_TESTS == 'true' }}
         shell: bash
         env:
-          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/hyperswitch_db
+          DATABASE_URL: postgres://db_user:db_pass@localhost:5432/orbix_db
         run: just migrate_v2 run --locked-schema
 
       - name: Configure enforced payment callbacks
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --set=ON_ERROR_STOP=1 --file=.github/data/payment_callback_config.sql
 
       - name: Insert card info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy cards_info FROM '.github/data/cards_info.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Insert GSM info into the database
         if: ${{ env.RUN_TESTS == 'true' }}
         run: |
-          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=hyperswitch_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
+          PGPASSWORD=db_pass psql --host=localhost --port=5432 --username=db_user --dbname=orbix_db --command "\copy gateway_status_map FROM '.github/data/gateway_status_map.csv' DELIMITER ',' CSV HEADER;"
 
       - name: Seed Superposition
         if: ${{ env.RUN_TESTS == 'true' }}

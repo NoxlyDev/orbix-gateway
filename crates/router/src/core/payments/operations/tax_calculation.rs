@@ -4,8 +4,8 @@ use api_models::enums::FrmSuggestion;
 use async_trait::async_trait;
 use common_utils::ext_traits::AsyncExt;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::mandates::MandateTransactionType;
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::mandates::MandateTransactionType;
+use orbix_masking::PeekInterface;
 use router_derive::PaymentOperation;
 use router_env::instrument;
 
@@ -50,7 +50,7 @@ impl<F: Send + Clone + Sync>
         platform: &domain::Platform,
         _auth_flow: services::AuthFlow,
         _flow_kind: operations::PaymentFlowKind,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
         _payment_method_fetch_data: operations::PaymentMethodFetchData,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
         _payment_pre_fetched_info: Option<operations::PaymentPreFetchedInformation>,
@@ -406,7 +406,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsDynamicTaxCa
         processor: &domain::Processor,
         mut payment_data: PaymentData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(PaymentSessionUpdateOperation<'b, F>, PaymentData<F>)>
     where
@@ -449,7 +449,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentData<F>, api::PaymentsDynamicTaxCa
             )
             .await?;
 
-            let payment_intent_update = hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::SessionResponseUpdate {
+            let payment_intent_update = orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::SessionResponseUpdate {
             tax_details: payment_data.payment_intent.tax_details.clone().ok_or(errors::ApiErrorResponse::InternalServerError).attach_printable("payment_intent.tax_details not found")?,
             shipping_address_id: shipping_address.map(|address| address.address_id),
             updated_by: payment_data.payment_intent.updated_by.clone(),

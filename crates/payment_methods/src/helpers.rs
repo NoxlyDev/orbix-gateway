@@ -1,7 +1,7 @@
 use api_models::{enums as api_enums, payment_methods as api};
 #[cfg(feature = "v1")]
 use common_utils::ext_traits::AsyncExt;
-pub use hyperswitch_domain_models::{errors::api_error_response, payment_methods as domain};
+pub use orbix_domain_models::{errors::api_error_response, payment_methods as domain};
 #[cfg(feature = "v1")]
 use router_env::logger;
 

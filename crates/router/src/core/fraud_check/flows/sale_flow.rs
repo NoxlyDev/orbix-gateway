@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use common_utils::ext_traits::ValueExt;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::payment_intent;
-use hyperswitch_masking::ExposeInterface;
+use orbix_domain_models::payments::payment_intent;
+use orbix_masking::ExposeInterface;
 
 use crate::{
     core::{
@@ -36,7 +36,7 @@ impl ConstructFlowSpecificData<frm_api::Sale, FraudCheckSaleData, FraudCheckResp
         _customer: &Option<domain::Customer>,
         _merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
         _merchant_recipient_data: Option<MerchantRecipientData>,
-        _header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        _header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
     ) -> RouterResult<RouterData<frm_api::Sale, FraudCheckSaleData, FraudCheckResponseData>> {
         todo!()
@@ -51,7 +51,7 @@ impl ConstructFlowSpecificData<frm_api::Sale, FraudCheckSaleData, FraudCheckResp
         _business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         _merchant_recipient_data: Option<MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _payment_method: Option<common_enums::PaymentMethod>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,

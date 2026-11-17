@@ -6,11 +6,11 @@ use common_utils::{id_type, ucs_types};
 use error_stack::ResultExt;
 use external_services::grpc_client;
 #[cfg(feature = "v2")]
-use hyperswitch_domain_models::payments::PaymentConfirmData;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payments::PaymentConfirmData;
+use orbix_domain_models::{
     errors::api_error_response::ApiErrorResponse, payments as domain_payments,
 };
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use unified_connector_service_client::payments as payments_grpc;
 
 use super::{ConstructFlowSpecificData, Feature};

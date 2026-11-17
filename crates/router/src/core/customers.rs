@@ -14,13 +14,13 @@ use common_utils::{
     validation::validate_phone_country_code,
 };
 use error_stack::{report, ResultExt};
-pub use hyperswitch_domain_models::customer::{
+pub use orbix_domain_models::customer::{
     is_customer_id_in_global_format, is_global_customer_id_format,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payment_methods as payment_methods_domain, type_encryption::AsyncLift,
 };
-use hyperswitch_masking::{ExposeInterface, Secret, SwitchStrategy};
+use orbix_masking::{ExposeInterface, Secret, SwitchStrategy};
 use payment_methods::controller::PaymentMethodsController;
 use router_env::instrument;
 
@@ -666,7 +666,7 @@ pub async fn retrieve_customer_by_merchant_reference_id(
 }
 
 /// Whether a customer identifier supplied in the request should be interpreted as the
-/// merchant's customer reference instead of a Hyperswitch global customer ID.
+/// merchant's customer reference instead of a Orbix Gateway global customer ID.
 #[cfg(feature = "v2")]
 pub async fn should_use_merchant_reference_id_as_customer_id(
     state: &SessionState,
@@ -1477,7 +1477,7 @@ impl CustomerUpdateBridge for customers::CustomerUpdateRequest {
             domain::FromRequestEncryptableCustomer::from_encryptable(encrypted_data)
                 .change_context(errors::CustomersErrorResponse::InternalServerError)?;
 
-        let document_details = hyperswitch_domain_models::type_encryption::crypto_operation(
+        let document_details = orbix_domain_models::type_encryption::crypto_operation(
             key_manager_state,
             type_name!(CustomerDocumentDetails),
             CryptoOperation::EncryptOptional(
@@ -1704,7 +1704,7 @@ pub async fn migrate_customers(
         {
             Ok(_) => (),
             Err(e) => match e.current_context() {
-                // Customer already exists in Hyperswitch: still merge the migrated
+                // Customer already exists in Orbix Gateway: still merge the migrated
                 // connector_customer_id(s) into the existing customer's connector_customer.
                 errors::CustomersErrorResponse::CustomerAlreadyExists => {
                     #[cfg(feature = "v1")]
@@ -1724,13 +1724,13 @@ pub async fn migrate_customers(
 }
 
 /// Saves the connector's customer id (from the migration CSV) onto a customer that already
-/// exists in Hyperswitch.
+/// exists in Orbix Gateway.
 ///
 /// Background, in plain terms:
 /// - Each customer row has a `connector_customer` field. Think of it as a small lookup table:
 ///   "for connector account X, this customer is known as Y on that connector's side".
 /// - When the migration creates a brand-new customer, that field is filled in right away.
-/// - But when the customer was already in Hyperswitch, the create step is skipped — and so the
+/// - But when the customer was already in Orbix Gateway, the create step is skipped — and so the
 ///   connector customer id from the CSV would be thrown away. This function handles that case:
 ///   it opens the existing customer and adds the id in.
 ///

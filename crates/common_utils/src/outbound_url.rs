@@ -118,7 +118,7 @@ impl From<SafeOutboundUrl> for String {
     }
 }
 
-impl hyperswitch_masking::SerializableSecret for SafeOutboundUrl {}
+impl orbix_masking::SerializableSecret for SafeOutboundUrl {}
 
 #[cfg(test)]
 mod tests {

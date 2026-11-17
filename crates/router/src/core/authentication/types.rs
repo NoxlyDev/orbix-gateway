@@ -1,5 +1,5 @@
 use error_stack::{Report, ResultExt};
-pub use hyperswitch_domain_models::{
+pub use orbix_domain_models::{
     authentication,
     router_request_types::authentication::{
         AcquirerDetails, ExternalThreeDSConnectorMetadata, PreAuthenticationData, ThreeDsMethodData,

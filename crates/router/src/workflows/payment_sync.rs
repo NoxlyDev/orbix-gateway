@@ -101,7 +101,7 @@ impl ProcessTrackerWorkflow<SessionState> for PaymentsSyncWorkflow {
             None,
             services::AuthFlow::Client,
             None,
-            hyperswitch_domain_models::payments::HeaderPayload::default(),
+            orbix_domain_models::payments::HeaderPayload::default(),
             &dimensions,
             None,
         ))
@@ -155,9 +155,9 @@ impl ProcessTrackerWorkflow<SessionState> for PaymentsSyncWorkflow {
                         .as_ref()
                         .is_none()
                 {
-                    let payment_intent_update = hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::PGStatusUpdate { status: api_models::enums::IntentStatus::Failed,updated_by: merchant_account.storage_scheme.to_string(), incremental_authorization_allowed: Some(false), feature_metadata: payment_data.payment_intent.feature_metadata.clone(), };
+                    let payment_intent_update = orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::PGStatusUpdate { status: api_models::enums::IntentStatus::Failed,updated_by: merchant_account.storage_scheme.to_string(), incremental_authorization_allowed: Some(false), feature_metadata: payment_data.payment_intent.feature_metadata.clone(), };
                     let payment_attempt_update =
-                        hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptUpdate::ErrorUpdate {
+                        orbix_domain_models::payments::payment_attempt::PaymentAttemptUpdate::ErrorUpdate {
                             connector: None,
                             status: api_models::enums::AttemptStatus::Failure,
                             error_code: None,

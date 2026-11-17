@@ -14,14 +14,14 @@ use common_utils::{
 };
 use common_utils::{errors::CustomResult, id_type};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     api::ApplicationResponse, errors::api_error_response as errors, platform,
 };
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::{ext_traits::OptionExt, payment_methods as domain_pm};
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::{ext_traits::OptionExt, payment_methods as domain_pm};
+use orbix_masking::PeekInterface;
 #[cfg(feature = "v1")]
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 #[cfg(feature = "v1")]
 use router_env::{instrument, logger};
 #[cfg(feature = "v1")]

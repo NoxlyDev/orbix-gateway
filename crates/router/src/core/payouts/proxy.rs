@@ -5,12 +5,12 @@ use common_enums::{
 };
 use common_utils::id_type;
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payment_methods::{PaymentMethod, PaymentMethodVaultSourceDetails, VaultPaymentMethodData},
     payments::HeaderPayload,
     payouts::proxy::{ExternalVaultPayoutCardData, ExternalVaultPayoutMethodData},
 };
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 
 use super::{
     gateway::context::RouterGatewayContext,
@@ -470,7 +470,7 @@ impl ExternalVaultPayout<'_> {
         "External vault connector account is disabled or incompatible with the provider profile",
     )?;
         match VaultConnectors::try_from(external_vault_mca.connector_name.clone()) {
-            Ok(VaultConnectors::HyperswitchVault) => {
+            Ok(VaultConnectors::OrbixVault) => {
                 Ok(PayoutExecutionContext::ExternalVaultProxy {
                     external_vault_mca: helpers::MerchantConnectorAccountType::DbVal(Box::new(
                         external_vault_mca,

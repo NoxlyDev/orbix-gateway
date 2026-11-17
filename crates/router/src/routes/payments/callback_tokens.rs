@@ -2,8 +2,8 @@
 
 use error_stack::ResultExt;
 #[cfg(all(test, feature = "v1"))]
-use hyperswitch_masking::PeekInterface;
-use hyperswitch_masking::Secret;
+use orbix_masking::PeekInterface;
+use orbix_masking::Secret;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 

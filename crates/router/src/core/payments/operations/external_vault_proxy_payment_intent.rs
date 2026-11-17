@@ -7,11 +7,11 @@ use common_utils::{
     types::keymanager::ToEncryptable,
 };
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     mandates, payment_method_data::PaymentMethodData, payments::PaymentConfirmData,
 };
-use hyperswitch_interfaces::api::ConnectorSpecifications;
-use hyperswitch_masking::PeekInterface;
+use orbix_interfaces::api::ConnectorSpecifications;
+use orbix_masking::PeekInterface;
 use router_env::{instrument, tracing};
 
 use super::{Domain, GetTracker, Operation, PostUpdateTracker, UpdateTracker, ValidateRequest};
@@ -174,7 +174,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentConfirmData<F>, ExternalVaultP
         request: &ExternalVaultProxyPaymentsRequest,
         platform: &domain::Platform,
         _profile: &domain::Profile,
-        header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<operations::GetTrackerResponse<PaymentConfirmData<F>>> {
         let db = &*state.store;
         let key_manager_state = &state.into();
@@ -196,10 +196,10 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentConfirmData<F>, ExternalVaultP
 
         let batch_encrypted_data = domain_types::crypto_operation(
             key_manager_state,
-            common_utils::type_name!(hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt),
+            common_utils::type_name!(orbix_domain_models::payments::payment_attempt::PaymentAttempt),
             domain_types::CryptoOperation::BatchEncrypt(
-                hyperswitch_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::to_encryptable(
-                    hyperswitch_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt {
+                orbix_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::to_encryptable(
+                    orbix_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt {
                         payment_method_billing_address: None,
                     },
                 ),
@@ -213,7 +213,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentConfirmData<F>, ExternalVaultP
         .attach_printable("Failed while encrypting payment intent details".to_string())?;
 
         let encrypted_data =
-             hyperswitch_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::from_encryptable(batch_encrypted_data)
+             orbix_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::from_encryptable(batch_encrypted_data)
                 .change_context(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Failed while encrypting payment intent details")?;
 
@@ -230,8 +230,8 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentConfirmData<F>, ExternalVaultP
 
             None => {
                 // TODO: Implement external vault specific payment attempt creation logic
-                let payment_attempt_domain_model: hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt =
-                hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt::external_vault_proxy_create_domain_model(
+                let payment_attempt_domain_model: orbix_domain_models::payments::payment_attempt::PaymentAttempt =
+                orbix_domain_models::payments::payment_attempt::PaymentAttempt::external_vault_proxy_create_domain_model(
                     &payment_intent,
                     cell_id,
                     storage_scheme.inner(),
@@ -254,7 +254,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentConfirmData<F>, ExternalVaultP
         // TODO: Extract external vault specific token/credentials from request
         let processor_payment_token = None; // request.external_vault_details.processor_payment_token.clone();
 
-        let payment_address = hyperswitch_domain_models::payment_address::PaymentAddress::new(
+        let payment_address = orbix_domain_models::payment_address::PaymentAddress::new(
             payment_intent
                 .shipping_address
                 .clone()
@@ -287,7 +287,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentConfirmData<F>, ExternalVaultP
             }),
         };
         let payment_method_data = request.payment_method_data.payment_method_data.clone().map(
-            hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::from,
+            orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::from,
         );
 
         let payment_data = PaymentConfirmData {
@@ -365,7 +365,7 @@ impl<F: Clone + Send + Sync> Domain<F, ExternalVaultProxyPaymentsRequest, Paymen
             payment_data.payment_attempt.customer_acceptance.clone(),
             payment_data.payment_attempt.payment_token.clone(),
         ) {
-            (Some(customer_id), Some(hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(card_details)), Some(_), None) => {
+            (Some(customer_id), Some(orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::Card(card_details)), Some(_), None) => {
 
                 let payment_method_data =
                     api::PaymentMethodCreateData::ProxyCard(api::ProxyCardDetails::from(*card_details));
@@ -398,7 +398,7 @@ impl<F: Clone + Send + Sync> Domain<F, ExternalVaultProxyPaymentsRequest, Paymen
 
                 payment_data.payment_method = Some(payment_method);
             }
-            (_, Some(hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData::VaultToken(vault_token)), None, Some(payment_token)) => {
+            (_, Some(orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData::VaultToken(vault_token)), None, Some(payment_token)) => {
                 payment_data.external_vault_pmd = Some(payment_methods::get_external_vault_token(
                     state,
                     platform.get_processor().get_key_store(),
@@ -485,7 +485,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentConfirmData<F>, ExternalVaultProxy
         processor: &domain::Processor,
         mut payment_data: PaymentConfirmData<F>,
         _frm_suggestion: Option<api_models::enums::FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(BoxedConfirmOperation<'b, F>, PaymentConfirmData<F>)>
     where
@@ -517,7 +517,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentConfirmData<F>, ExternalVaultProxy
         );
 
         let payment_intent_update =
-            hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::ConfirmIntent {
+            orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::ConfirmIntent {
                 status: intent_status,
                 updated_by: storage_scheme.inner().to_string(),
                 active_attempt_id: Some(payment_data.payment_attempt.id.clone())
@@ -538,7 +538,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentConfirmData<F>, ExternalVaultProxy
             .connector_response_reference_id
             .clone();
 
-        let payment_attempt_update = hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptUpdate::ConfirmIntent {
+        let payment_attempt_update = orbix_domain_models::payments::payment_attempt::PaymentAttemptUpdate::ConfirmIntent {
             status: attempt_status,
             updated_by: storage_scheme.inner().to_string(),
             connector,
@@ -594,13 +594,13 @@ impl<F: Clone> PostUpdateTracker<F, PaymentConfirmData<F>, types::PaymentsAuthor
     where
         F: 'b + Send + Sync,
         types::RouterData<F, types::PaymentsAuthorizeData, types::PaymentsResponseData>:
-            hyperswitch_domain_models::router_data::TrackerPostUpdateObjects<
+            orbix_domain_models::router_data::TrackerPostUpdateObjects<
                 F,
                 types::PaymentsAuthorizeData,
                 PaymentConfirmData<F>,
             >,
     {
-        use hyperswitch_domain_models::router_data::TrackerPostUpdateObjects;
+        use orbix_domain_models::router_data::TrackerPostUpdateObjects;
 
         let db = &*state.store;
 

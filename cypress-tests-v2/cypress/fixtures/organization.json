@@ -1,9 +1,9 @@
 {
   "org_create": {
-    "organization_name": "Hyperswitch"
+    "organization_name": "Orbix"
   },
   "org_update": {
-    "organization_name": "Hyperswitch",
+    "organization_name": "Orbix",
     "metadata": {
       "additional_info": "123"
     }

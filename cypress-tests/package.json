@@ -29,7 +29,7 @@
     "format:check": "prettier --config .prettierrc . --check",
     "lint": "eslint ."
   },
-  "author": "Hyperswitch",
+  "author": "Orbix",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",

@@ -857,7 +857,7 @@ export const connectorDetails = {
       Request: {
         currency: "USD",
         billing_descriptor: {
-          name: "Juspay",
+          name: "Orbix",
           city: "San Francisco",
         },
       },
@@ -882,7 +882,7 @@ export const connectorDetails = {
         body: {
           status: "succeeded",
           billing_descriptor: {
-            name: "Juspay",
+            name: "Orbix",
             city: "San Francisco",
             phone: null,
             statement_descriptor: null,
@@ -900,7 +900,7 @@ export const connectorDetails = {
           card: successfulNo3DSCardDetails,
         },
         billing_descriptor: {
-          name: "Juspay",
+          name: "Orbix",
           city: "San Francisco",
         },
         order_tax_amount: 500,
@@ -1039,7 +1039,7 @@ export const connectorDetails = {
         },
       },
       // Non-AFT payment: purpose_of_payment is optional at the API level, but
-      // hyperswitch validates the connector_metadata schema (unknown fields are
+      // orbix validates the connector_metadata schema (unknown fields are
       // rejected with IR_06) and echoes connector_metadata back on the payment
       // response. The payment itself proceeds as a standard card payment and
       // succeeds.
@@ -1083,7 +1083,7 @@ export const connectorDetails = {
         connector_metadata: null,
       },
       // With the AFT flag set, connector_metadata.checkout.purpose_of_payment
-      // becomes a required field: hyperswitch rejects the payment with IR_04
+      // becomes a required field: orbix rejects the payment with IR_04
       // before the recipient_details validation is reached, so this negative
       // is asserted without recipient_details.
       Response: {

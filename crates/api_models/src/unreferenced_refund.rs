@@ -1,6 +1,6 @@
 use cards::CardNumber;
 use common_utils::{fp_utils, types::MinorUnit};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

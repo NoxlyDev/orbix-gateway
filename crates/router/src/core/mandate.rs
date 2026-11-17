@@ -5,7 +5,7 @@ use common_utils::{ext_traits::Encode, id_type};
 use diesel_models::enums as storage_enums;
 use error_stack::{report, ResultExt};
 use futures::future;
-use hyperswitch_domain_models::mandates::{MandateData, MandateIds};
+use orbix_domain_models::mandates::{MandateData, MandateIds};
 use router_env::{instrument, logger};
 
 use super::payments::helpers as payment_helper;
@@ -179,7 +179,7 @@ pub async fn update_connector_mandate_id(
         .map(|md| {
             md.encode_to_value()
                 .change_context(errors::ApiErrorResponse::InternalServerError)
-                .map(hyperswitch_masking::Secret::new)
+                .map(orbix_masking::Secret::new)
         })
         .transpose()?;
 
@@ -362,7 +362,7 @@ where
                 .map(|md| {
                     md.encode_to_value()
                         .change_context(errors::ApiErrorResponse::MandateSerializationFailed)
-                        .map(hyperswitch_masking::Secret::new)
+                        .map(orbix_masking::Secret::new)
                 })
                 .transpose()?;
 

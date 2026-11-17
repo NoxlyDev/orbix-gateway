@@ -17,8 +17,8 @@ use common_utils::{
 };
 use error_stack::ResultExt;
 use helpers::PaymentAuthConnectorDataExt;
-use hyperswitch_domain_models::payments::PaymentIntent;
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_domain_models::payments::PaymentIntent;
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use pm_auth::{
     connector::plaid::transformers::PlaidAuthType,
     types::{
@@ -49,7 +49,7 @@ pub async fn create_link_token(
     state: SessionState,
     platform: domain::Platform,
     payload: api_models::pm_auth::LinkTokenCreateRequest,
-    headers: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    headers: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResponse<api_models::pm_auth::LinkTokenCreateResponse> {
     let db = &*state.store;
 
@@ -159,7 +159,7 @@ pub async fn create_link_token(
         merchant_id: Some(platform.get_processor().get_account().get_id().clone()),
         connector: Some(connector_name.to_string()),
         request: pm_auth_types::LinkTokenRequest {
-            client_name: "HyperSwitch".to_string(),
+            client_name: "Orbix".to_string(),
             country_codes: Some(vec![billing_country.ok_or(
                 ApiErrorResponse::MissingRequiredField {
                     field_name: "billing_country".into(),
@@ -216,7 +216,7 @@ pub async fn create_link_token(
     _state: SessionState,
     _platform: domain::Platform,
     _payload: api_models::pm_auth::LinkTokenCreateRequest,
-    _headers: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+    _headers: Option<orbix_domain_models::payments::HeaderPayload>,
 ) -> RouterResponse<api_models::pm_auth::LinkTokenCreateResponse> {
     todo!()
 }

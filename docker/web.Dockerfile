@@ -2,9 +2,9 @@ FROM node:lts
 
 RUN npm install concurrently -g
 
-WORKDIR /hyperswitch-web
+WORKDIR /orbix-web
 
-RUN git clone https://github.com/juspay/hyperswitch-web --depth 1 .
+RUN git clone https://github.com/orbix/orbix-web --depth 1 .
 
 RUN npm install
 

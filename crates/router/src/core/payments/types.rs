@@ -7,8 +7,8 @@ use common_utils::{
     types::{self as common_types, ConnectorTransactionIdTrait},
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt;
-pub use hyperswitch_domain_models::router_request_types::{
+use orbix_domain_models::payments::payment_attempt::PaymentAttempt;
+pub use orbix_domain_models::router_request_types::{
     self, AuthenticationData, SplitRefundsRequest, StripeSplitRefund, SurchargeDetails,
 };
 use redis_interface::errors::RedisError;

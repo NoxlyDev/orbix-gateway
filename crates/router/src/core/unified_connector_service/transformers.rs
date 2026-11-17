@@ -21,8 +21,8 @@ use diesel_models::{enums as storage_enums, types::OrderDetailsWithAmount};
 use error_stack::{report, ResultExt};
 use external_services::grpc_client::unified_connector_service::UnifiedConnectorServiceError;
 #[cfg(feature = "payouts")]
-use hyperswitch_domain_models::payouts::proxy;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payouts::proxy;
+use orbix_domain_models::{
     mandates,
     mandates::{MandateData, MandateDataType},
     router_data::{AccessToken, ErrorResponse, L2L3Data, RouterData},
@@ -48,12 +48,12 @@ use hyperswitch_domain_models::{
     },
     ApiModelToDieselModelConvertor,
 };
-use hyperswitch_interfaces::consts as interface_consts;
-pub use hyperswitch_interfaces::{
+use orbix_interfaces::consts as interface_consts;
+pub use orbix_interfaces::{
     helpers::ForeignTryFrom,
     unified_connector_service::transformers::convert_connector_service_status_code,
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::tracing;
 use time::Duration;
 use unified_connector_service_cards::{CardNumber, NetworkToken};
@@ -376,7 +376,7 @@ impl ForeignFrom<common_enums::FundingSource> for payments_grpc::FundingSource {
     }
 }
 
-/// Map a UCS FRM verdict onto Hyperswitch's fraud-check status.
+/// Map a UCS FRM verdict onto Orbix Gateway's fraud-check status.
 ///
 /// Only reached on a 2xx with no `error` payload, so the status code is not an
 /// input. `Error`/`Unspecified` on a success response means the provider gave
@@ -1565,7 +1565,7 @@ impl
 impl
     transformers::ForeignTryFrom<(
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payments::CreateConnectorCustomer,
+            orbix_domain_models::router_flow_types::payments::CreateConnectorCustomer,
             router_request_types::ConnectorCustomerData,
             PaymentsResponseData,
         >,
@@ -1577,7 +1577,7 @@ impl
     fn foreign_try_from(
         (router_data, _call_connector_action): (
             &RouterData<
-                hyperswitch_domain_models::router_flow_types::payments::CreateConnectorCustomer,
+                orbix_domain_models::router_flow_types::payments::CreateConnectorCustomer,
                 router_request_types::ConnectorCustomerData,
                 PaymentsResponseData,
             >,
@@ -2009,7 +2009,7 @@ impl
             router_request_types::PaymentsAuthenticateData,
             PaymentsResponseData,
         >,
-        &hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+        &orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
     )> for payments_grpc::PaymentMethodAuthenticationServiceAuthenticateRequest
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
@@ -2020,7 +2020,7 @@ impl
                 router_request_types::PaymentsAuthenticateData,
                 PaymentsResponseData,
             >,
-            &hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+            &orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
         ),
     ) -> Result<Self, Self::Error> {
         let currency = payments_grpc::Currency::foreign_try_from(
@@ -2247,7 +2247,7 @@ impl
             router_request_types::PaymentsPostAuthenticateData,
             PaymentsResponseData,
         >,
-        &hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+        &orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
     )> for payments_grpc::PaymentMethodAuthenticationServicePostAuthenticateRequest
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
@@ -2258,7 +2258,7 @@ impl
                 router_request_types::PaymentsPostAuthenticateData,
                 PaymentsResponseData,
             >,
-            &hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+            &orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
         ),
     ) -> Result<Self, Self::Error> {
         let currency = payments_grpc::Currency::foreign_try_from(
@@ -2473,7 +2473,7 @@ impl
             router_request_types::PaymentsPreAuthenticateData,
             PaymentsResponseData,
         >,
-        &hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+        &orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
     )> for payments_grpc::PaymentMethodAuthenticationServicePreAuthenticateRequest
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
@@ -2484,7 +2484,7 @@ impl
                 router_request_types::PaymentsPreAuthenticateData,
                 PaymentsResponseData,
             >,
-            &hyperswitch_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
+            &orbix_domain_models::payment_method_data::ExternalVaultPaymentMethodData,
         ),
     ) -> Result<Self, Self::Error> {
         let currency = payments_grpc::Currency::foreign_try_from(
@@ -3374,7 +3374,7 @@ impl
         // for -- keeps today's behaviour, because the helper answers NotImplemented for
         // variants it cannot build and the token short-circuit is what rescues them today.
         let payment_method_token = match router_data.request.payment_method_data {
-            hyperswitch_domain_models::payment_method_data::PaymentMethodData::Card(_)
+            orbix_domain_models::payment_method_data::PaymentMethodData::Card(_)
                 if setup_mandate_accepts_raw_card(router_data.connector.as_str()) =>
             {
                 None
@@ -3601,7 +3601,7 @@ impl
 }
 
 fn build_original_payment_authorized_amount(
-    recurring_data: Option<&hyperswitch_domain_models::router_data::RecurringMandatePaymentData>,
+    recurring_data: Option<&orbix_domain_models::router_data::RecurringMandatePaymentData>,
 ) -> Result<Option<payments_grpc::Money>, error_stack::Report<UnifiedConnectorServiceError>> {
     recurring_data
         .and_then(|data| {
@@ -3966,7 +3966,7 @@ impl
             .map(ConnectorState::foreign_from);
 
         let payment_method_data = match router_data.request.payment_method_data.clone() {
-            hyperswitch_domain_models::payment_method_data::PaymentMethodData::MandatePayment => {
+            orbix_domain_models::payment_method_data::PaymentMethodData::MandatePayment => {
                 None
             }
             payment_method_data => Some(payment_method_data),
@@ -4627,7 +4627,7 @@ impl
                 PaymentsResponseData::TransactionResponse {
                     resource_id: connector_transaction_id,
                     redirection_data: Box::new(redirection_data),
-                    mandate_reference: Box::new(response.mandate_reference_details.map(hyperswitch_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
+                    mandate_reference: Box::new(response.mandate_reference_details.map(orbix_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
                     connector_metadata,
                     network_txn_id: response.network_transaction_id.clone(),
                     network_txn_link_id: response.network_txn_link_id.clone(),
@@ -4735,7 +4735,7 @@ impl transformers::ForeignTryFrom<(payments_grpc::PaymentServiceCaptureResponse,
                 PaymentsResponseData::TransactionResponse {
                     resource_id: connector_transaction_id,
                     redirection_data: Box::new(None),
-                    mandate_reference: Box::new(response.mandate_reference_details.map(hyperswitch_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
+                    mandate_reference: Box::new(response.mandate_reference_details.map(orbix_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
                     connector_metadata,
                     network_txn_id: None,
                     network_txn_link_id: None,
@@ -4812,7 +4812,7 @@ impl transformers::ForeignTryFrom<payments_grpc::CustomerServiceCreateResponse>
                 connector_metadata: None,
             })
         } else {
-            use hyperswitch_domain_models::router_response_types::ConnectorCustomerResponseData;
+            use orbix_domain_models::router_response_types::ConnectorCustomerResponseData;
             Ok(PaymentsResponseData::ConnectorCustomerResponse(
                 ConnectorCustomerResponseData::new_with_customer_id(response.connector_customer_id),
             ))
@@ -4934,7 +4934,7 @@ impl
                             .map(RedirectForm::foreign_try_from)
                             .transpose()?,
                     ),
-                    mandate_reference: Box::new(response.mandate_reference_details.map(hyperswitch_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
+                    mandate_reference: Box::new(response.mandate_reference_details.map(orbix_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
                     connector_metadata,
                     network_txn_id: response.network_transaction_id,
                     network_txn_link_id: response.network_txn_link_id,
@@ -5057,7 +5057,7 @@ impl
                             .map(RedirectForm::foreign_try_from)
                             .transpose()?,
                     ),
-                    mandate_reference: Box::new(response.mandate_reference_details.map(hyperswitch_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
+                    mandate_reference: Box::new(response.mandate_reference_details.map(orbix_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
                     connector_metadata,
                     network_txn_id: response.network_transaction_id.clone(),
                     network_txn_link_id: response.network_txn_link_id.clone(),
@@ -5403,23 +5403,23 @@ impl transformers::ForeignTryFrom<payments_grpc::CardNetwork> for common_enums::
     }
 }
 
-impl transformers::ForeignTryFrom<hyperswitch_domain_models::payment_method_data::UpiSource>
+impl transformers::ForeignTryFrom<orbix_domain_models::payment_method_data::UpiSource>
     for payments_grpc::UpiSource
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        upi_source: hyperswitch_domain_models::payment_method_data::UpiSource,
+        upi_source: orbix_domain_models::payment_method_data::UpiSource,
     ) -> Result<Self, Self::Error> {
         match upi_source {
-            hyperswitch_domain_models::payment_method_data::UpiSource::UpiCc => Ok(Self::UpiCc),
-            hyperswitch_domain_models::payment_method_data::UpiSource::UpiCl => Ok(Self::UpiCl),
-            hyperswitch_domain_models::payment_method_data::UpiSource::UpiAccount => {
+            orbix_domain_models::payment_method_data::UpiSource::UpiCc => Ok(Self::UpiCc),
+            orbix_domain_models::payment_method_data::UpiSource::UpiCl => Ok(Self::UpiCl),
+            orbix_domain_models::payment_method_data::UpiSource::UpiAccount => {
                 Ok(Self::UpiAccount)
             }
-            hyperswitch_domain_models::payment_method_data::UpiSource::UpiCcCl => Ok(Self::UpiCcCl),
-            hyperswitch_domain_models::payment_method_data::UpiSource::UpiPpi => Ok(Self::UpiPpi),
-            hyperswitch_domain_models::payment_method_data::UpiSource::UpiVoucher => {
+            orbix_domain_models::payment_method_data::UpiSource::UpiCcCl => Ok(Self::UpiCcCl),
+            orbix_domain_models::payment_method_data::UpiSource::UpiPpi => Ok(Self::UpiPpi),
+            orbix_domain_models::payment_method_data::UpiSource::UpiVoucher => {
                 Ok(Self::UpiVoucher)
             }
         }
@@ -5431,13 +5431,13 @@ impl transformers::ForeignTryFrom<hyperswitch_domain_models::payment_method_data
 #[cfg(feature = "v1")]
 impl
     transformers::ForeignTryFrom<
-        hyperswitch_domain_models::payment_method_data::NetworkTokenDetailsForNetworkTransactionId,
+        orbix_domain_models::payment_method_data::NetworkTokenDetailsForNetworkTransactionId,
     > for payments_grpc::NetworkTokenData
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        token_nti_data: hyperswitch_domain_models::payment_method_data::NetworkTokenDetailsForNetworkTransactionId,
+        token_nti_data: orbix_domain_models::payment_method_data::NetworkTokenDetailsForNetworkTransactionId,
     ) -> Result<Self, Self::Error> {
         let card_network = token_nti_data
             .card_network
@@ -5467,13 +5467,13 @@ impl
     }
 }
 
-impl transformers::ForeignTryFrom<hyperswitch_domain_models::payment_method_data::NetworkTokenData>
+impl transformers::ForeignTryFrom<orbix_domain_models::payment_method_data::NetworkTokenData>
     for payments_grpc::NetworkTokenData
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        network_token_data: hyperswitch_domain_models::payment_method_data::NetworkTokenData,
+        network_token_data: orbix_domain_models::payment_method_data::NetworkTokenData,
     ) -> Result<Self, Self::Error> {
         let card_network = network_token_data
             .card_network
@@ -5539,13 +5539,13 @@ impl transformers::ForeignTryFrom<hyperswitch_domain_models::payment_method_data
 
 impl
     transformers::ForeignTryFrom<
-        hyperswitch_domain_models::payment_method_data::CardDetailsForNetworkTransactionId,
+        orbix_domain_models::payment_method_data::CardDetailsForNetworkTransactionId,
     > for payments_grpc::CardDetailsForNetworkTransactionId
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        card_nti_data: hyperswitch_domain_models::payment_method_data::CardDetailsForNetworkTransactionId,
+        card_nti_data: orbix_domain_models::payment_method_data::CardDetailsForNetworkTransactionId,
     ) -> Result<Self, Self::Error> {
         let card_network = card_nti_data
             .card_network
@@ -5579,11 +5579,11 @@ impl
 
 /// The vault-alias counterpart of the `CardDetailsForNetworkTransactionId` conversion. Infallible:
 /// the alias is already a string, so unlike a PAN there is nothing to parse.
-impl ForeignFrom<hyperswitch_domain_models::payment_method_data::ExternalVaultCard>
+impl ForeignFrom<orbix_domain_models::payment_method_data::ExternalVaultCard>
     for payments_grpc::ProxyCardDetailsForNetworkTransactionId
 {
     fn foreign_from(
-        external_vault_card: hyperswitch_domain_models::payment_method_data::ExternalVaultCard,
+        external_vault_card: orbix_domain_models::payment_method_data::ExternalVaultCard,
     ) -> Self {
         let card_network = external_vault_card
             .card_network
@@ -5620,13 +5620,13 @@ impl ForeignFrom<common_types::payments::TokenSource> for payments_grpc::TokenSo
 
 impl
     transformers::ForeignTryFrom<
-        hyperswitch_domain_models::payment_method_data::DecryptedWalletTokenDetailsForNetworkTransactionId,
+        orbix_domain_models::payment_method_data::DecryptedWalletTokenDetailsForNetworkTransactionId,
     > for payments_grpc::DecryptedWalletTokenDetailsForNetworkTransactionId
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        wallet_token_data: hyperswitch_domain_models::payment_method_data::DecryptedWalletTokenDetailsForNetworkTransactionId,
+        wallet_token_data: orbix_domain_models::payment_method_data::DecryptedWalletTokenDetailsForNetworkTransactionId,
     ) -> Result<Self, Self::Error> {
         let card_network = wallet_token_data
             .card_network
@@ -5723,13 +5723,13 @@ impl transformers::ForeignTryFrom<&common_types::payments::ApplePayPaymentData>
     }
 }
 
-impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeToken>
+impl transformers::ForeignTryFrom<&orbix_domain_models::router_data::PazeToken>
     for payments_grpc::PazeToken
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        value: &hyperswitch_domain_models::router_data::PazeToken,
+        value: &orbix_domain_models::router_data::PazeToken,
     ) -> Result<Self, Self::Error> {
         let payment_token = NetworkToken::from_str(&value.payment_token.get_card_no())
             .change_context(
@@ -5748,13 +5748,13 @@ impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeT
     }
 }
 
-impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeDynamicData>
+impl transformers::ForeignTryFrom<&orbix_domain_models::router_data::PazeDynamicData>
     for payments_grpc::PazeDynamicData
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        value: &hyperswitch_domain_models::router_data::PazeDynamicData,
+        value: &orbix_domain_models::router_data::PazeDynamicData,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             dynamic_data_value: value
@@ -5767,13 +5767,13 @@ impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeD
     }
 }
 
-impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazePhoneNumber>
+impl transformers::ForeignTryFrom<&orbix_domain_models::router_data::PazePhoneNumber>
     for payments_grpc::PazePhoneNumber
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        value: &hyperswitch_domain_models::router_data::PazePhoneNumber,
+        value: &orbix_domain_models::router_data::PazePhoneNumber,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             country_code: Some(value.country_code.clone().expose().into()),
@@ -5782,13 +5782,13 @@ impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeP
     }
 }
 
-impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeConsumer>
+impl transformers::ForeignTryFrom<&orbix_domain_models::router_data::PazeConsumer>
     for payments_grpc::PazeConsumer
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        value: &hyperswitch_domain_models::router_data::PazeConsumer,
+        value: &orbix_domain_models::router_data::PazeConsumer,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             first_name: value
@@ -5815,13 +5815,13 @@ impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeC
     }
 }
 
-impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeAddress>
+impl transformers::ForeignTryFrom<&orbix_domain_models::router_data::PazeAddress>
     for payments_grpc::PazeAddress
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        value: &hyperswitch_domain_models::router_data::PazeAddress,
+        value: &orbix_domain_models::router_data::PazeAddress,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             name: value.name.clone().map(|name| name.expose().into()),
@@ -5839,13 +5839,13 @@ impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeA
     }
 }
 
-impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeDecryptedData>
+impl transformers::ForeignTryFrom<&orbix_domain_models::router_data::PazeDecryptedData>
     for payments_grpc::PazeDecryptedData
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        value: &hyperswitch_domain_models::router_data::PazeDecryptedData,
+        value: &orbix_domain_models::router_data::PazeDecryptedData,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             client_id: Some(value.client_id.clone().expose().into()),
@@ -5871,13 +5871,13 @@ impl transformers::ForeignTryFrom<&hyperswitch_domain_models::router_data::PazeD
     }
 }
 
-impl transformers::ForeignTryFrom<&hyperswitch_domain_models::payment_method_data::PazeWalletData>
+impl transformers::ForeignTryFrom<&orbix_domain_models::payment_method_data::PazeWalletData>
     for payments_grpc::paze_wallet::PazeData
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        value: &hyperswitch_domain_models::payment_method_data::PazeWalletData,
+        value: &orbix_domain_models::payment_method_data::PazeWalletData,
     ) -> Result<Self, Self::Error> {
         Ok(Self::CompleteResponse(
             value.complete_response.clone().expose().into(),
@@ -5926,13 +5926,13 @@ impl transformers::ForeignTryFrom<&common_types::payments::GpayTokenizationData>
     }
 }
 
-impl transformers::ForeignTryFrom<hyperswitch_domain_models::payment_address::PaymentAddress>
+impl transformers::ForeignTryFrom<orbix_domain_models::payment_address::PaymentAddress>
     for payments_grpc::PaymentAddress
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        payment_address: hyperswitch_domain_models::payment_address::PaymentAddress,
+        payment_address: orbix_domain_models::payment_address::PaymentAddress,
     ) -> Result<Self, Self::Error> {
         let shipping = payment_address.get_shipping().map(|address| {
             let details = address.address.as_ref();
@@ -6058,13 +6058,13 @@ impl transformers::ForeignTryFrom<hyperswitch_domain_models::payment_address::Pa
 }
 
 #[cfg(feature = "payouts")]
-impl transformers::ForeignTryFrom<hyperswitch_domain_models::address::Address>
+impl transformers::ForeignTryFrom<orbix_domain_models::address::Address>
     for payments_grpc::Address
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        address: hyperswitch_domain_models::address::Address,
+        address: orbix_domain_models::address::Address,
     ) -> Result<Self, Self::Error> {
         let details = address.address.as_ref();
         let country = details.and_then(|details| {
@@ -6101,13 +6101,13 @@ impl transformers::ForeignTryFrom<hyperswitch_domain_models::address::Address>
 }
 
 #[cfg(feature = "payouts")]
-impl transformers::ForeignTryFrom<hyperswitch_domain_models::payment_address::PaymentAddress>
+impl transformers::ForeignTryFrom<orbix_domain_models::payment_address::PaymentAddress>
     for payments_grpc::PayoutAddress
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        payment_address: hyperswitch_domain_models::payment_address::PaymentAddress,
+        payment_address: orbix_domain_models::payment_address::PaymentAddress,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             shipping_address: payment_address
@@ -8685,7 +8685,7 @@ impl transformers::ForeignTryFrom<&MandateData> for payments_grpc::SetupMandateD
                                         billing_cycle: None,
                                         description: None,
                                         next_billing_date: None,
-                                        // Hyperswitch setup-mandate requests do not carry mandate status.
+                                        // Orbix Gateway setup-mandate requests do not carry mandate status.
                                         mandate_status: payments_grpc::MandateStatus::Unspecified
                                             .into(),
                                     },
@@ -8729,7 +8729,7 @@ impl transformers::ForeignTryFrom<&MandateData> for payments_grpc::SetupMandateD
                                             billing_cycle: None,
                                             description: None,
                                             next_billing_date: None,
-                                            // Hyperswitch setup-mandate requests do not carry mandate status.
+                                            // Orbix Gateway setup-mandate requests do not carry mandate status.
                                             mandate_status:
                                                 payments_grpc::MandateStatus::Unspecified.into(),
                                         },
@@ -8923,13 +8923,13 @@ impl
 
 impl
     transformers::ForeignTryFrom<
-        &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+        &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
     > for payments_grpc::RequestDetails
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        request_details: &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+        request_details: &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
     ) -> Result<Self, Self::Error> {
         let headers_map = request_details
             .headers
@@ -8952,13 +8952,13 @@ impl
 
 impl
     transformers::ForeignTryFrom<
-        &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+        &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
     > for EventServiceParseRequest
 {
     type Error = error_stack::Report<UnifiedConnectorServiceError>;
 
     fn foreign_try_from(
-        request_details: &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+        request_details: &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
     ) -> Result<Self, Self::Error> {
         let request_details_grpc =
             <payments_grpc::RequestDetails as transformers::ForeignTryFrom<_>>::foreign_try_from(
@@ -8971,7 +8971,7 @@ impl
 }
 
 pub fn build_handle_event_request(
-    request_details: &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+    request_details: &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
     webhook_secrets: Option<payments_grpc::WebhookSecrets>,
     event_context: Option<payments_grpc::EventContext>,
     merchant_event_id: String,
@@ -9700,7 +9700,7 @@ impl transformers::ForeignTryFrom<(payments_grpc::PaymentServiceVoidResponse, At
                 PaymentsResponseData::TransactionResponse {
                     resource_id: connector_transaction_id,
                     redirection_data: Box::new(None),
-                    mandate_reference: Box::new(response.mandate_reference_details.map(hyperswitch_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
+                    mandate_reference: Box::new(response.mandate_reference_details.map(orbix_domain_models::router_response_types::MandateReference::foreign_try_from).transpose()?),
                     connector_metadata,
                     network_txn_id: None,
                     network_txn_link_id: None,
@@ -9721,7 +9721,7 @@ impl transformers::ForeignTryFrom<(payments_grpc::PaymentServiceVoidResponse, At
 impl
     transformers::ForeignTryFrom<(
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::access_token_auth::AccessTokenAuth,
+            orbix_domain_models::router_flow_types::access_token_auth::AccessTokenAuth,
             router_request_types::AccessTokenRequestData,
             AccessToken,
         >,
@@ -9733,7 +9733,7 @@ impl
     fn foreign_try_from(
         (router_data, _call_connector_action): (
             &RouterData<
-                hyperswitch_domain_models::router_flow_types::access_token_auth::AccessTokenAuth,
+                orbix_domain_models::router_flow_types::access_token_auth::AccessTokenAuth,
                 router_request_types::AccessTokenRequestData,
                 AccessToken,
             >,
@@ -9893,7 +9893,7 @@ fn payout_method_for_ucs<F>(
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoCreate,
+            orbix_domain_models::router_flow_types::payouts::PoCreate,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -9903,7 +9903,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoCreate,
+            orbix_domain_models::router_flow_types::payouts::PoCreate,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -9991,7 +9991,7 @@ impl
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoCancel,
+            orbix_domain_models::router_flow_types::payouts::PoCancel,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10001,7 +10001,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoCancel,
+            orbix_domain_models::router_flow_types::payouts::PoCancel,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10029,7 +10029,7 @@ impl
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoEligibility,
+            orbix_domain_models::router_flow_types::payouts::PoEligibility,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10039,7 +10039,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoEligibility,
+            orbix_domain_models::router_flow_types::payouts::PoEligibility,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10099,7 +10099,7 @@ impl
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoFulfill,
+            orbix_domain_models::router_flow_types::payouts::PoFulfill,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10109,7 +10109,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoFulfill,
+            orbix_domain_models::router_flow_types::payouts::PoFulfill,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10212,7 +10212,7 @@ impl
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoQuote,
+            orbix_domain_models::router_flow_types::payouts::PoQuote,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10222,7 +10222,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoQuote,
+            orbix_domain_models::router_flow_types::payouts::PoQuote,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10315,7 +10315,7 @@ impl<F>
             .cloned()
             .map(|address| {
                 payments_grpc::Address::foreign_try_from(
-                    hyperswitch_domain_models::address::Address::from(address),
+                    orbix_domain_models::address::Address::from(address),
                 )
             })
             .transpose()?;
@@ -10431,7 +10431,7 @@ impl<F>
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoRecipient,
+            orbix_domain_models::router_flow_types::payouts::PoRecipient,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10441,7 +10441,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoRecipient,
+            orbix_domain_models::router_flow_types::payouts::PoRecipient,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10502,7 +10502,7 @@ impl
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoRecipientAccount,
+            orbix_domain_models::router_flow_types::payouts::PoRecipientAccount,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10512,7 +10512,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoRecipientAccount,
+            orbix_domain_models::router_flow_types::payouts::PoRecipientAccount,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10580,7 +10580,7 @@ impl
 impl
     transformers::ForeignTryFrom<
         &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoSync,
+            orbix_domain_models::router_flow_types::payouts::PoSync,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -10590,7 +10590,7 @@ impl
 
     fn foreign_try_from(
         router_data: &RouterData<
-            hyperswitch_domain_models::router_flow_types::payouts::PoSync,
+            orbix_domain_models::router_flow_types::payouts::PoSync,
             router_request_types::PayoutsData,
             PayoutsResponseData,
         >,
@@ -11512,7 +11512,7 @@ impl ForeignFrom<&api_models::payouts::PayshapProxyBankTransfer>
     }
 }
 
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_flow_types::payments::CalculateSurcharge,
     router_request_types::PaymentsSurchargeCalculationData,
     router_response_types::SurchargeCalculationResponseData,
@@ -11822,7 +11822,7 @@ impl ForeignFrom<&router_request_types::StripeSplitRefund>
             // `charge_id` is a plain proto3 string, so prost leaves an empty value off the wire
             // entirely - which is how an unresolved charge id reaches connector-service as an
             // absent field. Requires the connector-service side to read it as optional
-            // (juspay/connector-service `optional string charge_id`), so that deploys first.
+            // (orbix/connector-service `optional string charge_id`), so that deploys first.
             charge_id: stripe.charge_id.clone().unwrap_or_default(),
             transfer_account_id: stripe.transfer_account_id.clone(),
             charge_type: payments_grpc::PaymentChargeType::foreign_from(&stripe.charge_type).into(),
@@ -12037,7 +12037,7 @@ impl
                 .as_ref()
                 .map(|id| id.get_string_repr().to_owned()),
             // Sent as the full name; providers that want the parts split it
-            // themselves, since Hyperswitch does not store them apart.
+            // themselves, since Orbix Gateway does not store them apart.
             name: request
                 .customer_name
                 .as_ref()
@@ -12058,7 +12058,7 @@ impl
         // is encoded identically for a risk check and for the authorization that
         // follows it.
         //
-        // A payment method Hyperswitch cannot encode degrades to `None` rather
+        // A payment method Orbix Gateway cannot encode degrades to `None` rather
         // than failing: the FRM pre-check propagates its error with `?` in
         // `pre_payment_frm_core`, so returning `Err` here would fail the payment
         // outright over a risk-signal encoding problem.

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use common_utils::errors::CustomResult;
 #[cfg(any(feature = "gcp_kms", feature = "oci_kms"))]
 use error_stack::ResultExt;
-use hyperswitch_interfaces::encryption_interface::{
+use orbix_interfaces::encryption_interface::{
     EncryptionError, EncryptionManagementInterface,
 };
 

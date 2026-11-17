@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use utoipa::ToSchema;
 
 /// The operation Twilio is asking us to perform.
@@ -71,7 +71,7 @@ pub struct TwilioGenericPayRequest {
 /// Body Twilio expects back. It reads `error_code` to decide the outcome, so a decline is a `200` with that set.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct TwilioGenericPayResponse {
-    /// The Hyperswitch `payment_id`, on a successful charge.
+    /// The Orbix Gateway `payment_id`, on a successful charge.
     #[schema(value_type = Option<String>, example = "pay_8320b449b06630271e378214dab80ce5")]
     pub charge_id: Option<common_utils::id_type::PaymentId>,
 

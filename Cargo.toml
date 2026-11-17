@@ -61,5 +61,3 @@ lto = false
 codegen-units = 16
 strip = "none"
 
-[patch.crates-io]
-hyperswitch_masking = { path = "vendor/orbix_framework/crates/hyperswitch_masking" }

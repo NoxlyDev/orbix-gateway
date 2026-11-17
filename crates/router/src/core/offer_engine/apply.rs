@@ -1,5 +1,5 @@
 use common_utils::{errors::CustomResult, id_type, types::MinorUnit};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use super::{
     client::OfferEngineClient,
@@ -19,7 +19,7 @@ pub struct OfferQuoteRef {
 
 /// Non-sensitive context needed to build an Offer Engine `/apply` request.
 pub struct OfferApplyContext {
-    /// Hyperswitch payment id, used as the Offer Engine order id.
+    /// Orbix Gateway payment id, used as the Offer Engine order id.
     pub payment_id: id_type::PaymentId,
     /// Current payment attempt id, used as the Offer Engine `txn_id`.
     pub attempt_id: String,

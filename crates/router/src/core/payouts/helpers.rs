@@ -14,8 +14,8 @@ use common_utils::{
 #[cfg(feature = "v1")]
 use common_utils::{generate_customer_id_of_default_length, types::keymanager::ToEncryptable};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::type_encryption::{crypto_operation, CryptoOperation};
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret, SwitchStrategy};
+use orbix_domain_models::type_encryption::{crypto_operation, CryptoOperation};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret, SwitchStrategy};
 use router_env::logger;
 
 use super::{
@@ -71,13 +71,13 @@ pub async fn make_payout_method_data(
         .unwrap_or_default()
         .validate_normal_execution_kind()?;
     let db = &*state.store;
-    let hyperswitch_token = if let Some(payout_token) = payout_token {
+    let orbix_token = if let Some(payout_token) = payout_token {
         if payout_token.starts_with("temporary_token_") {
             Some(payout_token.to_string())
         } else {
             let certain_payout_type = payout_type.get_required_value("payout_type")?.to_owned();
             let key = format!(
-                "pm_token_{}_{}_hyperswitch",
+                "pm_token_{}_{}_orbix",
                 payout_token,
                 api_enums::PaymentMethod::foreign_from(certain_payout_type)
             );
@@ -88,7 +88,7 @@ pub async fn make_payout_method_data(
                 .change_context(errors::ApiErrorResponse::InternalServerError)
                 .attach_printable("Failed to get redis connection")?;
 
-            let hyperswitch_token = redis_conn
+            let orbix_token = redis_conn
                 .get_key::<Option<String>>(&key.into())
                 .await
                 .change_context(errors::ApiErrorResponse::InternalServerError)
@@ -98,11 +98,11 @@ pub async fn make_payout_method_data(
                         message: "Token is invalid or expired".to_owned(),
                     },
                 ))?;
-            let payment_token_data = hyperswitch_token
+            let payment_token_data = orbix_token
                 .clone()
                 .parse_struct("PaymentTokenData")
                 .change_context(errors::ApiErrorResponse::InternalServerError)
-                .attach_printable("failed to deserialize hyperswitch token data")?;
+                .attach_printable("failed to deserialize orbix token data")?;
 
             let payment_token = match payment_token_data {
                 storage::PaymentTokenData::PermanentCard(storage::CardTokenData {
@@ -124,7 +124,7 @@ pub async fn make_payout_method_data(
     let data: Result<Option<api::PayoutMethodData>, error_stack::Report<errors::ApiErrorResponse>> =
         match (
             payout_method_data.to_owned(),
-            hyperswitch_token,
+            orbix_token,
             payout_data,
         ) {
             // Get operation
@@ -1309,7 +1309,7 @@ pub async fn get_gsm_record(
     connector_name: Option<String>,
     flow: &str,
     sub_flow: &str,
-) -> Option<hyperswitch_domain_models::gsm::GatewayStatusMap> {
+) -> Option<orbix_domain_models::gsm::GatewayStatusMap> {
     let connector_name = connector_name.unwrap_or_default();
     let get_gsm = || async {
         state.store.find_gsm_rule(
@@ -1804,12 +1804,12 @@ pub async fn resolve_billing_address_for_payout(
     state: &SessionState,
     req_billing: Option<&api_models::payments::Address>,
     existing_address_id: Option<&String>,
-    payment_method: Option<&hyperswitch_domain_models::payment_methods::PaymentMethod>,
+    payment_method: Option<&orbix_domain_models::payment_methods::PaymentMethod>,
     platform: &domain::Platform,
     customer_id: Option<&id_type::CustomerId>,
     payout_id: &id_type::PayoutId,
 ) -> RouterResult<(
-    Option<hyperswitch_domain_models::address::Address>,
+    Option<orbix_domain_models::address::Address>,
     Option<String>,
 )> {
     let payout_id_as_payment_id = id_type::PaymentId::try_from(std::borrow::Cow::Owned(
@@ -1835,9 +1835,9 @@ pub async fn resolve_billing_address_for_payout(
             )
             .await?;
             let address_id = billing_address.as_ref().map(|a| a.address_id.clone());
-            let hyperswitch_address = billing_address
-                .map(|addr| hyperswitch_domain_models::address::Address::from(&addr));
-            Ok((hyperswitch_address, address_id))
+            let orbix_address = billing_address
+                .map(|addr| orbix_domain_models::address::Address::from(&addr));
+            Ok((orbix_address, address_id))
         }
 
         // Existing address using address_id
@@ -1853,9 +1853,9 @@ pub async fn resolve_billing_address_for_payout(
                 platform.get_processor().get_account().storage_scheme,
             )
             .await?;
-            let hyperswitch_address = billing_address
-                .map(|addr| hyperswitch_domain_models::address::Address::from(&addr));
-            Ok((hyperswitch_address, Some(address_id.clone())))
+            let orbix_address = billing_address
+                .map(|addr| orbix_domain_models::address::Address::from(&addr));
+            Ok((orbix_address, Some(address_id.clone())))
         }
 
         // Existing address in stored payment method
@@ -1874,15 +1874,15 @@ pub async fn resolve_billing_address_for_payout(
                             .clone()
                             .into_inner()
                             .expose()
-                            .parse_value::<hyperswitch_domain_models::address::Address>(
+                            .parse_value::<orbix_domain_models::address::Address>(
                                 "payment_method_billing_address",
                             )
                             .map(|domain_address| {
-                                logger::info!("Successfully parsed as hyperswitch_domain_models::address::Address");
+                                logger::info!("Successfully parsed as orbix_domain_models::address::Address");
                                 (Some(domain_address), None)
                             })
                             .map_err(|e| {
-                                logger::error!("Failed to parse billing address into (hyperswitch_domain_models::address::Address): {:?}", e);
+                                logger::error!("Failed to parse billing address into (orbix_domain_models::address::Address): {:?}", e);
                                 errors::ApiErrorResponse::InternalServerError
                             })
                             .attach_printable("Failed to parse stored billing address")

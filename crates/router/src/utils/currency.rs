@@ -9,7 +9,7 @@ use api_models::enums;
 use common_utils::{date_time, errors::CustomResult, events::ApiEventMetric, ext_traits::AsyncExt};
 use currency_conversion::types::{CurrencyFactors, ExchangeRates};
 use error_stack::ResultExt;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use redis_interface::DelReply;
 use router_env::instrument;
 use rust_decimal::Decimal;

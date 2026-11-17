@@ -2,7 +2,7 @@
 
 use api_models::payment_methods::{NetworkTokenResponse, PaymentMethodId};
 use common_utils::{id_type, request::Method};
-use hyperswitch_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
+use orbix_interfaces::micro_service::{MicroserviceClientError, MicroserviceClientErrorKind};
 use time::PrimitiveDateTime;
 
 use crate::types::{
@@ -37,7 +37,7 @@ pub struct RetrievePaymentMethodResponse {
     pub network_token: Option<NetworkTokenResponse>,
     pub raw_payment_method_data: Option<RawPaymentMethodData>,
     pub network_transaction_id: Option<String>,
-    pub billing: Option<hyperswitch_domain_models::address::Address>,
+    pub billing: Option<orbix_domain_models::address::Address>,
     pub storage_type: Option<common_enums::StorageType>,
 }
 
@@ -121,7 +121,7 @@ impl RetrievePaymentMethod {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     RetrievePaymentMethod,
     method = Method::Get,
     path = "/{prefix}/payment-methods/{id}",

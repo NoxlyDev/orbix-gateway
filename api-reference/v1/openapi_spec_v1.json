@@ -4,12 +4,12 @@
     "enabled": true
   },
   "info": {
-    "title": "Hyperswitch - API Documentation",
-    "description": "\n## Get started\n\nHyperswitch provides a collection of APIs that enable you to process and manage payments.\nOur APIs accept and return JSON in the HTTP body, and return standard HTTP response codes.\n\nYou can consume the APIs directly using your favorite HTTP/REST library.\n\nWe have a testing environment referred to \"sandbox\", which you can setup to test API calls without\naffecting production data.\nCurrently, our sandbox environment is live while our production environment is under development\nand will be available soon.\nYou can sign up on our Dashboard to get API keys to access Hyperswitch API.\n\n### Environment\n\nUse the following base URLs when making requests to the APIs:\n\n| Environment   |  Base URL                          |\n|---------------|------------------------------------|\n| Sandbox       | <https://sandbox.hyperswitch.io>   |\n| Production    | <https://api.hyperswitch.io>       |\n\n## Authentication\n\nWhen you sign up on our [dashboard](https://app.hyperswitch.io) and create a merchant\naccount, you are given a secret key (also referred as api-key) and a publishable key.\nYou may authenticate all API requests with Hyperswitch server by providing the appropriate key in\nthe request Authorization header.\n\n| Key             |  Description                                                                                  |\n|-----------------|-----------------------------------------------------------------------------------------------|\n| api-key         | Private key. Used to authenticate all API requests from your merchant server                  |\n| publishable key | Unique identifier for your account. Used to authenticate API requests from your app's client  |\n\nNever share your secret api keys. Keep them guarded and secure.\n",
+    "title": "Orbix Gateway - API Documentation",
+    "description": "\n## Get started\n\nOrbix provides a collection of APIs that enable you to process and manage payments.\nOur APIs accept and return JSON in the HTTP body, and return standard HTTP response codes.\n\nYou can consume the APIs directly using your favorite HTTP/REST library.\n\nWe have a testing environment referred to \"sandbox\", which you can setup to test API calls without\naffecting production data.\nCurrently, our sandbox environment is live while our production environment is under development\nand will be available soon.\nYou can sign up on our Dashboard to get API keys to access Orbix Gateway API.\n\n### Environment\n\nUse the following base URLs when making requests to the APIs:\n\n| Environment   |  Base URL                          |\n|---------------|------------------------------------|\n| Sandbox       | <https://sandbox.orbix.example>   |\n| Production    | <https://api.orbix.example>       |\n\n## Authentication\n\nWhen you sign up on our [dashboard](https://app.orbix.example) and create a merchant\naccount, you are given a secret key (also referred as api-key) and a publishable key.\nYou may authenticate all API requests with Orbix Gateway server by providing the appropriate key in\nthe request Authorization header.\n\n| Key             |  Description                                                                                  |\n|-----------------|-----------------------------------------------------------------------------------------------|\n| api-key         | Private key. Used to authenticate all API requests from your merchant server                  |\n| publishable key | Unique identifier for your account. Used to authenticate API requests from your app's client  |\n\nNever share your secret api keys. Keep them guarded and secure.\n",
     "contact": {
-      "name": "Hyperswitch Support",
-      "url": "https://hyperswitch.io",
-      "email": "support.global@juspay.io"
+      "name": "Orbix Gateway Support",
+      "url": "https://orbix.example",
+      "email": "support.global@orbix.example"
     },
     "license": {
       "name": "Apache-2.0"
@@ -18,7 +18,7 @@
   },
   "servers": [
     {
-      "url": "https://sandbox.hyperswitch.io",
+      "url": "https://sandbox.orbix.example",
       "description": "Sandbox Environment"
     }
   ],
@@ -272,7 +272,7 @@
                     "phone": "999999999",
                     "phone_country_code": "+65",
                     "profile_id": "pro_abcdefghijklmnop",
-                    "return_url": "https://hyperswitch.io",
+                    "return_url": "https://orbix.example",
                     "setup_future_usage": "off_session",
                     "split_payments": {
                       "stripe_split_payment": {
@@ -673,7 +673,7 @@
                           "vault_data": {
                             "sdk_authorization": "cHJvZmlsZV9pZD1wcm9mXzEyMyxwdWJsaXNoYWJsZV9rZXk9cGtfbGl2ZV8xMjM="
                           },
-                          "vault_type": "hyperswitch"
+                          "vault_type": "orbix"
                         }
                       },
                       "status": "requires_payment_method"
@@ -867,7 +867,7 @@
                           "vault_data": {
                             "sdk_authorization": "cHJvZmlsZV9pZD1wcm9mXzEyMyxwdWJsaXNoYWJsZV9rZXk9cGtfbGl2ZV8xMjM="
                           },
-                          "vault_type": "hyperswitch"
+                          "vault_type": "orbix"
                         }
                       },
                       "status": "requires_payment_method"
@@ -1216,7 +1216,7 @@
           "Payments"
         ],
         "summary": "Payments - Session token",
-        "description": "Creates a session object or a session token for wallets like Apple Pay, Google Pay, etc. These tokens are used by Hyperswitch's SDK to initiate these wallets' SDK.",
+        "description": "Creates a session object or a session token for wallets like Apple Pay, Google Pay, etc. These tokens are used by Orbix Gateway's SDK to initiate these wallets' SDK.",
         "operationId": "Create Session tokens for a Payment",
         "requestBody": {
           "content": {
@@ -3542,7 +3542,7 @@
           "Gsm"
         ],
         "summary": "Gsm - Create",
-        "description": "Creates a GSM (Global Status Mapping) Rule. A GSM rule is used to map a connector's error message/error code combination during a particular payments flow/sub-flow to Hyperswitch's unified status/error code/error message combination. It is also used to decide the next action in the flow - retry/requeue/do_default",
+        "description": "Creates a GSM (Global Status Mapping) Rule. A GSM rule is used to map a connector's error message/error code combination during a particular payments flow/sub-flow to Orbix Gateway's unified status/error code/error message combination. It is also used to decide the next action in the flow - retry/requeue/do_default",
         "operationId": "Create Gsm Rule",
         "requestBody": {
           "content": {
@@ -11993,7 +11993,7 @@
           "management_url": {
             "type": "string",
             "description": "A URL to a web page where the user can update or delete the payment method for the recurring payment",
-            "example": "https://hyperswitch.io"
+            "example": "https://orbix.example"
           }
         }
       },
@@ -12020,7 +12020,7 @@
           "management_u_r_l": {
             "type": "string",
             "description": "A URL to a web page where the user can update or delete the payment method for the recurring payment",
-            "example": "https://hyperswitch.io"
+            "example": "https://orbix.example"
           }
         }
       },
@@ -12559,7 +12559,7 @@
           "gpayments",
           "ctp_mastercard",
           "unified_authentication_service",
-          "juspaythreedsserver",
+          "orbixthreedsserver",
           "ctp_visa",
           "cardinal"
         ]
@@ -14307,7 +14307,7 @@
       },
       "BankNames": {
         "type": "string",
-        "description": "Name of banks supported by Hyperswitch",
+        "description": "Name of banks supported by Orbix Gateway",
         "enum": [
           "absa",
           "access_bank",
@@ -17702,7 +17702,7 @@
               },
               "branding_visibility": {
                 "type": "boolean",
-                "description": "Toggle for HyperSwitch branding visibility",
+                "description": "Toggle for Orbix Gateway branding visibility",
                 "nullable": true
               }
             }
@@ -18972,7 +18972,7 @@
           },
           "card_cvc_token": {
             "type": "string",
-            "description": "Token referencing a CVC vaulted in the hyperswitch (self-hosted) vault. Used by the\nself-hosted default-vault repeat-customer flow, where the card is referenced by the\ntop-level `payment_token` and the freshly-tokenized CVC arrives as this token; the server\nresolves it to the raw CVC. Not used by the external vault proxy flow.",
+            "description": "Token referencing a CVC vaulted in the orbix (self-hosted) vault. Used by the\nself-hosted default-vault repeat-customer flow, where the card is referenced by the\ntop-level `payment_token` and the freshly-tokenized CVC arrives as this token; the server\nresolves it to the raw CVC. Not used by the external vault proxy flow.",
             "nullable": true
           }
         }
@@ -19759,7 +19759,7 @@
           "hipay",
           "helcim",
           "hyperpg",
-          "hyperswitch_vault",
+          "orbix_vault",
           "interpayments",
           "inespay",
           "iatapay",
@@ -19768,8 +19768,8 @@
           "itaubank",
           "jpmorgan",
           "jpmorgan_orbital",
-          "juspay",
-          "juspaythreedsserver",
+          "orbix",
+          "orbixthreedsserver",
           "klarna",
           "loonio",
           "merchante",
@@ -19928,7 +19928,7 @@
             "nullable": true
           },
           "category": {
-            "$ref": "#/components/schemas/HyperswitchConnectorCategory"
+            "$ref": "#/components/schemas/OrbixConnectorCategory"
           },
           "integration_status": {
             "$ref": "#/components/schemas/ConnectorIntegrationStatus"
@@ -24685,7 +24685,7 @@
       },
       "FeatureMetadata": {
         "type": "object",
-        "description": "additional data that might be required by hyperswitch",
+        "description": "additional data that might be required by orbix",
         "properties": {
           "redirect_response": {
             "allOf": [
@@ -25544,14 +25544,14 @@
           "logo": {
             "type": "string",
             "description": "Merchant's display logo",
-            "example": "https://hyperswitch.io/favicon.ico",
+            "example": "https://orbix.example/favicon.ico",
             "nullable": true,
             "maxLength": 255
           },
           "merchant_name": {
             "type": "string",
             "description": "Custom merchant name for the link",
-            "example": "Hyperswitch",
+            "example": "Orbix",
             "nullable": true,
             "maxLength": 255
           },
@@ -25986,7 +25986,7 @@
       },
       "GooglePayTokenizationSpecificationType": {
         "type": "string",
-        "description": "The tokenization type sent to the Google Pay SDK.\n\nUnlike [`GooglePayTokenizationType`], this holds only the values Google itself understands:\nthe Hyperswitch-internal `INTERNAL_GATEWAY` marker is resolved into `PAYMENT_GATEWAY` during\nthe session flow before this is built, so it can never leak into an SDK response.",
+        "description": "The tokenization type sent to the Google Pay SDK.\n\nUnlike [`GooglePayTokenizationType`], this holds only the values Google itself understands:\nthe Orbix Gateway-internal `INTERNAL_GATEWAY` marker is resolved into `PAYMENT_GATEWAY` during\nthe session flow before this is built, so it can never leak into an SDK response.",
         "enum": [
           "PAYMENT_GATEWAY",
           "DIRECT"
@@ -26704,7 +26704,7 @@
           }
         }
       },
-      "HyperswitchConnectorCategory": {
+      "OrbixConnectorCategory": {
         "type": "string",
         "description": "Connector Access Method",
         "enum": [
@@ -26719,7 +26719,7 @@
           "revenue_growth_management_platform"
         ]
       },
-      "HyperswitchVaultData": {
+      "OrbixVaultData": {
         "type": "object",
         "required": [
           "sdk_authorization"
@@ -26727,11 +26727,11 @@
         "properties": {
           "sdk_authorization": {
             "type": "string",
-            "description": "Base64-encoded SDK authorization token for the Hyperswitch Vault session"
+            "description": "Base64-encoded SDK authorization token for the Orbix Gateway Vault session"
           }
         }
       },
-      "HyperswitchVaultSessionDetails": {
+      "OrbixVaultSessionDetails": {
         "type": "object",
         "required": [
           "sdk_authorization"
@@ -26739,7 +26739,7 @@
         "properties": {
           "sdk_authorization": {
             "type": "string",
-            "description": "Base64-encoded SDK authorization token for the Hyperswitch Vault session"
+            "description": "Base64-encoded SDK authorization token for the Orbix Gateway Vault session"
           }
         }
       },
@@ -28902,7 +28902,7 @@
           },
           "connector_label": {
             "type": "string",
-            "description": "This is an unique label you can generate and pass in order to identify this connector account on your Hyperswitch dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`",
+            "description": "This is an unique label you can generate and pass in order to identify this connector account on your Orbix Gateway dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`",
             "example": "stripe_US_travel",
             "nullable": true
           },
@@ -29491,7 +29491,7 @@
           },
           "connector_label": {
             "type": "string",
-            "description": "This is an unique label you can generate and pass in order to identify this connector account on your Hyperswitch dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`",
+            "description": "This is an unique label you can generate and pass in order to identify this connector account on your Orbix Gateway dashboard and reports. Eg: if your profile label is `default`, connector label can be `stripe_default`",
             "example": "stripe_US_travel",
             "nullable": true
           },
@@ -29997,7 +29997,7 @@
       },
       "MultiCurrencyProcessingData": {
         "type": "object",
-        "description": "Datatrans multi-currency processing (multi-currency processing) details supplied by the merchant.\n\n`amount`/`currency` here describe the **merchant settlement leg** — what Planet pays out to\nthe merchant. The payment's own `amount`/`currency` remain the **customer-facing leg**, i.e.\nwhat the shopper saw at checkout and is charged. Hyperswitch never recomputes either leg; the\nmerchant is the source of truth for both.",
+        "description": "Datatrans multi-currency processing (multi-currency processing) details supplied by the merchant.\n\n`amount`/`currency` here describe the **merchant settlement leg** — what Planet pays out to\nthe merchant. The payment's own `amount`/`currency` remain the **customer-facing leg**, i.e.\nwhat the shopper saw at checkout and is charged. Orbix Gateway never recomputes either leg; the\nmerchant is the source of truth for both.",
         "required": [
           "currency",
           "amount"
@@ -30819,7 +30819,7 @@
             "properties": {
               "image_data_url": {
                 "type": "string",
-                "description": "Hyperswitch generated image data source url"
+                "description": "Orbix Gateway generated image data source url"
               },
               "display_to_timestamp": {
                 "type": "integer",
@@ -32661,7 +32661,7 @@
           "url": {
             "type": "string",
             "description": "URL of the image",
-            "example": "https://hyperswitch.io/favicon.ico"
+            "example": "https://orbix.example/favicon.ico"
           },
           "position": {
             "allOf": [
@@ -32762,7 +32762,7 @@
           },
           "branding_visibility": {
             "type": "boolean",
-            "description": "Toggle for HyperSwitch branding visibility",
+            "description": "Toggle for Orbix Gateway branding visibility",
             "nullable": true
           },
           "payment_button_text": {
@@ -32899,7 +32899,7 @@
           "seller_name": {
             "type": "string",
             "description": "Custom merchant name for payment link",
-            "example": "hyperswitch",
+            "example": "orbix",
             "nullable": true,
             "maxLength": 255
           },
@@ -33396,7 +33396,7 @@
               "return_url": {
                 "type": "string",
                 "description": "Redirect to this URL post completion",
-                "example": "https://sandbox.hyperswitch.io/payment_method/collect/pm_collect_link_2bdacf398vwzq5n422S1/status",
+                "example": "https://sandbox.orbix.example/payment_method/collect/pm_collect_link_2bdacf398vwzq5n422S1/status",
                 "nullable": true
               },
               "enabled_payment_methods": {
@@ -33445,12 +33445,12 @@
               "link": {
                 "type": "string",
                 "description": "URL to the form's link generated for collecting payment method details.",
-                "example": "https://sandbox.hyperswitch.io/payment_method/collect/pm_collect_link_2bdacf398vwzq5n422S1"
+                "example": "https://sandbox.orbix.example/payment_method/collect/pm_collect_link_2bdacf398vwzq5n422S1"
               },
               "return_url": {
                 "type": "string",
                 "description": "Redirect to this URL post completion",
-                "example": "https://sandbox.hyperswitch.io/payment_method/collect/pm_collect_link_2bdacf398vwzq5n422S1/status",
+                "example": "https://sandbox.orbix.example/payment_method/collect/pm_collect_link_2bdacf398vwzq5n422S1/status",
                 "nullable": true
               },
               "enabled_payment_methods": {
@@ -35064,7 +35064,7 @@
                   "payment_processing_details_at": {
                     "type": "string",
                     "enum": [
-                      "Hyperswitch"
+                      "Orbix"
                     ]
                   }
                 }
@@ -35463,7 +35463,7 @@
           },
           "payment_id": {
             "type": "string",
-            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Hyperswitch generates a unique ID for the payment.",
+            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Orbix Gateway generates a unique ID for the payment.",
             "example": "pay_mbabizu24mvu3mela5njyhpit4",
             "nullable": true,
             "maxLength": 30,
@@ -35516,7 +35516,7 @@
           },
           "confirm": {
             "type": "boolean",
-            "description": "If set to `true`, Hyperswitch attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
+            "description": "If set to `true`, Orbix Gateway attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
             "default": false,
             "example": true,
             "nullable": true
@@ -35553,7 +35553,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect the customer to after they complete the payment process or authentication. This is crucial for flows that involve off-site redirection (e.g., 3DS, some bank redirects, wallet payments).",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true,
             "maxLength": 2048
           },
@@ -35583,7 +35583,7 @@
           },
           "payment_token": {
             "type": "string",
-            "description": "As Hyperswitch tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
+            "description": "As Orbix Gateway tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
             "example": "187282ab-40ef-47a9-9206-5099ba31e432",
             "nullable": true
           },
@@ -35599,7 +35599,7 @@
             "type": "string",
             "description": "For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.",
             "deprecated": true,
-            "example": "Hyperswitch Router",
+            "example": "Orbix Gateway Router",
             "nullable": true,
             "maxLength": 255
           },
@@ -36012,7 +36012,7 @@
           },
           "settlement_conclusion_applied": {
             "type": "boolean",
-            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Hyperswitch skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
+            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Orbix Gateway skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
             "default": false,
             "example": false,
             "nullable": true
@@ -36058,7 +36058,7 @@
           },
           "payment_id": {
             "type": "string",
-            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Hyperswitch generates a unique ID for the payment.",
+            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Orbix Gateway generates a unique ID for the payment.",
             "example": "pay_mbabizu24mvu3mela5njyhpit4",
             "nullable": true,
             "maxLength": 30,
@@ -36111,7 +36111,7 @@
           },
           "confirm": {
             "type": "boolean",
-            "description": "If set to `true`, Hyperswitch attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
+            "description": "If set to `true`, Orbix Gateway attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
             "default": false,
             "example": true,
             "nullable": true
@@ -36148,7 +36148,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect the customer to after they complete the payment process or authentication. This is crucial for flows that involve off-site redirection (e.g., 3DS, some bank redirects, wallet payments).",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true,
             "maxLength": 2048
           },
@@ -36178,7 +36178,7 @@
           },
           "payment_token": {
             "type": "string",
-            "description": "As Hyperswitch tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
+            "description": "As Orbix Gateway tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
             "example": "187282ab-40ef-47a9-9206-5099ba31e432",
             "nullable": true
           },
@@ -36194,7 +36194,7 @@
             "type": "string",
             "description": "For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.",
             "deprecated": true,
-            "example": "Hyperswitch Router",
+            "example": "Orbix Gateway Router",
             "nullable": true,
             "maxLength": 255
           },
@@ -36641,7 +36641,7 @@
           },
           "settlement_conclusion_applied": {
             "type": "boolean",
-            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Hyperswitch skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
+            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Orbix Gateway skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
             "default": false,
             "example": false,
             "nullable": true
@@ -36769,7 +36769,7 @@
           },
           "client_secret": {
             "type": "string",
-            "description": "A secret token unique to this payment intent. It is primarily used by client-side applications (e.g., Hyperswitch SDKs) to authenticate actions like confirming the payment or handling next actions. This secret should be handled carefully and not exposed publicly beyond its intended client-side use.",
+            "description": "A secret token unique to this payment intent. It is primarily used by client-side applications (e.g., Orbix Gateway SDKs) to authenticate actions like confirming the payment or handling next actions. This secret should be handled carefully and not exposed publicly beyond its intended client-side use.",
             "example": "pay_U42c409qyHwOkWo3vK60_secret_el9ksDkiB8hi6j9N78yo",
             "nullable": true
           },
@@ -36958,7 +36958,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect after the completion of the operation",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true
           },
           "authentication_type": {
@@ -36974,7 +36974,7 @@
             "type": "string",
             "description": "For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.",
             "deprecated": true,
-            "example": "Hyperswitch Router",
+            "example": "Orbix Gateway Router",
             "nullable": true,
             "maxLength": 255
           },
@@ -37310,7 +37310,7 @@
           },
           "merchant_order_reference_id": {
             "type": "string",
-            "description": "Merchant's identifier for the payment/invoice. This will be sent to the connector\nif the connector provides support to accept multiple reference ids.\nIn case the connector supports only one reference id, Hyperswitch's Payment ID will be sent as reference.",
+            "description": "Merchant's identifier for the payment/invoice. This will be sent to the connector\nif the connector provides support to accept multiple reference ids.\nIn case the connector supports only one reference id, Orbix Gateway's Payment ID will be sent as reference.",
             "example": "Custom_Order_id_123",
             "nullable": true,
             "maxLength": 255
@@ -37906,7 +37906,7 @@
           },
           "payment_id": {
             "type": "string",
-            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Hyperswitch generates a unique ID for the payment.",
+            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Orbix Gateway generates a unique ID for the payment.",
             "example": "pay_mbabizu24mvu3mela5njyhpit4",
             "nullable": true,
             "maxLength": 30,
@@ -37973,7 +37973,7 @@
           },
           "confirm": {
             "type": "boolean",
-            "description": "If set to `true`, Hyperswitch attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
+            "description": "If set to `true`, Orbix Gateway attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
             "default": false,
             "example": true,
             "nullable": true
@@ -38042,7 +38042,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect the customer to after they complete the payment process or authentication. This is crucial for flows that involve off-site redirection (e.g., 3DS, some bank redirects, wallet payments).",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true,
             "maxLength": 2048
           },
@@ -38072,7 +38072,7 @@
           },
           "payment_token": {
             "type": "string",
-            "description": "As Hyperswitch tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
+            "description": "As Orbix Gateway tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
             "example": "187282ab-40ef-47a9-9206-5099ba31e432",
             "nullable": true
           },
@@ -38094,7 +38094,7 @@
             "type": "string",
             "description": "For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.",
             "deprecated": true,
-            "example": "Hyperswitch Router",
+            "example": "Orbix Gateway Router",
             "nullable": true,
             "maxLength": 255
           },
@@ -38569,7 +38569,7 @@
           },
           "settlement_conclusion_applied": {
             "type": "boolean",
-            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Hyperswitch skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
+            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Orbix Gateway skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
             "default": false,
             "example": false,
             "nullable": true
@@ -38698,7 +38698,7 @@
           },
           "client_secret": {
             "type": "string",
-            "description": "A secret token unique to this payment intent. It is primarily used by client-side applications (e.g., Hyperswitch SDKs) to authenticate actions like confirming the payment or handling next actions. This secret should be handled carefully and not exposed publicly beyond its intended client-side use.",
+            "description": "A secret token unique to this payment intent. It is primarily used by client-side applications (e.g., Orbix Gateway SDKs) to authenticate actions like confirming the payment or handling next actions. This secret should be handled carefully and not exposed publicly beyond its intended client-side use.",
             "example": "pay_U42c409qyHwOkWo3vK60_secret_el9ksDkiB8hi6j9N78yo",
             "nullable": true
           },
@@ -38902,7 +38902,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect after the completion of the operation",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true
           },
           "authentication_type": {
@@ -38918,7 +38918,7 @@
             "type": "string",
             "description": "For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.",
             "deprecated": true,
-            "example": "Hyperswitch Router",
+            "example": "Orbix Gateway Router",
             "nullable": true,
             "maxLength": 255
           },
@@ -39264,7 +39264,7 @@
           },
           "merchant_order_reference_id": {
             "type": "string",
-            "description": "Merchant's identifier for the payment/invoice. This will be sent to the connector\nif the connector provides support to accept multiple reference ids.\nIn case the connector supports only one reference id, Hyperswitch's Payment ID will be sent as reference.",
+            "description": "Merchant's identifier for the payment/invoice. This will be sent to the connector\nif the connector provides support to accept multiple reference ids.\nIn case the connector supports only one reference id, Orbix Gateway's Payment ID will be sent as reference.",
             "example": "Custom_Order_id_123",
             "nullable": true,
             "maxLength": 255
@@ -39467,7 +39467,7 @@
           },
           "connector": {
             "type": "string",
-            "description": "Optionally specifies the connector to be used for a 'force_sync' retrieve operation. If provided, Hyperswitch will attempt to sync the payment status from this specific connector.",
+            "description": "Optionally specifies the connector to be used for a 'force_sync' retrieve operation. If provided, Orbix Gateway will attempt to sync the payment status from this specific connector.",
             "nullable": true
           },
           "merchant_connector_details": {
@@ -39663,7 +39663,7 @@
           },
           "payment_id": {
             "type": "string",
-            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Hyperswitch generates a unique ID for the payment.",
+            "description": "Optional. A merchant-provided unique identifier for the payment, contains 30 characters long (e.g., \"pay_mbabizu24mvu3mela5njyhpit4\"). If provided, it ensures idempotency for the payment creation request. If omitted, Orbix Gateway generates a unique ID for the payment.",
             "example": "pay_mbabizu24mvu3mela5njyhpit4",
             "nullable": true,
             "maxLength": 30,
@@ -39716,7 +39716,7 @@
           },
           "confirm": {
             "type": "boolean",
-            "description": "If set to `true`, Hyperswitch attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
+            "description": "If set to `true`, Orbix Gateway attempts to confirm and authorize the payment immediately after creation, provided sufficient payment method details are included. If `false` or omitted (default is `false`), the payment is created with a status such as `requires_payment_method` or `requires_confirmation`, and a separate `POST /payments/{payment_id}/confirm` call is necessary to proceed with authorization.",
             "default": false,
             "example": true,
             "nullable": true
@@ -39753,7 +39753,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect the customer to after they complete the payment process or authentication. This is crucial for flows that involve off-site redirection (e.g., 3DS, some bank redirects, wallet payments).",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true,
             "maxLength": 2048
           },
@@ -39783,7 +39783,7 @@
           },
           "payment_token": {
             "type": "string",
-            "description": "As Hyperswitch tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
+            "description": "As Orbix Gateway tokenises the sensitive details about the payments method, it provides the payment_token as a reference to a stored payment method, ensuring that the sensitive details are not exposed in any manner.",
             "example": "187282ab-40ef-47a9-9206-5099ba31e432",
             "nullable": true
           },
@@ -39799,7 +39799,7 @@
             "type": "string",
             "description": "For non-card charges, you can use this value as the complete description that appears on your customers’ statements. Must contain at least one letter, maximum 22 characters. To be deprecated soon, use billing_descriptor instead.",
             "deprecated": true,
-            "example": "Hyperswitch Router",
+            "example": "Orbix Gateway Router",
             "nullable": true,
             "maxLength": 255
           },
@@ -40226,7 +40226,7 @@
           },
           "settlement_conclusion_applied": {
             "type": "boolean",
-            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Hyperswitch skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
+            "description": "Indicates that the merchant has concluded settlement and supplied final amounts.\nWhen true, Orbix Gateway skips tax and surcharge calculations that would change\nthose amounts. Omit this field on updates or confirmation to preserve the setting.",
             "default": false,
             "example": false,
             "nullable": true
@@ -40438,7 +40438,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect after the completion of the operation",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true
           },
           "business_country": {
@@ -40783,7 +40783,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect after the completion of the operation",
-            "example": "https://hyperswitch.io"
+            "example": "https://orbix.example"
           },
           "business_country": {
             "$ref": "#/components/schemas/CountryAlpha2"
@@ -41586,7 +41586,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect after the completion of the operation",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true
           },
           "business_country": {
@@ -41866,7 +41866,7 @@
           "return_url": {
             "type": "string",
             "description": "The URL to redirect after the completion of the operation",
-            "example": "https://hyperswitch.io",
+            "example": "https://orbix.example",
             "nullable": true
           },
           "business_country": {
@@ -46612,7 +46612,7 @@
           "zift",
           "plaid",
           "zsl",
-          "juspaythreedsserver",
+          "orbixthreedsserver",
           "ctp_mastercard",
           "ctp_visa",
           "netcetera",
@@ -49963,7 +49963,7 @@
         "properties": {
           "charge_id": {
             "type": "string",
-            "description": "The Hyperswitch `payment_id`, on a successful charge.",
+            "description": "The Orbix Gateway `payment_id`, on a successful charge.",
             "example": "pay_8320b449b06630271e378214dab80ce5",
             "nullable": true
           },
@@ -50547,11 +50547,11 @@
               "vault_type": {
                 "type": "string",
                 "enum": [
-                  "hyperswitch"
+                  "orbix"
                 ]
               },
               "vault_data": {
-                "$ref": "#/components/schemas/HyperswitchVaultData"
+                "$ref": "#/components/schemas/OrbixVaultData"
               }
             }
           },
@@ -50574,7 +50574,7 @@
             }
           }
         ],
-        "description": "V1-facing vault details for the session-tokens response, serialized as a tagged\n`{ \"vault_type\": ..., \"vault_data\": { ... } }` object. Exactly one variant is returned:\nexternal vault details when configured, otherwise the internal Hyperswitch vault session.",
+        "description": "V1-facing vault details for the session-tokens response, serialized as a tagged\n`{ \"vault_type\": ..., \"vault_data\": { ... } }` object. Exactly one variant is returned:\nexternal vault details when configured, otherwise the internal Orbix Gateway vault session.",
         "discriminator": {
           "propertyName": "vault_type"
         }
@@ -50583,7 +50583,7 @@
         "type": "string",
         "enum": [
           "vgs_sdk",
-          "hyperswitch_sdk"
+          "orbix_sdk"
         ]
       },
       "VaultSessionDetails": {
@@ -50602,11 +50602,11 @@
           {
             "type": "object",
             "required": [
-              "hyperswitch_vault"
+              "orbix_vault"
             ],
             "properties": {
-              "hyperswitch_vault": {
-                "$ref": "#/components/schemas/HyperswitchVaultSessionDetails"
+              "orbix_vault": {
+                "$ref": "#/components/schemas/OrbixVaultSessionDetails"
               }
             }
           }
@@ -51702,7 +51702,7 @@
             }
           }
         ],
-        "description": "Hyperswitch supports SDK integration with Apple Pay and Google Pay wallets. For other wallets, we integrate with their respective connectors, redirecting the customer to the connector for wallet payments. As a result, we don’t receive any payment method data in the confirm call for payments made through other wallets."
+        "description": "Orbix Gateway supports SDK integration with Apple Pay and Google Pay wallets. For other wallets, we integrate with their respective connectors, redirecting the customer to the connector for wallet payments. As a result, we don’t receive any payment method data in the confirm call for payments made through other wallets."
       },
       "WeChatPay": {
         "type": "object"
@@ -51717,7 +51717,7 @@
         "oneOf": [
           {
             "type": "string",
-            "description": "Standard webhook configuration supporting all events hyperswitch provides",
+            "description": "Standard webhook configuration supporting all events orbix provides",
             "enum": [
               "AllEvents"
             ]
@@ -52080,7 +52080,7 @@
       },
       "WebhookSetupCapabilities": {
         "type": "object",
-        "description": "Connector details for webhook configuration via hyperswitch API",
+        "description": "Connector details for webhook configuration via orbix API",
         "required": [
           "is_webhook_auto_configuration_supported"
         ],
@@ -52375,7 +52375,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "api-key",
-        "description": "Use the API key created under your merchant account from the HyperSwitch dashboard. API key is used to authenticate API requests from your merchant server only. Don't expose this key on a website or embed it in a mobile application."
+        "description": "Use the API key created under your merchant account from the Orbix Gateway dashboard. API key is used to authenticate API requests from your merchant server only. Don't expose this key on a website or embed it in a mobile application."
       },
       "basic_api_key": {
         "type": "http",

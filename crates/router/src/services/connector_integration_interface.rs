@@ -1,4 +1,4 @@
-pub use hyperswitch_interfaces::{
+pub use orbix_interfaces::{
     authentication::ExternalAuthenticationPayload, connector_integration_interface::*,
     connector_integration_v2::ConnectorIntegrationV2, webhooks::IncomingWebhookFlowError,
 };

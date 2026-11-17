@@ -4,12 +4,12 @@ use common_enums::enums::{self, CardNetwork};
 use common_utils::{date_time, ext_traits::ValueExt, id_type};
 use error_stack::ResultExt;
 use external_services::grpc_client::{self as external_grpc_client, GrpcHeaders};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     business_profile, merchant_account, merchant_connector_account, merchant_key_store,
     payment_method_data::{Card, PaymentMethodData},
     payments::{payment_attempt::PaymentAttempt, PaymentIntent, PaymentStatusData},
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 use router_env::logger;
 use serde::{Deserialize, Serialize};
 

@@ -14,10 +14,10 @@
 sdk_url = "http://localhost:9050/HyperLoader.js"
 
 [integ]
-sdk_url = "https://dev.hyperswitch.io/v0/HyperLoader.js"
+sdk_url = "https://dev.orbix.example/v0/HyperLoader.js"
 
 [sandbox]
-sdk_url = "https://beta.hyperswitch.io/v1/HyperLoader.js"
+sdk_url = "https://beta.orbix.example/v1/HyperLoader.js"
 
 [production]
-sdk_url = "https://checkout.hyperswitch.io/v0/HyperLoader.js"
+sdk_url = "https://checkout.orbix.example/v0/HyperLoader.js"

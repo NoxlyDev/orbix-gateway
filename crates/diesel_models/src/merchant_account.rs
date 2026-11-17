@@ -1,6 +1,6 @@
 use common_utils::{encryption::Encryption, pii};
 use diesel::{AsChangeset, Identifiable, Insertable, Queryable, Selectable};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 
 use crate::enums as storage_enums;
 #[cfg(feature = "v1")]

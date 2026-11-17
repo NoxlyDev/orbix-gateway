@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use common_enums::{EventClass, EventRecipient, EventType, WebhookDeliveryAttempt};
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 use utoipa::ToSchema;

@@ -31,10 +31,10 @@ where
         (ConnectorEventSource::Prism, None) => {
             QueryBuilder::new(AnalyticsCollection::PrismConnectorPayoutEvents)
         }
-        (ConnectorEventSource::Hyperswitch, Some(_)) => {
+        (ConnectorEventSource::Orbix, Some(_)) => {
             QueryBuilder::new(AnalyticsCollection::ConnectorEvents)
         }
-        (ConnectorEventSource::Hyperswitch, None) => {
+        (ConnectorEventSource::Orbix, None) => {
             QueryBuilder::new(AnalyticsCollection::ConnectorPayoutEvents)
         }
     };

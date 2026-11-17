@@ -5,7 +5,7 @@ const successfulNo3DSCardDetails = {
   card_number: "4444333322221111",
   card_exp_month: "01",
   card_exp_year: "27",
-  card_holder_name: "Juspay Hyperswitch",
+  card_holder_name: "Orbix Orbix Gateway",
   card_cvc: "123",
 };
 
@@ -752,7 +752,7 @@ export const connectorDetails = {
         },
       },
       // Non-AFT payment: funding_transaction_type and payment_purpose are optional at
-      // the API level, but hyperswitch validates the connector_metadata schema (unknown
+      // the API level, but orbix validates the connector_metadata schema (unknown
       // fields are rejected with IR_06) and echoes connector_metadata back on the
       // payment response. The payment itself proceeds as a standard card payment and
       // succeeds.
@@ -795,7 +795,7 @@ export const connectorDetails = {
         },
         connector_metadata: null,
       },
-      // Without the AFT flag, connector_metadata is optional: hyperswitch accepts
+      // Without the AFT flag, connector_metadata is optional: orbix accepts
       // the payment and returns success even when it is absent.
       Response: {
         status: 200,

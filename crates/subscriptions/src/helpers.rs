@@ -1,4 +1,4 @@
-pub use hyperswitch_domain_models::errors::api_error_response;
+pub use orbix_domain_models::errors::api_error_response;
 
 pub const X_PROFILE_ID: &str = "X-Profile-Id";
 pub const X_TENANT_ID: &str = "x-tenant-id";

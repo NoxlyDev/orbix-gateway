@@ -7,7 +7,7 @@ use diesel_models::{
     authentication::Authentication as diesel_authentication, reverse_lookup::ReverseLookupNew,
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     authentication::{Authentication, AuthenticationInterface, AuthenticationUpdate},
     behaviour::Conversion,
     merchant_key_store::MerchantKeyStore,

@@ -1,7 +1,7 @@
 """
 mitmproxy capture addon.
 
-Records Hyperswitch outbound HTTP into JSON cassettes grouped by the Cypress
+Records Orbix Gateway outbound HTTP into JSON cassettes grouped by the Cypress
 test that issued the call. Grouping key is testIdHash (hash of connector +
 titlePath, sent on /test/start); every outbound carries
 X-Request-ID: {testIdHash}-{NNN}, so calls are attributed to their test even

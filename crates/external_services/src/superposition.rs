@@ -13,7 +13,7 @@ pub use aws_smithy_types::DateTime;
 use aws_smithy_types::{Document, Number};
 use common_utils::{errors::CustomResult, id_type::TargetingKey, types::MinorUnit};
 use error_stack::{report, ResultExt};
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 use serde_json::Map;
 use superposition_provider::traits::AllFeatureProvider;
 use superposition_sdk::operation::{

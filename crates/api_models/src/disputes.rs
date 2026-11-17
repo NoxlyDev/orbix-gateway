@@ -4,7 +4,7 @@ use common_utils::{
     pii::EmailStrategy,
     types::{StringMinorUnit, TimeRange},
 };
-use hyperswitch_masking::{Deserialize, Secret, Serialize};
+use orbix_masking::{Deserialize, Secret, Serialize};
 use serde::de::Error;
 use smithy::SmithyModel;
 use time::PrimitiveDateTime;
@@ -67,7 +67,7 @@ pub struct DisputeResponse {
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema, Eq, PartialEq, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct DisputeResponsePaymentsRetrieve {
     /// The identifier for dispute
     #[smithy(value_type = "String")]

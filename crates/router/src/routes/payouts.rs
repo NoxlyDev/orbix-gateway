@@ -7,7 +7,7 @@ use api_models::payments::BrowserInformation;
 use common_utils::id_type;
 #[cfg(feature = "v2")]
 use common_utils::types::BrowserInformation;
-use hyperswitch_domain_models::payments::HeaderPayload;
+use orbix_domain_models::payments::HeaderPayload;
 use router_env::{instrument, tracing, Flow};
 
 use super::app::AppState;

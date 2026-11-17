@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use events::{EventsError, Message, MessagingInterface};
-use hyperswitch_masking::ErasedMaskSerialize;
+use orbix_masking::ErasedMaskSerialize;
 use time::PrimitiveDateTime;
 
 use super::EventType;

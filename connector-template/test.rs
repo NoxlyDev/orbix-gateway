@@ -1,5 +1,5 @@
-use hyperswitch_domain_models::payment_method_data::{Card, PaymentMethodData};
-use hyperswitch_masking::Secret;
+use orbix_domain_models::payment_method_data::{Card, PaymentMethodData};
+use orbix_masking::Secret;
 use router::{
     types::{self, api, storage::enums,
 }};

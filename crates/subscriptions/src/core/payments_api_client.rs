@@ -1,7 +1,7 @@
 use api_models::subscription as subscription_types;
 use common_utils::{ext_traits::BytesExt, request as services};
 use error_stack::ResultExt;
-use hyperswitch_interfaces::api_client as api;
+use orbix_interfaces::api_client as api;
 
 use crate::{core::errors, helpers, state::SubscriptionState as SessionState};
 
@@ -25,11 +25,11 @@ impl PaymentsApiClient {
         state: &SessionState,
         merchant_id: &str,
         profile_id: &str,
-    ) -> Vec<(String, hyperswitch_masking::Maskable<String>)> {
+    ) -> Vec<(String, orbix_masking::Maskable<String>)> {
         vec![
             (
                 helpers::X_INTERNAL_API_KEY.to_string(),
-                hyperswitch_masking::Maskable::Masked(
+                orbix_masking::Maskable::Masked(
                     state
                         .conf
                         .internal_merchant_id_profile_id_auth
@@ -39,17 +39,17 @@ impl PaymentsApiClient {
             ),
             (
                 helpers::X_TENANT_ID.to_string(),
-                hyperswitch_masking::Maskable::Normal(
+                orbix_masking::Maskable::Normal(
                     state.tenant.tenant_id.get_string_repr().to_string(),
                 ),
             ),
             (
                 helpers::X_MERCHANT_ID.to_string(),
-                hyperswitch_masking::Maskable::Normal(merchant_id.to_string()),
+                orbix_masking::Maskable::Normal(merchant_id.to_string()),
             ),
             (
                 helpers::X_PROFILE_ID.to_string(),
-                hyperswitch_masking::Maskable::Normal(profile_id.to_string()),
+                orbix_masking::Maskable::Normal(profile_id.to_string()),
             ),
         ]
     }

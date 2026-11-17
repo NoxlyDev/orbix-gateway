@@ -5,7 +5,7 @@ use common_utils::{
     id_type,
     types::{user::ThemeLineage, Url},
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]

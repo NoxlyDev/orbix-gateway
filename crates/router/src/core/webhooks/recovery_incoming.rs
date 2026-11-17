@@ -8,7 +8,7 @@ use common_utils::{
 use diesel_models::process_tracker as storage;
 use error_stack::{report, ResultExt};
 use futures::stream::SelectNextSome;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments as domain_payments,
     revenue_recovery::{self, RecoveryPaymentIntent},
     router_data_v2::flow_common_types,
@@ -17,8 +17,8 @@ use hyperswitch_domain_models::{
     router_response_types::revenue_recovery as revenue_recovery_response,
     types as router_types,
 };
-use hyperswitch_interfaces::webhooks as interface_webhooks;
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_interfaces::webhooks as interface_webhooks;
+use orbix_masking::{PeekInterface, Secret};
 use router_env::{instrument, logger, tracing};
 use services::kafka;
 use storage::business_status;
@@ -61,9 +61,9 @@ pub async fn recovery_incoming_webhook_flow(
     business_profile: domain::Profile,
     source_verified: bool,
     connector_enum: &connector_integration_interface::ConnectorEnum,
-    billing_connector_account: hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+    billing_connector_account: orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
     connector_name: &str,
-    request_details: &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+    request_details: &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
     event_type: webhooks::IncomingWebhookEvent,
     req_state: ReqState,
     object_ref_id: &webhooks::ObjectReferenceId,
@@ -353,7 +353,7 @@ impl RevenueRecoveryInvoice {
 
     fn get_recovery_invoice_details(
         connector_enum: &connector_integration_interface::ConnectorEnum,
-        request_details: &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+        request_details: &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
         billing_connector_invoice_details: Option<
             &revenue_recovery_response::BillingConnectorInvoiceSyncResponse,
         >,
@@ -390,7 +390,7 @@ impl RevenueRecoveryInvoice {
             profile.clone(),
             req_state.clone(),
             &self.0.merchant_reference_id,
-            hyperswitch_domain_models::payments::HeaderPayload::default(),
+            orbix_domain_models::payments::HeaderPayload::default(),
         ))
         .await;
         let response = match payment_response {
@@ -447,7 +447,7 @@ impl RevenueRecoveryInvoice {
             api_payments::PaymentsIntentResponse,
             _,
             _,
-            hyperswitch_domain_models::payments::PaymentIntentData<
+            orbix_domain_models::payments::PaymentIntentData<
                 router_flow_types::payments::PaymentCreateIntent,
             >,
         >(
@@ -458,7 +458,7 @@ impl RevenueRecoveryInvoice {
             payments::operations::PaymentIntentCreate,
             payload,
             global_payment_id,
-            hyperswitch_domain_models::payments::HeaderPayload::default(),
+            orbix_domain_models::payments::HeaderPayload::default(),
         ))
         .await
         .change_context(errors::RevenueRecoveryError::PaymentIntentCreateFailed)?;
@@ -605,7 +605,7 @@ impl RevenueRecoveryAttempt {
 
     fn get_recovery_invoice_transaction_details(
         connector_enum: &connector_integration_interface::ConnectorEnum,
-        request_details: &hyperswitch_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
+        request_details: &orbix_interfaces::webhooks::IncomingWebhookRequestDetails<'_>,
         billing_connector_payment_details: Option<
             &revenue_recovery_response::BillingConnectorPaymentsSyncResponse,
         >,
@@ -727,7 +727,7 @@ impl RevenueRecoveryAttempt {
                 api_payments::PaymentAttemptListResponse,
                 _,
                 payments::operations::payment_attempt_list::PaymentGetListAttempts,
-                hyperswitch_domain_models::payments::PaymentAttemptListData<
+                orbix_domain_models::payments::PaymentAttemptListData<
                     payments::operations::PaymentGetListAttempts,
                 >,
             >(
@@ -740,7 +740,7 @@ impl RevenueRecoveryAttempt {
                     payment_intent_id: payment_intent.payment_id.clone(),
                 },
                 payment_intent.payment_id.clone(),
-                hyperswitch_domain_models::payments::HeaderPayload::default(),
+                orbix_domain_models::payments::HeaderPayload::default(),
             ))
             .await;
         match attempt_response {
@@ -847,7 +847,7 @@ impl RevenueRecoveryAttempt {
             profile.clone(),
             request_payload,
             payment_intent.payment_id.clone(),
-            hyperswitch_domain_models::payments::HeaderPayload::default(),
+            orbix_domain_models::payments::HeaderPayload::default(),
         ))
         .await;
 
@@ -1275,7 +1275,7 @@ impl BillingConnectorPaymentsSyncResponseData {
     async fn handle_billing_connector_payment_sync_call(
         state: &SessionState,
         platform: &domain::Platform,
-        merchant_connector_account: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        merchant_connector_account: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
         connector_name: &str,
         id: &str,
     ) -> CustomResult<Self, errors::RevenueRecoveryError> {
@@ -1336,7 +1336,7 @@ impl BillingConnectorPaymentsSyncResponseData {
         should_billing_connector_payment_api_called: bool,
         state: &SessionState,
         platform: &domain::Platform,
-        billing_connector_account: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        billing_connector_account: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
         connector_name: &str,
         object_ref_id: &webhooks::ObjectReferenceId,
     ) -> CustomResult<
@@ -1378,7 +1378,7 @@ impl BillingConnectorPaymentsSyncFlowRouterData {
     async fn construct_router_data_for_billing_connector_payment_sync_call(
         state: &SessionState,
         connector_name: &str,
-        merchant_connector_account: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        merchant_connector_account: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
         platform: &domain::Platform,
         billing_connector_psync_id: &str,
     ) -> CustomResult<Self, errors::RevenueRecoveryError> {
@@ -1394,7 +1394,7 @@ impl BillingConnectorPaymentsSyncFlowRouterData {
             .attach_printable("Cannot find connector from the connector_name")?;
 
         let connector_params =
-            hyperswitch_domain_models::connector_endpoints::Connectors::get_connector_params(
+            orbix_domain_models::connector_endpoints::Connectors::get_connector_params(
                 &state.conf.connectors,
                 connector,
             )
@@ -1443,7 +1443,7 @@ impl BillingConnectorInvoiceSyncResponseData {
     async fn handle_billing_connector_invoice_sync_call(
         state: &SessionState,
         platform: &domain::Platform,
-        merchant_connector_account: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        merchant_connector_account: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
         connector_name: &str,
         id: &str,
     ) -> CustomResult<Self, errors::RevenueRecoveryError> {
@@ -1504,7 +1504,7 @@ impl BillingConnectorInvoiceSyncResponseData {
         should_billing_connector_invoice_api_called: bool,
         state: &SessionState,
         platform: &domain::Platform,
-        billing_connector_account: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        billing_connector_account: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
         connector_name: &str,
         merchant_reference_id: Option<id_type::PaymentReferenceId>,
     ) -> CustomResult<
@@ -1544,7 +1544,7 @@ impl BillingConnectorInvoiceSyncFlowRouterData {
     async fn construct_router_data_for_billing_connector_invoice_sync_call(
         state: &SessionState,
         connector_name: &str,
-        merchant_connector_account: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        merchant_connector_account: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
         platform: &domain::Platform,
         billing_connector_invoice_id: &str,
     ) -> CustomResult<Self, errors::RevenueRecoveryError> {
@@ -1560,7 +1560,7 @@ impl BillingConnectorInvoiceSyncFlowRouterData {
             .attach_printable("Cannot find connector from the connector_name")?;
 
         let connector_params =
-            hyperswitch_domain_models::connector_endpoints::Connectors::get_connector_params(
+            orbix_domain_models::connector_endpoints::Connectors::get_connector_params(
                 &state.conf.connectors,
                 connector,
             )
@@ -1839,7 +1839,7 @@ impl RecoveryAction {
         state: &SessionState,
         business_profile: &domain::Profile,
         platform: &domain::Platform,
-        billing_connector_account: &hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount,
+        billing_connector_account: &orbix_domain_models::merchant_connector_account::MerchantConnectorAccount,
         mca_retry_threshold: u16,
         intent_retry_count: u16,
         recovery_tuple: &(

@@ -12,7 +12,7 @@
     "cypress:routing": "cypress run --headless --spec 'cypress/e2e/spec/Routing/**/*'",
     "cypress:platform": "echo 'Platform specs not yet migrated to cypress-tests-v2; skipping'"
   },
-  "author": "Hyperswitch Team",
+  "author": "Orbix Gateway Team",
   "license": "ISC",
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",

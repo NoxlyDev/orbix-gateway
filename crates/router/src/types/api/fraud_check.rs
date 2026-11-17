@@ -3,10 +3,10 @@ use std::str::FromStr;
 use api_models::enums;
 use common_utils::errors::CustomResult;
 use error_stack::ResultExt;
-pub use hyperswitch_domain_models::router_flow_types::fraud_check::{
+pub use orbix_domain_models::router_flow_types::fraud_check::{
     Checkout, Fulfillment, PoFrm, RecordReturn, Sale, Transaction,
 };
-pub use hyperswitch_interfaces::api::fraud_check::{
+pub use orbix_interfaces::api::fraud_check::{
     FraudCheckCheckout, FraudCheckFulfillment, FraudCheckPayout, FraudCheckRecordReturn,
     FraudCheckSale, FraudCheckTransaction,
 };

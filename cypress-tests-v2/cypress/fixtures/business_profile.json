@@ -1,7 +1,7 @@
 {
   "bp_create": {
     "profile_name": "HyperS",
-    "return_url": "https://hyperswitch.io",
+    "return_url": "https://orbix.example",
     "enable_payment_response_hash": true,
     "redirect_to_merchant_with_http_post": false,
     "metadata": null,
@@ -30,8 +30,8 @@
     }
   },
   "bp_update": {
-    "profile_name": "Hyperswitch",
-    "return_url": "https://hyperswitch.io",
+    "profile_name": "Orbix",
+    "return_url": "https://orbix.example",
     "enable_payment_response_hash": true,
     "redirect_to_merchant_with_http_post": false,
     "metadata": null,

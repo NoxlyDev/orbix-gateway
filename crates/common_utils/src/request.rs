@@ -1,4 +1,4 @@
-use hyperswitch_masking::{Maskable, Secret};
+use orbix_masking::{Maskable, Secret};
 use reqwest::multipart::Form;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -113,7 +113,7 @@ pub fn is_utf8_label(label: &[u8]) -> bool {
 fn default_request_headers() -> [(String, Maskable<String>); 1] {
     use http::header;
 
-    [(header::VIA.to_string(), "HyperSwitch".to_string().into())]
+    [(header::VIA.to_string(), "Orbix".to_string().into())]
 }
 
 #[derive(Debug)]
@@ -141,16 +141,16 @@ impl std::fmt::Debug for RequestContent {
 }
 
 pub enum RequestContent {
-    Json(Box<dyn hyperswitch_masking::ErasedMaskSerialize + Send>),
-    FormUrlEncoded(Box<dyn hyperswitch_masking::ErasedMaskSerialize + Send>),
+    Json(Box<dyn orbix_masking::ErasedMaskSerialize + Send>),
+    FormUrlEncoded(Box<dyn orbix_masking::ErasedMaskSerialize + Send>),
     FormData(
         (
             Form,
-            Box<dyn hyperswitch_masking::ErasedMaskSerialize + Send>,
+            Box<dyn orbix_masking::ErasedMaskSerialize + Send>,
         ),
     ),
     Xml(
-        Box<dyn hyperswitch_masking::ErasedMaskSerialize + Send>,
+        Box<dyn orbix_masking::ErasedMaskSerialize + Send>,
         Option<XmlConfig>,
     ),
     RawBytes(Vec<u8>),

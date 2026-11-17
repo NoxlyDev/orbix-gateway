@@ -1,8 +1,8 @@
 pub mod utils;
 
 #[cfg(feature = "dummy_connector")]
-pub use hyperswitch_connectors::connectors::DummyConnector;
-pub use hyperswitch_connectors::connectors::{
+pub use orbix_connectors::connectors::DummyConnector;
+pub use orbix_connectors::connectors::{
     absa_sanlam, absa_sanlam::AbsaSanlam, aci, aci::Aci, adyen, adyen::Adyen, adyenplatform,
     adyenplatform::Adyenplatform, affirm, affirm::Affirm, airwallex, airwallex::Airwallex,
     amazonpay, amazonpay::Amazonpay, archipel, archipel::Archipel, authipay, authipay::Authipay,
@@ -30,13 +30,13 @@ pub use hyperswitch_connectors::connectors::{
     globalpayments_realex, globalpayments_realex::GlobalpaymentsRealex, globepay,
     globepay::Globepay, gocardless, gocardless::Gocardless, gotyme_sanlam,
     gotyme_sanlam::GotymeSanlam, gpayments, gpayments::Gpayments, helcim, helcim::Helcim, hipay,
-    hipay::Hipay, hyperpg, hyperpg::Hyperpg, hyperswitch_vault,
-    hyperswitch_vault::HyperswitchVault, hyperwallet, hyperwallet::Hyperwallet, iatapay,
+    hipay::Hipay, hyperpg, hyperpg::Hyperpg, orbix_vault,
+    orbix_vault::OrbixVault, hyperwallet, hyperwallet::Hyperwallet, iatapay,
     iatapay::Iatapay, ilixium, ilixium::Ilixium, imerchantsolutions,
     imerchantsolutions::Imerchantsolutions, inespay, inespay::Inespay, interpayments,
     interpayments::Interpayments, itaubank, itaubank::Itaubank, jpmorgan, jpmorgan::Jpmorgan,
-    jpmorgan_orbital, jpmorgan_orbital::JpmorganOrbital, juspaythreedsserver,
-    juspaythreedsserver::Juspaythreedsserver, katapult, katapult::Katapult, klarna, klarna::Klarna,
+    jpmorgan_orbital, jpmorgan_orbital::JpmorganOrbital, orbixthreedsserver,
+    orbixthreedsserver::Orbixthreedsserver, katapult, katapult::Katapult, klarna, klarna::Klarna,
     loonio, loonio::Loonio, merchante, merchante::Merchante, mifinity, mifinity::Mifinity, mollie,
     mollie::Mollie, moneris, moneris::Moneris, mpgs, mpgs::Mpgs, multisafepay,
     multisafepay::Multisafepay, netcetera, netcetera::Netcetera, nexinets, nexinets::Nexinets,

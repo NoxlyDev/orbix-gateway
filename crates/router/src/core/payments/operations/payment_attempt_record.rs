@@ -8,8 +8,8 @@ use common_utils::{
     types::{keymanager::ToEncryptable, MinorUnit},
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::PaymentAttemptRecordData;
-use hyperswitch_masking::PeekInterface;
+use orbix_domain_models::payments::PaymentAttemptRecordData;
+use orbix_masking::PeekInterface;
 use router_env::{instrument, tracing};
 
 use super::{BoxedOperation, Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -122,7 +122,7 @@ impl<F: Send + Clone + Sync>
         request: &PaymentsAttemptRecordRequest,
         platform: &domain::Platform,
         _profile: &domain::Profile,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<operations::GetTrackerResponse<PaymentAttemptRecordData<F>>> {
         let db = &*state.store;
         let key_manager_state = &state.into();
@@ -150,14 +150,14 @@ impl<F: Send + Clone + Sync>
             .transpose()
             .change_context(errors::ApiErrorResponse::InternalServerError)
             .attach_printable("Failed to encode payment_method_billing address")?
-            .map(hyperswitch_masking::Secret::new);
+            .map(orbix_masking::Secret::new);
 
         let batch_encrypted_data = domain_types::crypto_operation(
                 key_manager_state,
-                common_utils::type_name!(hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt),
+                common_utils::type_name!(orbix_domain_models::payments::payment_attempt::PaymentAttempt),
                 domain_types::CryptoOperation::BatchEncrypt(
-                    hyperswitch_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::to_encryptable(
-                        hyperswitch_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt {
+                    orbix_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::to_encryptable(
+                        orbix_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt {
                             payment_method_billing_address,
                         },
                     ),
@@ -171,13 +171,13 @@ impl<F: Send + Clone + Sync>
             .attach_printable("Failed while encrypting payment intent details".to_string())?;
 
         let encrypted_data =
-                 hyperswitch_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::from_encryptable(batch_encrypted_data)
+                 orbix_domain_models::payments::payment_attempt::FromRequestEncryptablePaymentAttempt::from_encryptable(batch_encrypted_data)
                     .change_context(errors::ApiErrorResponse::InternalServerError)
                     .attach_printable("Failed while encrypting payment intent details")?;
         let cell_id = state.conf.cell_information.id.clone();
 
         let payment_attempt_domain_model =
-            hyperswitch_domain_models::payments::payment_attempt::PaymentAttempt::create_domain_model_using_record_request(
+            orbix_domain_models::payments::payment_attempt::PaymentAttempt::create_domain_model_using_record_request(
                 &payment_intent,
                 cell_id,
                 storage_scheme.inner(),
@@ -196,7 +196,7 @@ impl<F: Send + Clone + Sync>
             .await
             .change_context(errors::ApiErrorResponse::InternalServerError)
             .attach_printable("Could not insert payment attempt")?;
-        let revenue_recovery_data = hyperswitch_domain_models::payments::RevenueRecoveryData {
+        let revenue_recovery_data = orbix_domain_models::payments::RevenueRecoveryData {
             connector_details: request.connector_details.clone(),
             processor_payment_method_token: request.processor_payment_method_token.clone(),
             connector_customer_id: request.connector_customer_id.clone(),
@@ -208,7 +208,7 @@ impl<F: Send + Clone + Sync>
             card_issuer: request.card_issuer.clone(),
             standardised_error_code: request.standardised_error_code,
         };
-        let payment_address = hyperswitch_domain_models::payment_address::PaymentAddress::new(
+        let payment_address = orbix_domain_models::payment_address::PaymentAddress::new(
             payment_intent
                 .shipping_address
                 .clone()
@@ -250,7 +250,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentAttemptRecordData<F>, PaymentsAtte
         processor: &domain::Processor,
         mut payment_data: PaymentAttemptRecordData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(
         PaymentsAttemptRecordOperation<'b, F>,
@@ -277,7 +277,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentAttemptRecordData<F>, PaymentsAtte
         };
         let payment_intent_update =
 
-    hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::RecordUpdate
+    orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::RecordUpdate
         {
             status,
             feature_metadata: Box::new(feature_metadata),

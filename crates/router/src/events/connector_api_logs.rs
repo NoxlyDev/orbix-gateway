@@ -1,4 +1,4 @@
-pub use hyperswitch_interfaces::events::connector_api_logs::ConnectorEvent;
+pub use orbix_interfaces::events::connector_api_logs::ConnectorEvent;
 
 use super::EventType;
 use crate::services::kafka::KafkaMessage;

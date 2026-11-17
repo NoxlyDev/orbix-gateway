@@ -7,7 +7,7 @@ use common_utils::{
 };
 use error_stack::ResultExt;
 use http::header;
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     crm::{CrmInterface, CrmPayload},
     errors::HttpClientError,
     types::Proxy,

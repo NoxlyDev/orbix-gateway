@@ -68,7 +68,7 @@ pub(crate) mod boundary {
     };
     use bytes::Bytes;
     use deja::DejaHook;
-    use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+    use orbix_masking::{ExposeInterface, PeekInterface, Secret};
     use serde_json::json;
 
     static HOOK: OnceLock<Option<Arc<deja::RuntimeHook>>> = OnceLock::new();
@@ -561,7 +561,7 @@ fn generate_uuid_v7() -> String {
         if deja::__private::current_correlation_id().is_some() {
             let caller = std::panic::Location::caller();
             let request =
-                hyperswitch_masking::Secret::new(serde_json::json!({ "source": "uuid_v7" }));
+                orbix_masking::Secret::new(serde_json::json!({ "source": "uuid_v7" }));
 
             // REPLAY: serve the recorded id for this call site (correlated, so it
             // matches robustly). A miss falls through to live generation.
@@ -581,7 +581,7 @@ fn generate_uuid_v7() -> String {
                 "generate_uuid_v7",
                 caller,
                 request,
-                hyperswitch_masking::Secret::new(
+                orbix_masking::Secret::new(
                     serde_json::json!({ "generated_value": generated_value.clone() }),
                 ),
             );

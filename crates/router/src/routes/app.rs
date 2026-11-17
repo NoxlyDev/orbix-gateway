@@ -23,7 +23,7 @@ use external_services::{
     grpc_client::{GrpcClients, GrpcHeaders, GrpcHeadersUcs, GrpcHeadersUcsBuilderInitial},
     superposition::SuperpositionClient,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     crm::CrmInterface,
     encryption_interface::EncryptionManagementInterface,
     helpers as interfaces_helpers,
@@ -268,7 +268,7 @@ impl SessionState {
             request_id: self.request_id.as_ref().map(|req_id| req_id.to_string()),
         }
     }
-    /// Gateway identifier of Hyperswitch's own Google Pay gateway registration.
+    /// Gateway identifier of Orbix Gateway's own Google Pay gateway registration.
     pub fn google_pay_gateway_id(&self) -> Option<String> {
         self.conf
             .google_pay_decrypt_keys
@@ -338,8 +338,8 @@ impl SessionStateInfo for SessionState {
     #[cfg(feature = "partial-auth")]
     fn get_detached_auth(&self) -> RouterResult<(Blake3, &[u8])> {
         use error_stack::ResultExt;
-        use hyperswitch_domain_models::errors::api_error_response as errors;
-        use hyperswitch_masking::PeekInterface as _;
+        use orbix_domain_models::errors::api_error_response as errors;
+        use orbix_masking::PeekInterface as _;
         use router_env::logger;
 
         let output = CHECKSUM_KEY.get_or_try_init(|| {
@@ -353,8 +353,8 @@ impl SessionStateInfo for SessionState {
             let key = conf.api_keys.get_inner().checksum_auth_key.peek();
             hex::decode(key).map(|key| {
                 (
-                    hyperswitch_masking::StrongSecret::new(context),
-                    hyperswitch_masking::StrongSecret::new(key),
+                    orbix_masking::StrongSecret::new(context),
+                    orbix_masking::StrongSecret::new(key),
                 )
             })
         });
@@ -384,11 +384,11 @@ impl interfaces_helpers::GetComparisonServiceConfig for SessionState {
     }
 }
 
-impl hyperswitch_interfaces::api_client::ApiClientWrapper for SessionState {
+impl orbix_interfaces::api_client::ApiClientWrapper for SessionState {
     fn get_api_client(&self) -> &dyn crate::services::ApiClient {
         self.api_client.as_ref()
     }
-    fn get_proxy(&self) -> hyperswitch_interfaces::types::Proxy {
+    fn get_proxy(&self) -> orbix_interfaces::types::Proxy {
         self.conf.proxy.clone()
     }
     fn get_request_id(&self) -> Option<RequestId> {
@@ -400,10 +400,10 @@ impl hyperswitch_interfaces::api_client::ApiClientWrapper for SessionState {
     fn get_tenant(&self) -> Tenant {
         self.tenant.clone()
     }
-    fn get_connectors(&self) -> hyperswitch_domain_models::connector_endpoints::Connectors {
+    fn get_connectors(&self) -> orbix_domain_models::connector_endpoints::Connectors {
         self.conf.connectors.clone()
     }
-    fn event_handler(&self) -> &dyn hyperswitch_interfaces::events::EventHandlerInterface {
+    fn event_handler(&self) -> &dyn orbix_interfaces::events::EventHandlerInterface {
         &self.event_handler
     }
 }
@@ -456,8 +456,8 @@ pub trait AppStateInfo {
 
 #[cfg(feature = "partial-auth")]
 static CHECKSUM_KEY: once_cell::sync::OnceCell<(
-    hyperswitch_masking::StrongSecret<String>,
-    hyperswitch_masking::StrongSecret<Vec<u8>>,
+    orbix_masking::StrongSecret<String>,
+    orbix_masking::StrongSecret<Vec<u8>>,
 )> = once_cell::sync::OnceCell::new();
 
 impl AppStateInfo for AppState {

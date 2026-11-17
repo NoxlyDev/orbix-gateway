@@ -5,7 +5,7 @@ const successfulNo3DSCardDetails = {
   card_number: "4009348888881881",
   card_exp_month: "10",
   card_exp_year: "30",
-  card_holder_name: "Juspay Hyperswitch",
+  card_holder_name: "Orbix Orbix Gateway",
   card_cvc: "737",
 };
 
@@ -56,7 +56,7 @@ const paymentMethodDataNo3DSResponse = {
     card_extended_bin: null,
     card_exp_month: "10",
     card_exp_year: "30",
-    card_holder_name: "Juspay Hyperswitch",
+    card_holder_name: "Orbix Orbix Gateway",
     payment_checks: null,
     authentication_data: null,
     auth_code: null,
@@ -78,7 +78,7 @@ const paymentMethodData3DSResponse = {
     card_extended_bin: null,
     card_exp_month: "10",
     card_exp_year: "30",
-    card_holder_name: "Juspay Hyperswitch",
+    card_holder_name: "Orbix Orbix Gateway",
     payment_checks: null,
     authentication_data: null,
     auth_code: null,
@@ -628,7 +628,7 @@ export const connectorDetails = {
         currency: "USD",
         connector_metadata: {
           braintree: {
-            merchant_account_id: "juspay",
+            merchant_account_id: "orbix",
             merchant_config_currency: "USD",
           },
         },
@@ -655,7 +655,7 @@ export const connectorDetails = {
         },
         connector_metadata: {
           braintree: {
-            merchant_account_id: "juspay",
+            merchant_account_id: "orbix",
             merchant_config_currency: "USD",
           },
         },

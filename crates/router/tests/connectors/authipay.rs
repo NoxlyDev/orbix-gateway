@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router::{
     core::errors,
     types::{self, api, storage::enums},

@@ -2,7 +2,7 @@ use api_models::{enums::FrmSuggestion, payments::PaymentsRetrieveRequest};
 use async_trait::async_trait;
 use common_utils::ext_traits::AsyncExt;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::PaymentStatusData;
+use orbix_domain_models::payments::PaymentStatusData;
 use router_env::{instrument, tracing};
 
 use super::{Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -161,7 +161,7 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentStatusData<F>, PaymentsRetriev
         request: &PaymentsRetrieveRequest,
         platform: &domain::Platform,
         _profile: &domain::Profile,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<operations::GetTrackerResponse<PaymentStatusData<F>>> {
         let db = &*state.store;
 
@@ -197,13 +197,13 @@ impl<F: Send + Clone + Sync> GetTracker<F, PaymentStatusData<F>, PaymentsRetriev
         payment_attempt.encoded_data = request
             .param
             .as_ref()
-            .map(|val| hyperswitch_masking::Secret::new(val.clone()));
+            .map(|val| orbix_masking::Secret::new(val.clone()));
 
         let should_sync_with_connector =
             request.force_sync && payment_intent.status.should_force_sync_with_connector();
 
         // We need the address here to send it in the response
-        let payment_address = hyperswitch_domain_models::payment_address::PaymentAddress::new(
+        let payment_address = orbix_domain_models::payment_address::PaymentAddress::new(
             payment_intent
                 .shipping_address
                 .clone()
@@ -374,7 +374,7 @@ impl<F: Clone + Sync> UpdateTracker<F, PaymentStatusData<F>, PaymentsRetrieveReq
         _processor: &domain::Processor,
         payment_data: PaymentStatusData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(BoxedConfirmOperation<'b, F>, PaymentStatusData<F>)>
     where

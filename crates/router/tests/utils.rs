@@ -218,7 +218,7 @@ fn mk_merchant_account(merchant_id: Option<String>) -> Value {
         "website": "www.example.com",
         "about_business": "Online Retail with a wide selection of organic products for North America",
         "address": {
-          "line1": "Juspay Router",
+          "line1": "Orbix Router",
           "line2": "Koramangala",
           "line3": "Stallion",
           "city": "Bangalore",
@@ -270,8 +270,8 @@ fn mk_payment(amount: i64, amount_to_capture: i32) -> Value {
           "card_cvc": "123"
         }
       },
-      "statement_descriptor_name": "Hyperswitch",
-      "statement_descriptor_suffix": "Hyperswitch",
+      "statement_descriptor_name": "Orbix",
+      "statement_descriptor_suffix": "Orbix",
       "metadata": {
         "udf1": "value1",
         "new_customer": "true",

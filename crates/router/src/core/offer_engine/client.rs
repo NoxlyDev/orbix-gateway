@@ -3,10 +3,10 @@ use common_utils::{
     errors::CustomResult,
     request::{Headers, Method, RequestContent},
 };
-use hyperswitch_interfaces::micro_service::{
+use orbix_interfaces::micro_service::{
     MicroserviceClient, MicroserviceClientError, MicroserviceClientErrorKind,
 };
-use hyperswitch_masking::{Mask, PeekInterface};
+use orbix_masking::{Mask, PeekInterface};
 use router_env::{IdReuse, RequestIdentifier};
 
 use super::types::{
@@ -143,7 +143,7 @@ impl MicroserviceClient for OfferEngineClient {
     }
 
     // Offer Engine is an external third-party service that resolves the tenant
-    // from the API key, not hyperswitch's `x-tenant-id`. Forwarding our tenant
+    // from the API key, not orbix's `x-tenant-id`. Forwarding our tenant
     // header makes it reject the request ("Merchant tenantAccId not present").
     fn should_forward_tenant_header(&self) -> bool {
         false
@@ -176,7 +176,7 @@ impl TryFrom<serde_json::Value> for OfferConnectivityResponse {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     OfferConnectivity,
     method = Method::Post,
     path = OFFERS_LIST_PATH,
@@ -214,7 +214,7 @@ impl OfferList {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     OfferList,
     method = Method::Post,
     path = OFFERS_LIST_PATH,
@@ -250,7 +250,7 @@ impl OfferApply {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     OfferApply,
     method = Method::Post,
     path = OFFERS_APPLY_PATH,
@@ -286,7 +286,7 @@ impl OfferNotify {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     OfferNotify,
     method = Method::Post,
     path = OFFERS_NOTIFY_PATH,
@@ -322,7 +322,7 @@ impl OfferBrowseList {
     }
 }
 
-hyperswitch_interfaces::impl_microservice_flow!(
+orbix_interfaces::impl_microservice_flow!(
     OfferBrowseList,
     method = Method::Post,
     path = OFFERS_LIST_PATH,

@@ -96,7 +96,7 @@ async fn should_make_adyen_3ds_mandate_with_zero_dollar_payment(
 async fn should_make_adyen_gpay_payment(web_driver: WebDriver) -> Result<(), WebDriverError> {
     let conn = AdyenSeleniumTest {};
     conn.make_gpay_payment(web_driver,
-        &format!("{CHECKOUT_BASE_URL}/gpay?gatewayname=adyen&gatewaymerchantid=JuspayDEECOM&amount=70.00&country=US&currency=USD"),
+        &format!("{CHECKOUT_BASE_URL}/gpay?gatewayname=adyen&gatewaymerchantid=OrbixDEECOM&amount=70.00&country=US&currency=USD"),
         vec![
         Event::Assert(Assert::IsPresent("succeeded")),
     ]).await?;
@@ -108,7 +108,7 @@ async fn should_make_adyen_gpay_mandate_payment(
 ) -> Result<(), WebDriverError> {
     let conn = AdyenSeleniumTest {};
     conn.make_gpay_payment(web_driver,
-        &format!("{CHECKOUT_BASE_URL}/gpay?gatewayname=adyen&gatewaymerchantid=JuspayDEECOM&amount=70.00&country=US&currency=USD&mandate_data[customer_acceptance][acceptance_type]=offline&mandate_data[customer_acceptance][accepted_at]=1963-05-03T04:07:52.723Z&mandate_data[customer_acceptance][online][ip_address]=127.0.0.1&mandate_data[customer_acceptance][online][user_agent]=amet%20irure%20esse&mandate_data[mandate_type][multi_use][amount]=7000&mandate_data[mandate_type][multi_use][currency]=USD"),
+        &format!("{CHECKOUT_BASE_URL}/gpay?gatewayname=adyen&gatewaymerchantid=OrbixDEECOM&amount=70.00&country=US&currency=USD&mandate_data[customer_acceptance][acceptance_type]=offline&mandate_data[customer_acceptance][accepted_at]=1963-05-03T04:07:52.723Z&mandate_data[customer_acceptance][online][ip_address]=127.0.0.1&mandate_data[customer_acceptance][online][user_agent]=amet%20irure%20esse&mandate_data[mandate_type][multi_use][amount]=7000&mandate_data[mandate_type][multi_use][currency]=USD"),
         vec![
         Event::Assert(Assert::IsPresent("succeeded")),
         Event::Assert(Assert::IsPresent("Mandate ID")),
@@ -125,7 +125,7 @@ async fn should_make_adyen_gpay_zero_dollar_mandate_payment(
 ) -> Result<(), WebDriverError> {
     let conn = AdyenSeleniumTest {};
     conn.make_gpay_payment(web_driver,
-        &format!("{CHECKOUT_BASE_URL}/gpay?gatewayname=adyen&gatewaymerchantid=JuspayDEECOM&amount=0.00&country=US&currency=USD&mandate_data[customer_acceptance][acceptance_type]=offline&mandate_data[customer_acceptance][accepted_at]=1963-05-03T04:07:52.723Z&mandate_data[customer_acceptance][online][ip_address]=127.0.0.1&mandate_data[customer_acceptance][online][user_agent]=amet%20irure%20esse&mandate_data[mandate_type][multi_use][amount]=700&mandate_data[mandate_type][multi_use][currency]=USD"),
+        &format!("{CHECKOUT_BASE_URL}/gpay?gatewayname=adyen&gatewaymerchantid=OrbixDEECOM&amount=0.00&country=US&currency=USD&mandate_data[customer_acceptance][acceptance_type]=offline&mandate_data[customer_acceptance][accepted_at]=1963-05-03T04:07:52.723Z&mandate_data[customer_acceptance][online][ip_address]=127.0.0.1&mandate_data[customer_acceptance][online][user_agent]=amet%20irure%20esse&mandate_data[mandate_type][multi_use][amount]=700&mandate_data[mandate_type][multi_use][currency]=USD"),
         vec![
         Event::Assert(Assert::IsPresent("succeeded")),
         Event::Assert(Assert::IsPresent("Mandate ID")),

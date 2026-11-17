@@ -12,7 +12,7 @@ use diesel::{
     sql_types::{Json, Jsonb},
     AsExpression, FromSqlRow,
 };
-use hyperswitch_masking::{Secret, WithType};
+use orbix_masking::{Secret, WithType};
 use serde::{self, Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, FromSqlRow, AsExpression)]
@@ -66,7 +66,7 @@ pub struct OrderDetailsWithAmount {
     pub discount_type: Option<String>,
 }
 
-impl hyperswitch_masking::SerializableSecret for OrderDetailsWithAmount {}
+impl orbix_masking::SerializableSecret for OrderDetailsWithAmount {}
 
 common_utils::impl_to_sql_from_sql_json!(OrderDetailsWithAmount);
 
@@ -313,7 +313,7 @@ pub struct FeatureMetadata {
     /// Recurring payment details required for apple pay Merchant Token
     #[serde(skip_serializing_if = "Option::is_none")]
     pub apple_pay_recurring_details: Option<ApplePayRecurringDetails>,
-    /// The system that the gateway is integrated with, e.g., `Direct`(through hyperswitch), `UnifiedConnectorService`(through ucs), etc.
+    /// The system that the gateway is integrated with, e.g., `Direct`(through orbix), `UnifiedConnectorService`(through ucs), etc.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gateway_system: Option<common_enums::GatewaySystem>,
     /// Additional information related to pix like expiry time etc for QR Code payments
@@ -488,7 +488,7 @@ pub struct RedirectResponse {
     pub param: Option<Secret<String>>,
     pub json_payload: Option<pii::SecretSerdeValue>,
 }
-impl hyperswitch_masking::SerializableSecret for RedirectResponse {}
+impl orbix_masking::SerializableSecret for RedirectResponse {}
 common_utils::impl_to_sql_from_sql_json!(RedirectResponse);
 
 #[cfg(feature = "v2")]

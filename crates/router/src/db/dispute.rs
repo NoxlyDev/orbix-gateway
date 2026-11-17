@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use hyperswitch_domain_models::disputes;
+use orbix_domain_models::disputes;
 
 use super::MockDb;
 use crate::{
@@ -78,7 +78,7 @@ pub trait DisputeInterface {
 #[cfg(not(feature = "kv_store"))]
 mod storage_impl {
     use error_stack::report;
-    use hyperswitch_domain_models::disputes;
+    use orbix_domain_models::disputes;
     use router_env::instrument;
 
     use super::DisputeInterface;
@@ -280,7 +280,7 @@ mod storage_impl {
 mod storage_impl {
     use common_utils::{ext_traits::Encode, fallback_reverse_lookup_not_found};
     use error_stack::{report, ResultExt};
-    use hyperswitch_domain_models::disputes;
+    use orbix_domain_models::disputes;
     use redis_interface::HsetnxReply;
     use router_env::instrument;
     use storage_impl::{
@@ -1275,8 +1275,8 @@ mod tests {
             dispute::DisputeNew,
             enums::{DisputeStage, DisputeStatus},
         };
-        use hyperswitch_domain_models::disputes::DisputeListConstraints;
-        use hyperswitch_masking::Secret;
+        use orbix_domain_models::disputes::DisputeListConstraints;
+        use orbix_masking::Secret;
         use redis_interface::RedisSettings;
         use serde_json::Value;
         use time::macros::datetime;
@@ -1607,7 +1607,7 @@ mod tests {
                 dispute::DisputeUpdate,
                 enums::{DisputeStage, DisputeStatus},
             };
-            use hyperswitch_masking::Secret;
+            use orbix_masking::Secret;
             use serde_json::Value;
             use time::macros::datetime;
 

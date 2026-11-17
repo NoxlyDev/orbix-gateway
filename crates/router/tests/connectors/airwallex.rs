@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use hyperswitch_domain_models::address::{Address, AddressDetails};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_domain_models::address::{Address, AddressDetails};
+use orbix_masking::{PeekInterface, Secret};
 use router::types::{self, domain, storage::enums, AccessToken};
 
 use crate::{

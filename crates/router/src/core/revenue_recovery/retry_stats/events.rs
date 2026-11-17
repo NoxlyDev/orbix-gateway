@@ -1,5 +1,5 @@
 use common_enums::{CardNetwork, CardType, StandardisedCode};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments::payment_attempt::PaymentAttempt,
     revenue_recovery::{
         retry_stats_cluster_key::{Dim, RetryStatsClusterKey},

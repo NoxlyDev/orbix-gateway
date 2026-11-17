@@ -1,5 +1,5 @@
 use common_utils::{hashing::HashedString, types::TimeRange};
-use hyperswitch_masking::{ExposeInterface, WithType};
+use orbix_masking::{ExposeInterface, WithType};
 use serde_json::Value;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]

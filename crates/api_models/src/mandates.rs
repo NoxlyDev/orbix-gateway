@@ -1,5 +1,5 @@
 use common_types::payments as common_payments_types;
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 use smithy::SmithyModel;
 use time::PrimitiveDateTime;
@@ -13,7 +13,7 @@ pub struct MandateId {
 }
 
 #[derive(Default, Debug, Deserialize, Serialize, ToSchema, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MandateRevokedResponse {
     /// The identifier for mandate
     #[smithy(value_type = "String")]
@@ -33,7 +33,7 @@ pub struct MandateRevokedResponse {
 }
 
 #[derive(Default, Debug, Deserialize, Serialize, ToSchema, Clone, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MandateResponse {
     /// The identifier for mandate
     #[smithy(value_type = "String")]
@@ -86,7 +86,7 @@ pub struct MandateResponse {
 }
 
 #[derive(Default, Debug, Deserialize, Serialize, ToSchema, Clone, SmithyModel)]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct MandateCardDetails {
     /// The last 4 digits of card
     #[smithy(value_type = "Option<String>")]
@@ -138,7 +138,7 @@ pub struct MandateCardDetails {
 
 #[derive(Clone, Debug, Deserialize, ToSchema, Serialize, SmithyModel)]
 #[serde(deny_unknown_fields)]
-#[smithy(namespace = "com.hyperswitch.smithy.types", mixin = true)]
+#[smithy(namespace = "com.orbix.smithy.types", mixin = true)]
 pub struct MandateListConstraints {
     /// limit on the number of objects to return
     #[smithy(value_type = "Option<i64>", http_query = "limit")]
@@ -183,7 +183,7 @@ pub struct MandateListConstraints {
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum RecurringDetails {
     #[smithy(value_type = "String")]
     MandateId(String),
@@ -232,7 +232,7 @@ pub enum RecurringDetails {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct ProcessorPaymentToken {
     #[smithy(value_type = "String")]
     pub processor_payment_token: String,
@@ -244,7 +244,7 @@ pub struct ProcessorPaymentToken {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTransactionIdAndCardDetails {
     /// The card number
     #[schema(value_type = String, example = "4242424242424242")]
@@ -329,7 +329,7 @@ pub struct NetworkTransactionIdAndCardDetails {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct CardWithLimitedData {
     /// The card number
     #[schema(value_type = String, example = "4242424242424242")]
@@ -372,7 +372,7 @@ pub struct CardWithLimitedData {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTransactionIdAndNetworkTokenDetails {
     /// The Network Token
     #[schema(value_type = String, example = "4604000460040787")]
@@ -446,7 +446,7 @@ pub struct NetworkTransactionIdAndNetworkTokenDetails {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTokenDetails {
     /// The Network Token
     #[schema(value_type = String, example = "4604000460040787")]
@@ -508,7 +508,7 @@ pub struct NetworkTokenDetails {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct VaultCardData {
     /// The vault alias which refers to the card number
     #[schema(value_type = String, example = "token_card_number")]
@@ -575,7 +575,7 @@ pub struct VaultCardData {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTransactionIdAndVaultCardDetails {
     /// The external vault card details
     #[smithy(value_type = "VaultCardData")]
@@ -599,7 +599,7 @@ pub struct NetworkTransactionIdAndVaultCardDetails {
 #[derive(
     Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema, PartialEq, Eq, SmithyModel,
 )]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub struct NetworkTokenWithVaultCardFallback {
     /// The network token to attempt first
     #[smithy(value_type = "NetworkTokenDetails")]

@@ -10,7 +10,7 @@ use common_utils::{
 use diesel_models::enums::UserStatus;
 use error_stack::ResultExt;
 use external_services::http_client;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use router_env::{instrument, logger};
 
 use crate::{
@@ -23,7 +23,7 @@ use crate::{
 // Reusing the AI-service timeout until a dedicated constant is added.
 const REQUEST_TIMEOUT_SECS: u64 = REQUEST_TIME_OUT_FOR_AI_SERVICE;
 
-const SAGE_SOURCE: &str = "hyperswitch-cc";
+const SAGE_SOURCE: &str = "orbix-cc";
 
 #[instrument(skip_all, fields(user_id, merchant_id))]
 pub async fn launch_sage(

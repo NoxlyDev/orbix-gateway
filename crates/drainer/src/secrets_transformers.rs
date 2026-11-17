@@ -1,5 +1,5 @@
 use common_utils::{errors::CustomResult, ext_traits::AsyncExt};
-use hyperswitch_interfaces::secrets_interface::{
+use orbix_interfaces::secrets_interface::{
     secret_handler::SecretsHandler,
     secret_state::{RawSecret, SecretStateContainer, SecuredSecret},
     SecretManagementInterface, SecretsManagementError,

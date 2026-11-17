@@ -33,7 +33,7 @@ use std::{collections::BTreeMap, fs, path::Path};
 const SCANNED_ROOTS: &[&str] = &[
     "crates/router/src",
     "crates/router_env/src",
-    "crates/hyperswitch_interfaces/src",
+    "crates/orbix_interfaces/src",
 ];
 
 /// Files permitted to spawn an uninstrumented future, with the count in that

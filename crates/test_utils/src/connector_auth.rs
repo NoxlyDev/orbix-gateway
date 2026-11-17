@@ -1,6 +1,6 @@
 use std::{collections::HashMap, env};
 
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -75,7 +75,7 @@ pub struct ConnectorAuthentication {
     pub helcim: Option<HeaderKey>,
     pub hipay: Option<HeaderKey>,
     pub hyperpg: Option<HeaderKey>,
-    pub hyperswitch_vault: Option<SignatureKey>,
+    pub orbix_vault: Option<SignatureKey>,
     pub hyperwallet: Option<BodyKey>,
     pub iatapay: Option<SignatureKey>,
     pub imerchantsolutions: Option<HeaderKey>,
@@ -84,7 +84,7 @@ pub struct ConnectorAuthentication {
     pub itaubank: Option<MultiAuthKey>,
     pub jpmorgan: Option<BodyKey>,
     pub jpmorgan_orbital: Option<SignatureKey>,
-    pub juspaythreedsserver: Option<HeaderKey>,
+    pub orbixthreedsserver: Option<HeaderKey>,
     pub katapult: Option<HeaderKey>,
     pub loonio: Option<HeaderKey>,
     pub merchante: Option<BodyKey>,
@@ -187,7 +187,7 @@ impl ConnectorAuthentication {
     /// Will panic if `CONNECTOR_AUTH_FILE_PATH` env is not set
     #[allow(clippy::expect_used)]
     pub fn new() -> Self {
-        // Do `export CONNECTOR_AUTH_FILE_PATH="/hyperswitch/crates/router/tests/connectors/sample_auth.toml"`
+        // Do `export CONNECTOR_AUTH_FILE_PATH="/orbix/crates/router/tests/connectors/sample_auth.toml"`
         // before running tests in shell
         let path = env::var("CONNECTOR_AUTH_FILE_PATH")
             .expect("Connector authentication file path not set");
@@ -219,7 +219,7 @@ impl ConnectorAuthenticationMap {
     /// Will panic if `CONNECTOR_AUTH_FILE_PATH` env  is not set
     #[allow(clippy::expect_used)]
     pub fn new() -> Self {
-        // Do `export CONNECTOR_AUTH_FILE_PATH="/hyperswitch/crates/router/tests/connectors/sample_auth.toml"`
+        // Do `export CONNECTOR_AUTH_FILE_PATH="/orbix/crates/router/tests/connectors/sample_auth.toml"`
         // before running tests in shell
         let path = env::var("CONNECTOR_AUTH_FILE_PATH")
             .expect("connector authentication file path not set");

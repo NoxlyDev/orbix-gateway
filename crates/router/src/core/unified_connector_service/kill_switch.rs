@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use common_enums::{connector_enums::Connector, ConnectorIntegrationType, ExecutionMode};
 use error_stack::ResultExt;
-use hyperswitch_interfaces::unified_connector_service::transformers::{
+use orbix_interfaces::unified_connector_service::transformers::{
     UcsKillSwitchReason, UnifiedConnectorServiceError,
 };
 use router_env::logger;
@@ -682,7 +682,7 @@ mod tests {
     /// A connector's own answer, arriving through UCS.
     fn connector_error(status_code: u16) -> UnifiedConnectorServiceError {
         UnifiedConnectorServiceError::ConnectorError(Box::new(
-            hyperswitch_interfaces::unified_connector_service::transformers::ConnectorErrorInner {
+            orbix_interfaces::unified_connector_service::transformers::ConnectorErrorInner {
                 code: "card_declined".to_string(),
                 message: "Card was declined".to_string(),
                 status_code,
@@ -710,25 +710,25 @@ mod tests {
         let cases = [
             (
                 UnifiedConnectorServiceError::ResponseDeserializationFailed,
-                UcsKillSwitchReason::HyperswitchResponseUndecodable,
+                UcsKillSwitchReason::OrbixResponseUndecodable,
             ),
             (
                 UnifiedConnectorServiceError::ParsingFailed,
-                UcsKillSwitchReason::HyperswitchResponseUndecodable,
+                UcsKillSwitchReason::OrbixResponseUndecodable,
             ),
             (
                 UnifiedConnectorServiceError::RequestEncodingFailed,
-                UcsKillSwitchReason::HyperswitchRequestInvalid,
+                UcsKillSwitchReason::OrbixRequestInvalid,
             ),
             (
                 UnifiedConnectorServiceError::FailedToObtainAuthType,
-                UcsKillSwitchReason::HyperswitchRequestInvalid,
+                UcsKillSwitchReason::OrbixRequestInvalid,
             ),
             (
                 UnifiedConnectorServiceError::MissingRequiredField {
                     field_name: "payment_method_data".into(),
                 },
-                UcsKillSwitchReason::HyperswitchRequestInvalid,
+                UcsKillSwitchReason::OrbixRequestInvalid,
             ),
             (
                 UnifiedConnectorServiceError::NotImplemented("PSync".into()),
@@ -853,8 +853,8 @@ mod tests {
     #[test]
     fn failure_reasons_have_distinct_tags() {
         let tags = [
-            UcsKillSwitchReason::HyperswitchResponseUndecodable.to_string(),
-            UcsKillSwitchReason::HyperswitchRequestInvalid.to_string(),
+            UcsKillSwitchReason::OrbixResponseUndecodable.to_string(),
+            UcsKillSwitchReason::OrbixRequestInvalid.to_string(),
             UcsKillSwitchReason::UcsRejectedRequest.to_string(),
             UcsKillSwitchReason::UcsFlowUnsupported.to_string(),
             UcsKillSwitchReason::UcsInternalError.to_string(),
@@ -875,8 +875,8 @@ pub mod shadow {
 
     use common_enums::{ApiClientError, UcsAvailability};
     use external_services::grpc_client::unified_connector_service::UcsConfigSource;
-    use hyperswitch_domain_models::router_data::ErrorResponse;
-    use hyperswitch_interfaces::{api::gateway::GetRouterData, errors::ConnectorError};
+    use orbix_domain_models::router_data::ErrorResponse;
+    use orbix_interfaces::{api::gateway::GetRouterData, errors::ConnectorError};
     use router_env::logger;
 
     use super::{exceeds_threshold, read_hash_counter, write_hash_counter, COUNTER_FIELD};
@@ -1009,9 +1009,9 @@ pub mod shadow {
     fn response_failure_reason(error: &ErrorResponse) -> ShadowFailureReason {
         match error.status_code {
             407 => ShadowFailureReason::ProxyAuthenticationRequired,
-            504 if error.code == hyperswitch_interfaces::consts::REQUEST_TIMEOUT_ERROR_CODE
+            504 if error.code == orbix_interfaces::consts::REQUEST_TIMEOUT_ERROR_CODE
                 && error.message
-                    == hyperswitch_interfaces::consts::REQUEST_TIMEOUT_ERROR_MESSAGE =>
+                    == orbix_interfaces::consts::REQUEST_TIMEOUT_ERROR_MESSAGE =>
             {
                 ShadowFailureReason::RequestTimeout
             }
@@ -1132,8 +1132,8 @@ pub mod shadow {
             assert!(response_failure_reason(&response).should_increment_counter());
             let response = ErrorResponse {
                 status_code: 504,
-                code: hyperswitch_interfaces::consts::REQUEST_TIMEOUT_ERROR_CODE.to_owned(),
-                message: hyperswitch_interfaces::consts::REQUEST_TIMEOUT_ERROR_MESSAGE.to_owned(),
+                code: orbix_interfaces::consts::REQUEST_TIMEOUT_ERROR_CODE.to_owned(),
+                message: orbix_interfaces::consts::REQUEST_TIMEOUT_ERROR_MESSAGE.to_owned(),
                 ..Default::default()
             };
             assert_eq!(

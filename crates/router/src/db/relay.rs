@@ -1,6 +1,6 @@
 use diesel_models;
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::behaviour::{Conversion, ReverseConversion};
+use orbix_domain_models::behaviour::{Conversion, ReverseConversion};
 use storage_impl::MockDb;
 
 use super::domain;
@@ -16,28 +16,28 @@ pub trait RelayInterface {
     async fn insert_relay(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
-        new: hyperswitch_domain_models::relay::Relay,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError>;
+        new: orbix_domain_models::relay::Relay,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError>;
 
     async fn update_relay(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
-        current_state: hyperswitch_domain_models::relay::Relay,
-        relay_update: hyperswitch_domain_models::relay::RelayUpdate,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError>;
+        current_state: orbix_domain_models::relay::Relay,
+        relay_update: orbix_domain_models::relay::RelayUpdate,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError>;
 
     async fn find_relay_by_id(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
         relay_id: &common_utils::id_type::RelayId,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError>;
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError>;
 
     async fn find_relay_by_profile_id_connector_reference_id(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
         profile_id: &common_utils::id_type::ProfileId,
         connector_reference_id: &str,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError>;
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError>;
 }
 
 #[async_trait::async_trait]
@@ -45,8 +45,8 @@ impl RelayInterface for Store {
     async fn insert_relay(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
-        new: hyperswitch_domain_models::relay::Relay,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+        new: orbix_domain_models::relay::Relay,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         let conn = connection::pg_connection_write(self).await?;
         new.construct_new()
             .await
@@ -67,9 +67,9 @@ impl RelayInterface for Store {
     async fn update_relay(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
-        current_state: hyperswitch_domain_models::relay::Relay,
-        relay_update: hyperswitch_domain_models::relay::RelayUpdate,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+        current_state: orbix_domain_models::relay::Relay,
+        relay_update: orbix_domain_models::relay::RelayUpdate,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         let conn = connection::pg_connection_write(self).await?;
         Conversion::convert(current_state)
             .await
@@ -94,7 +94,7 @@ impl RelayInterface for Store {
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
         relay_id: &common_utils::id_type::RelayId,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         let conn = connection::pg_connection_read(self).await?;
         diesel_models::relay::Relay::find_by_id(&conn, relay_id)
             .await
@@ -114,7 +114,7 @@ impl RelayInterface for Store {
         merchant_key_store: &domain::MerchantKeyStore,
         profile_id: &common_utils::id_type::ProfileId,
         connector_reference_id: &str,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         let conn = connection::pg_connection_read(self).await?;
         diesel_models::relay::Relay::find_by_profile_id_connector_reference_id(
             &conn,
@@ -139,17 +139,17 @@ impl RelayInterface for MockDb {
     async fn insert_relay(
         &self,
         _merchant_key_store: &domain::MerchantKeyStore,
-        _new: hyperswitch_domain_models::relay::Relay,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+        _new: orbix_domain_models::relay::Relay,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         Err(errors::StorageError::MockDbError)?
     }
 
     async fn update_relay(
         &self,
         _merchant_key_store: &domain::MerchantKeyStore,
-        _current_state: hyperswitch_domain_models::relay::Relay,
-        _relay_update: hyperswitch_domain_models::relay::RelayUpdate,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+        _current_state: orbix_domain_models::relay::Relay,
+        _relay_update: orbix_domain_models::relay::RelayUpdate,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         Err(errors::StorageError::MockDbError)?
     }
 
@@ -157,7 +157,7 @@ impl RelayInterface for MockDb {
         &self,
         _merchant_key_store: &domain::MerchantKeyStore,
         _relay_id: &common_utils::id_type::RelayId,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         Err(errors::StorageError::MockDbError)?
     }
 
@@ -166,7 +166,7 @@ impl RelayInterface for MockDb {
         _merchant_key_store: &domain::MerchantKeyStore,
         _profile_id: &common_utils::id_type::ProfileId,
         _connector_reference_id: &str,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         Err(errors::StorageError::MockDbError)?
     }
 }
@@ -176,8 +176,8 @@ impl RelayInterface for KafkaStore {
     async fn insert_relay(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
-        new: hyperswitch_domain_models::relay::Relay,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+        new: orbix_domain_models::relay::Relay,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         self.diesel_store
             .insert_relay(merchant_key_store, new)
             .await
@@ -186,9 +186,9 @@ impl RelayInterface for KafkaStore {
     async fn update_relay(
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
-        current_state: hyperswitch_domain_models::relay::Relay,
-        relay_update: hyperswitch_domain_models::relay::RelayUpdate,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+        current_state: orbix_domain_models::relay::Relay,
+        relay_update: orbix_domain_models::relay::RelayUpdate,
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         self.diesel_store
             .update_relay(merchant_key_store, current_state, relay_update)
             .await
@@ -198,7 +198,7 @@ impl RelayInterface for KafkaStore {
         &self,
         merchant_key_store: &domain::MerchantKeyStore,
         relay_id: &common_utils::id_type::RelayId,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         self.diesel_store
             .find_relay_by_id(merchant_key_store, relay_id)
             .await
@@ -209,7 +209,7 @@ impl RelayInterface for KafkaStore {
         merchant_key_store: &domain::MerchantKeyStore,
         profile_id: &common_utils::id_type::ProfileId,
         connector_reference_id: &str,
-    ) -> CustomResult<hyperswitch_domain_models::relay::Relay, errors::StorageError> {
+    ) -> CustomResult<orbix_domain_models::relay::Relay, errors::StorageError> {
         self.diesel_store
             .find_relay_by_profile_id_connector_reference_id(
                 merchant_key_store,

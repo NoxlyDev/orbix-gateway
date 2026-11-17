@@ -1,12 +1,12 @@
 //! AWS SES email client.
 //!
-//! Hyperswitch adapter over the shared [`cloud_services::email::ses`] client: it adds logging and
+//! Orbix Gateway adapter over the shared [`cloud_services::email::ses`] client: it adds logging and
 //! `error-stack` reports on top of the plain client.
 
 pub use cloud_services::email::ses::{SesConfig as SESConfig, SesError as AwsSesError};
 use cloud_services::email::{ses as shared, EmailMessage};
 use common_utils::{errors::CustomResult, pii};
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use router_env::logger;
 
 use crate::{

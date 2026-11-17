@@ -1,6 +1,6 @@
 //! Interactions with the AWS KMS SDK
 //!
-//! Hyperswitch adapter over the shared [`cloud_services::kms::aws`] client: it adds logging,
+//! Orbix Gateway adapter over the shared [`cloud_services::kms::aws`] client: it adds logging,
 //! metrics and `error-stack` reports on top of the plain client.
 
 use std::time::Instant;

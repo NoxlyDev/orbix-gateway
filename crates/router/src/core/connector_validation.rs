@@ -2,7 +2,7 @@ use api_models::enums as api_enums;
 use common_utils::pii;
 use error_stack::ResultExt;
 use external_services::http_client::client;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 use pm_auth::connector::plaid::transformers::PlaidAuthType;
 
 use crate::{core::errors, types, types::transformers::ForeignTryFrom};
@@ -66,7 +66,7 @@ impl ConnectorAuthTypeAndMetadataValidation<'_> {
             | api_enums::Connector::DummyConnector5
             | api_enums::Connector::DummyConnector6
             | api_enums::Connector::DummyConnector7 => {
-                hyperswitch_connectors::connectors::dummyconnector::transformers::DummyConnectorAuthType::try_from(self.auth_type)?;
+                orbix_connectors::connectors::dummyconnector::transformers::DummyConnectorAuthType::try_from(self.auth_type)?;
                 Ok(())
             }
             api_enums::Connector::AbsaSanlam => {
@@ -354,8 +354,8 @@ impl ConnectorAuthTypeAndMetadataValidation<'_> {
                 helcim::transformers::HelcimAuthType::try_from(self.auth_type)?;
                 Ok(())
             }
-            api_enums::Connector::HyperswitchVault => {
-                hyperswitch_vault::transformers::HyperswitchVaultAuthType::try_from(
+            api_enums::Connector::OrbixVault => {
+                orbix_vault::transformers::OrbixVaultAuthType::try_from(
                     self.auth_type,
                 )?;
                 Ok(())
@@ -389,7 +389,7 @@ impl ConnectorAuthTypeAndMetadataValidation<'_> {
                 )?;
                 Ok(())
             }
-            api_enums::Connector::Juspay | api_enums::Connector::Juspaythreedsserver => Ok(()),
+            api_enums::Connector::Orbix | api_enums::Connector::Orbixthreedsserver => Ok(()),
             api_enums::Connector::Klarna => {
                 klarna::transformers::KlarnaAuthType::try_from(self.auth_type)?;
                 klarna::transformers::KlarnaConnectorMetadataObject::try_from(
@@ -699,10 +699,10 @@ impl ConnectorAuthTypeAndMetadataValidation<'_> {
                 // delegate to. nSure needs the authorization key plus the
                 // portal Application ID.
                 match self.auth_type {
-                    hyperswitch_domain_models::router_data::ConnectorAuthType::BodyKey {
+                    orbix_domain_models::router_data::ConnectorAuthType::BodyKey {
                         ..
                     }
-                    | hyperswitch_domain_models::router_data::ConnectorAuthType::HeaderKey {
+                    | orbix_domain_models::router_data::ConnectorAuthType::HeaderKey {
                         ..
                     } => Ok(()),
                     _ => Err(errors::ConnectorError::FailedToObtainAuthType.into()),
@@ -788,18 +788,18 @@ impl ConnectorAuthTypeValidation<'_> {
             }
         };
         match self.auth_type {
-            hyperswitch_domain_models::router_data::ConnectorAuthType::TemporaryAuth => Ok(()),
-            hyperswitch_domain_models::router_data::ConnectorAuthType::HeaderKey { api_key } => {
+            orbix_domain_models::router_data::ConnectorAuthType::TemporaryAuth => Ok(()),
+            orbix_domain_models::router_data::ConnectorAuthType::HeaderKey { api_key } => {
                 validate_non_empty_field(api_key.peek(), "api_key")
             }
-            hyperswitch_domain_models::router_data::ConnectorAuthType::BodyKey {
+            orbix_domain_models::router_data::ConnectorAuthType::BodyKey {
                 api_key,
                 key1,
             } => {
                 validate_non_empty_field(api_key.peek(), "api_key")?;
                 validate_non_empty_field(key1.peek(), "key1")
             }
-            hyperswitch_domain_models::router_data::ConnectorAuthType::SignatureKey {
+            orbix_domain_models::router_data::ConnectorAuthType::SignatureKey {
                 api_key,
                 key1,
                 api_secret,
@@ -808,7 +808,7 @@ impl ConnectorAuthTypeValidation<'_> {
                 validate_non_empty_field(key1.peek(), "key1")?;
                 validate_non_empty_field(api_secret.peek(), "api_secret")
             }
-            hyperswitch_domain_models::router_data::ConnectorAuthType::MultiAuthKey {
+            orbix_domain_models::router_data::ConnectorAuthType::MultiAuthKey {
                 api_key,
                 key1,
                 api_secret,
@@ -819,7 +819,7 @@ impl ConnectorAuthTypeValidation<'_> {
                 validate_non_empty_field(api_secret.peek(), "api_secret")?;
                 validate_non_empty_field(key2.peek(), "key2")
             }
-            hyperswitch_domain_models::router_data::ConnectorAuthType::CurrencyAuthKey {
+            orbix_domain_models::router_data::ConnectorAuthType::CurrencyAuthKey {
                 auth_key_map,
             } => {
                 if auth_key_map.is_empty() {
@@ -832,7 +832,7 @@ impl ConnectorAuthTypeValidation<'_> {
                     Ok(())
                 }
             }
-            hyperswitch_domain_models::router_data::ConnectorAuthType::CertificateAuth {
+            orbix_domain_models::router_data::ConnectorAuthType::CertificateAuth {
                 certificate,
                 private_key,
             } => {
@@ -850,7 +850,7 @@ impl ConnectorAuthTypeValidation<'_> {
                 })?;
                 Ok(())
             }
-            hyperswitch_domain_models::router_data::ConnectorAuthType::NoKey => Ok(()),
+            orbix_domain_models::router_data::ConnectorAuthType::NoKey => Ok(()),
         }
     }
 }

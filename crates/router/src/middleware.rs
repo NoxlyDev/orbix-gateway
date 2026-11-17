@@ -18,12 +18,12 @@ pub fn default_response_headers() -> actix_web::middleware::DefaultHeaders {
 
     #[cfg(feature = "vergen")]
     let default_headers_middleware =
-        default_headers_middleware.add(("x-hyperswitch-version", router_env::git_tag!()));
+        default_headers_middleware.add(("x-orbix-version", router_env::git_tag!()));
 
     default_headers_middleware
         // Max age of 1 year in seconds, equal to `60 * 60 * 24 * 365` seconds.
         .add((header::STRICT_TRANSPORT_SECURITY, "max-age=31536000"))
-        .add((header::VIA, "HyperSwitch"))
+        .add((header::VIA, "Orbix"))
 }
 
 /// Middleware to build a TOP level domain span for each request.

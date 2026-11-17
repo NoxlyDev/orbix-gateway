@@ -4,7 +4,7 @@
 //! in the Euclid Rule DSL. These include standard control flow analyses like testing
 //! conflicting assertions, to Domain Specific Analyses making use of the
 //! [`Knowledge Graph Framework`](crate::dssa::graph).
-use hyperswitch_constraint_graph::{ConstraintGraph, Memoization};
+use orbix_constraint_graph::{ConstraintGraph, Memoization};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
@@ -243,7 +243,7 @@ mod tests {
     use std::{ops::Deref, sync::Weak};
 
     use euclid_macros::knowledge;
-    use hyperswitch_constraint_graph as cgraph;
+    use orbix_constraint_graph as cgraph;
 
     use super::*;
     #[allow(unused_imports)] // Required by the `knowledge!` macro expansion

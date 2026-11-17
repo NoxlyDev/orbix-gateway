@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Tool is a solution designed to automate testing for the [Hyperswitch](https://github.com/juspay/hyperswitch/) using Cypress, an open-source tool capable of conducting API call tests and UI tests. This README provides guidance on installing Cypress and its dependencies.
+This Tool is a solution designed to automate testing for the [Orbix Gateway](https://github.com/orbix/orbix/) using Cypress, an open-source tool capable of conducting API call tests and UI tests. This README provides guidance on installing Cypress and its dependencies.
 
 ## Installation
 
@@ -20,7 +20,7 @@ To run test cases, follow these steps:
 1. Clone the repository and switch to the project directory:
 
    ```shell
-   git clone https://github.com/juspay/hyperswitch
+   git clone https://github.com/orbix/orbix
    cd cypress-tests
    ```
 
@@ -109,7 +109,7 @@ The folder structure of this directory is as follows:
 
 ### Adding Connectors
 
-To add a new connector for testing with Hyperswitch, follow these steps:
+To add a new connector for testing with Orbix Gateway, follow these steps:
 
 1.Include the connector details in the `creds.json` file:
 

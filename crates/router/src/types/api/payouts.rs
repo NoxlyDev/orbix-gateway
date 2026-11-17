@@ -10,10 +10,10 @@ pub use api_models::payouts::{
     PixKeyBankTransfer, RequiredFieldsOverrideRequest, SepaBankTransfer, TedBankTransfer,
     TrustlyBankTransfer, TrustlyBankTransferData, Wallet as WalletPayout,
 };
-pub use hyperswitch_domain_models::router_flow_types::payouts::{
+pub use orbix_domain_models::router_flow_types::payouts::{
     PoCancel, PoCreate, PoEligibility, PoFulfill, PoQuote, PoRecipient, PoRecipientAccount, PoSync,
 };
-pub use hyperswitch_interfaces::api::payouts::{
+pub use orbix_interfaces::api::payouts::{
     PayoutCancel, PayoutCreate, PayoutEligibility, PayoutFulfill, PayoutQuote, PayoutRecipient,
     PayoutRecipientAccount, PayoutSync, Payouts,
 };

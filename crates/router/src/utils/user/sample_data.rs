@@ -10,7 +10,7 @@ use common_utils::{
 use diesel_models::user::sample_data::PaymentAttemptBatchNew;
 use diesel_models::{enums as storage_enums, DisputeNew, RefundNew};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::PaymentIntent;
+use orbix_domain_models::payments::PaymentIntent;
 use time::OffsetDateTime;
 
 use crate::{
@@ -92,7 +92,7 @@ pub async fn generate_sample_data(
     let (profile_id_result, business_country_default, business_label_default) = {
         let profile_id = req
             .profile_id.clone()
-            .ok_or(hyperswitch_domain_models::errors::api_error_response::ApiErrorResponse::MissingRequiredField {
+            .ok_or(orbix_domain_models::errors::api_error_response::ApiErrorResponse::MissingRequiredField {
                 field_name: "profile_id".into(),
             });
 
@@ -241,7 +241,7 @@ pub async fn generate_sample_data(
             client_secret: Some(client_secret),
             business_country: business_country_default,
             business_label: business_label_default.clone(),
-            active_attempt: hyperswitch_domain_models::RemoteStorageObject::ForeignID(
+            active_attempt: orbix_domain_models::RemoteStorageObject::ForeignID(
                 attempt_id.clone(),
             ),
             attempt_count: 1,
@@ -506,7 +506,7 @@ pub async fn generate_sample_data(
                         .connector
                         .clone()
                         .unwrap_or(DummyConnector4.to_string()),
-                    evidence: hyperswitch_masking::Secret::new(serde_json::json!({})),
+                    evidence: orbix_masking::Secret::new(serde_json::json!({})),
                     profile_id: payment_intent.profile_id.clone(),
                     merchant_connector_id: payment_attempt.merchant_connector_id.clone(),
                     dispute_amount: MinorUnit::new(amount * 100),

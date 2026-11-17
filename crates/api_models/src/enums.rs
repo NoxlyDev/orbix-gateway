@@ -290,7 +290,7 @@ pub enum BillingConnectors {
 #[strum(serialize_all = "snake_case")]
 pub enum VaultConnectors {
     Vgs,
-    HyperswitchVault,
+    OrbixVault,
     Tokenex,
 }
 
@@ -298,7 +298,7 @@ impl From<VaultConnectors> for Connector {
     fn from(value: VaultConnectors) -> Self {
         match value {
             VaultConnectors::Vgs => Self::Vgs,
-            VaultConnectors::HyperswitchVault => Self::HyperswitchVault,
+            VaultConnectors::OrbixVault => Self::OrbixVault,
             VaultConnectors::Tokenex => Self::Tokenex,
         }
     }
@@ -328,7 +328,7 @@ impl TryFrom<Connector> for VaultConnectors {
     fn try_from(value: Connector) -> Result<Self, Self::Error> {
         match value {
             Connector::Vgs => Ok(Self::Vgs),
-            Connector::HyperswitchVault => Ok(Self::HyperswitchVault),
+            Connector::OrbixVault => Ok(Self::OrbixVault),
             Connector::Tokenex => Ok(Self::Tokenex),
             _ => Err(format!("Connector {value} is not a valid vault connector")),
         }
@@ -563,7 +563,7 @@ mod test {
 )]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
-#[smithy(namespace = "com.hyperswitch.smithy.types")]
+#[smithy(namespace = "com.orbix.smithy.types")]
 pub enum RetryAction {
     /// Manual retry through request is being deprecated, now it is available through profile
     ManualRetry,

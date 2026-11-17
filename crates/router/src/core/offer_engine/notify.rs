@@ -1,6 +1,6 @@
 use common_utils::{ext_traits::ValueExt, id_type};
 use diesel_models::process_tracker::business_status;
-use hyperswitch_domain_models::platform::{
+use orbix_domain_models::platform::{
     ProcessorKeyStore, ProcessorMerchantAccount, ProcessorMerchantId,
 };
 use scheduler::{consumer::types::process_data, utils as pt_utils};

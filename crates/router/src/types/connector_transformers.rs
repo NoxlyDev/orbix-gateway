@@ -93,9 +93,9 @@ impl ForeignTryFrom<api_enums::Connector> for euclid::enums::RoutableConnectors 
             api_enums::Connector::Hipay => Self::Hipay,
             api_enums::Connector::Helcim => Self::Helcim,
             api_enums::Connector::Hyperpg => Self::Hyperpg,
-            api_enums::Connector::HyperswitchVault => {
+            api_enums::Connector::OrbixVault => {
                 Err(common_utils::errors::ValidationError::InvalidValue {
-                    message: "Hyperswitch Vault is not a routable connector".to_string(),
+                    message: "Orbix Gateway Vault is not a routable connector".to_string(),
                 })?
             }
             api_enums::Connector::Iatapay => Self::Iatapay,
@@ -104,14 +104,14 @@ impl ForeignTryFrom<api_enums::Connector> for euclid::enums::RoutableConnectors 
             api_enums::Connector::Interpayments => Self::Interpayments,
             api_enums::Connector::Itaubank => Self::Itaubank,
             api_enums::Connector::Jpmorgan => Self::Jpmorgan,
-            api_enums::Connector::Juspay => {
+            api_enums::Connector::Orbix => {
                 Err(common_utils::errors::ValidationError::InvalidValue {
-                    message: "juspay is not a routable connector".to_string(),
+                    message: "orbix is not a routable connector".to_string(),
                 })?
             }
-            api_enums::Connector::Juspaythreedsserver => {
+            api_enums::Connector::Orbixthreedsserver => {
                 Err(common_utils::errors::ValidationError::InvalidValue {
-                    message: "juspaythreedsserver is not a routable connector".to_string(),
+                    message: "orbixthreedsserver is not a routable connector".to_string(),
                 })?
             }
             api_enums::Connector::Klarna => Self::Klarna,

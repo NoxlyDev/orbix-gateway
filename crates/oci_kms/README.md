@@ -1,6 +1,6 @@
 # OCI KMS
 
-A client for the OCI Vault KMS crypto endpoint, shared by Hyperswitch services that keep their
+A client for the OCI Vault KMS crypto endpoint, shared by Orbix Gateway services that keep their
 secrets or data keys under an OCI Vault key.
 
 There is no official OCI Rust SDK, and the community ones don't cover the KMS crypto endpoint, so
@@ -16,7 +16,7 @@ this crate implements what an SDK would otherwise hide:
 - **Request signing**, OCI Signature v1.
 - **Timeouts and retries**, with jittered exponential backoff on transport errors, 429 and 5xx.
 
-It has no dependency on other Hyperswitch crates, so services outside this workspace can use it.
+It has no dependency on other Orbix Gateway crates, so services outside this workspace can use it.
 
 ## Usage
 

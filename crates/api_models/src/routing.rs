@@ -1946,13 +1946,13 @@ impl RoutingMigrationStatusQuery {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RoutingMigrationState {
-    /// Rules exist in Hyperswitch and none of them are in the decision engine.
+    /// Rules exist in Orbix Gateway and none of them are in the decision engine.
     Pending,
     /// Some rules made it across and some did not — a dual-write that failed, usually.
     Partial,
     /// Both sides hold rules, but not the same ones — counts can match, so ids are compared.
     Diverged,
-    /// Every rule is in the decision engine, and Hyperswitch is still routing.
+    /// Every rule is in the decision engine, and Orbix Gateway is still routing.
     Migrated,
     /// Cut over: the decision engine decides this profile's routing.
     Enabled,
@@ -1969,20 +1969,20 @@ pub struct RoutingMigrationProfileStatus {
     pub merchant_id: common_utils::id_type::MerchantId,
     /// Counts only the kinds a rule migration carries, so it can be compared with the decision
     /// engine directly. Dynamic and 3DS rules are `rules_out_of_scope`.
-    pub rules_hyperswitch: i64,
-    /// Held by Hyperswitch but never migrated by this endpoint — see
+    pub rules_orbix: i64,
+    /// Held by Orbix Gateway but never migrated by this endpoint — see
     /// [`RoutingAlgorithmKind::rule_migration_exclusion`].
     pub rules_out_of_scope: i64,
     /// `None` when the decision engine could not be reached for this profile.
     pub rules_decision_engine: Option<i64>,
-    /// Held by Hyperswitch, absent in the decision engine — what a migration run would write.
+    /// Held by Orbix Gateway, absent in the decision engine — what a migration run would write.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub rules_missing_in_decision_engine: Vec<String>,
-    /// Held by the decision engine, absent in Hyperswitch. Migration does not remove them.
+    /// Held by the decision engine, absent in Orbix Gateway. Migration does not remove them.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub rules_only_in_decision_engine: Vec<String>,
     /// The cut-over as configured, not as enforced — the diff kill switch can suppress it at
-    /// runtime. `None` when unresolved, which is not the same as "on Hyperswitch".
+    /// runtime. `None` when unresolved, which is not the same as "on Orbix Gateway".
     pub routing_source: Option<RoutingResultSource>,
     pub state: RoutingMigrationState,
 }
@@ -2054,15 +2054,15 @@ impl RuleMigrationResponse {
 ///
 /// Possible values:
 /// - `decision_engine` → External Decision Engine evaluated the rule
-/// - `hyperswitch_routing` → Internal Hyperswitch routing logic was used
+/// - `orbix_routing` → Internal Orbix Gateway routing logic was used
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize, strum::Display, strum::EnumString)]
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum RoutingResultSource {
     /// External Decision Engine
     DecisionEngine,
-    /// Inbuilt Hyperswitch Routing Engine
-    HyperswitchRouting,
+    /// Inbuilt Orbix Gateway Routing Engine
+    OrbixRouting,
 }
 
 //TODO: temporary change will be refactored afterwards
@@ -2131,7 +2131,7 @@ pub struct RoutingEvaluateRequest {
     ///
     /// For the complete superset of supported routing keys,
     /// refer to `routing_configs.keys` in:
-    /// https://github.com/juspay/decision-engine/blob/main/config/development.toml
+    /// https://github.com/orbix/decision-engine/blob/main/config/development.toml
     #[schema(value_type = Object)]
     pub parameters: std::collections::HashMap<String, Option<ValueType>>,
 

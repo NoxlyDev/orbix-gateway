@@ -7,11 +7,11 @@ use common_utils::{
 };
 use diesel_models as store;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     behaviour::{Conversion, ReverseConversion},
     merchant_key_store::MerchantKeyStore,
 };
-use hyperswitch_masking::StrongSecret;
+use orbix_masking::StrongSecret;
 use redis::{kv_store::RedisConnInterface, pub_sub::PubSubInterface, RedisStore};
 mod address;
 pub mod authentication;
@@ -55,7 +55,7 @@ use common_utils::{errors::CustomResult, types::keymanager::KeyManagerState};
 use database::store::PgPool;
 pub mod tokenization;
 #[cfg(not(feature = "payouts"))]
-use hyperswitch_domain_models::{PayoutAttemptInterface, PayoutsInterface};
+use orbix_domain_models::{PayoutAttemptInterface, PayoutsInterface};
 pub use mock_db::MockDb;
 use redis_interface::{errors::RedisError, RedisConnectionWithContext, SaddReply};
 

@@ -3,7 +3,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use error_stack::ResultExt;
-use hyperswitch_masking::Deserialize;
+use orbix_masking::Deserialize;
 use semver::Version;
 use serde::Serialize;
 use time::PrimitiveDateTime;

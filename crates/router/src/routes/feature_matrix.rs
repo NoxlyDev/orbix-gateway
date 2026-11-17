@@ -1,10 +1,10 @@
 use actix_web::{web, HttpRequest, Responder};
 use api_models::{connector_enums::Connector, feature_matrix};
 use common_enums::enums;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     api::ApplicationResponse, router_response_types::PaymentMethodTypeMetadata,
 };
-use hyperswitch_interfaces::api::{ConnectorCommon, ConnectorSpecifications};
+use orbix_interfaces::api::{ConnectorCommon, ConnectorSpecifications};
 use router_env::{instrument, Flow};
 use strum::IntoEnumIterator;
 

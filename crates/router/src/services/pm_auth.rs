@@ -1,4 +1,4 @@
-use hyperswitch_interfaces::consts;
+use orbix_interfaces::consts;
 use pm_auth::{
     core::errors::ConnectorError,
     types::{self as pm_auth_types, api::BoxedConnectorIntegration, PaymentAuthRouterData},

@@ -1,7 +1,7 @@
 use common_utils::ext_traits::AsyncExt;
 use diesel_models::business_profile::{self as diesel, ProfileUpdateInternal};
 use error_stack::{report, ResultExt};
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     business_profile::{
         ProfileInterface, {self as domain},
     },
@@ -626,11 +626,11 @@ use common_utils::{
 };
 #[cfg(feature = "v2")]
 use diesel_models::business_profile::RevenueRecoveryAlgorithmData;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     // behaviour::Conversion,
     type_encryption::{crypto_operation, AsyncLift, CryptoOperation},
 };
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_masking::{PeekInterface, Secret};
 
 #[cfg(feature = "v1")]
 impl ForeignFrom<domain::ProfileUpdate> for ProfileUpdateInternal {

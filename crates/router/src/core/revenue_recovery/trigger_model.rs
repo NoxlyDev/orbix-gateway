@@ -14,7 +14,7 @@ use crate::{
 /// checked against it, and from here on each model has exactly what it needs.
 #[derive(Debug)]
 pub(super) enum RecoveryTrigger<'a> {
-    /// Hyperswitch triggers the retries through these connector accounts.
+    /// Orbix Gateway triggers the retries through these connector accounts.
     Internal {
         billing_merchant_connector_id: id_type::MerchantConnectorAccountId,
         payment_merchant_connector_id: id_type::MerchantConnectorAccountId,

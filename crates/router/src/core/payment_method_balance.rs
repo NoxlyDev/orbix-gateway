@@ -11,15 +11,15 @@ use common_utils::{
     types::MinorUnit,
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     payments::HeaderPayload,
     router_data_v2::{flow_common_types::GiftCardBalanceCheckFlowData, RouterDataV2},
     router_flow_types::GiftCardBalanceCheck,
     router_request_types::GiftCardBalanceCheckRequestData,
     router_response_types::GiftCardBalanceCheckResponseData,
 };
-use hyperswitch_interfaces::connector_integration_interface::RouterDataConversion;
-use hyperswitch_masking::ExposeInterface;
+use orbix_interfaces::connector_integration_interface::RouterDataConversion;
+use orbix_masking::ExposeInterface;
 use router_env::{instrument, tracing};
 
 use crate::{
@@ -124,7 +124,7 @@ pub async fn payments_check_gift_card_balance_core(
             currency: Some(payment_intent.amount_details.currency),
             minor_amount: Some(payment_intent.amount_details.order_amount),
         },
-        response: Err(hyperswitch_domain_models::router_data::ErrorResponse::default()),
+        response: Err(orbix_domain_models::router_data::ErrorResponse::default()),
     };
 
     let old_router_data = GiftCardBalanceCheckFlowData::to_old_router_data(router_data)

@@ -188,7 +188,7 @@ db_user := env_var_or_default('DB_USER', 'db_user')
 db_password := env_var_or_default('DB_PASSWORD', 'db_pass')
 db_host := env_var_or_default('DB_HOST', 'localhost')
 db_port := env_var_or_default('DB_PORT', '5432')
-db_name := env_var_or_default('DB_NAME', 'hyperswitch_db')
+db_name := env_var_or_default('DB_NAME', 'orbix_db')
 default_db_url := 'postgresql://' + db_user + ':' + db_password + '@' + db_host + ':' + db_port / db_name
 database_url := env_var_or_default('DATABASE_URL', default_db_url)
 default_migration_params := ''
@@ -264,7 +264,7 @@ migrate_v2_compatible:
     just delete_dir_if_exists
     exit $EXIT_CODE
 
-# Drop database if exists and then create a new 'hyperswitch_db' Database
+# Drop database if exists and then create a new 'orbix_db' Database
 resurrect database_name=db_name:
     psql -U postgres -c 'DROP DATABASE IF EXISTS  {{ database_name }}';
     psql -U postgres -c 'CREATE DATABASE {{ database_name }}';

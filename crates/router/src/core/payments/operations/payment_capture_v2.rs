@@ -1,7 +1,7 @@
 use api_models::{enums::FrmSuggestion, payments::PaymentsCaptureRequest};
 use async_trait::async_trait;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payments::PaymentCaptureData;
+use orbix_domain_models::payments::PaymentCaptureData;
 use router_env::{instrument, tracing};
 
 use super::{Domain, GetTracker, Operation, UpdateTracker, ValidateRequest};
@@ -151,7 +151,7 @@ impl<F: Send + Clone> GetTracker<F, PaymentCaptureData<F>, PaymentsCaptureReques
         request: &PaymentsCaptureRequest,
         platform: &domain::Platform,
         _profile: &domain::Profile,
-        _header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: &orbix_domain_models::payments::HeaderPayload,
     ) -> RouterResult<operations::GetTrackerResponse<PaymentCaptureData<F>>> {
         let db = &*state.store;
 
@@ -316,7 +316,7 @@ impl<F: Clone> UpdateTracker<F, PaymentCaptureData<F>, PaymentsCaptureRequest> f
         processor: &domain::Processor,
         mut payment_data: PaymentCaptureData<F>,
         _frm_suggestion: Option<FrmSuggestion>,
-        _header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        _header_payload: orbix_domain_models::payments::HeaderPayload,
         _dimensions: &dimension_state::DimensionsWithProcessorAndProviderMerchantId,
     ) -> RouterResult<(BoxedConfirmOperation<'b, F>, PaymentCaptureData<F>)>
     where
@@ -324,7 +324,7 @@ impl<F: Clone> UpdateTracker<F, PaymentCaptureData<F>, PaymentsCaptureRequest> f
     {
         let storage_scheme = processor.get_storage_scheme();
         let key_store = processor.get_key_store();
-        let payment_attempt_update = hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptUpdate::PreCaptureUpdate { amount_to_capture: payment_data.payment_attempt.amount_details.get_amount_to_capture(), updated_by: storage_scheme.inner().to_string() };
+        let payment_attempt_update = orbix_domain_models::payments::payment_attempt::PaymentAttemptUpdate::PreCaptureUpdate { amount_to_capture: payment_data.payment_attempt.amount_details.get_amount_to_capture(), updated_by: storage_scheme.inner().to_string() };
 
         let payment_attempt = state
             .store

@@ -1,7 +1,7 @@
 //! Sending email through AWS SES or an SMTP server.
 //!
 //! The clients themselves are the shared [`cloud_services::email`] ones; this module adds
-//! Hyperswitch's templating ([`EmailData`]), settings and error reporting.
+//! Orbix Gateway's templating ([`EmailData`]), settings and error reporting.
 
 use common_utils::{errors::CustomResult, pii};
 use serde::Deserialize;
@@ -135,7 +135,7 @@ impl From<pii::Email> for EmailRecipients {
 
 impl EmailRecipients {
     fn addresses(emails: Vec<pii::Email>) -> Vec<String> {
-        use hyperswitch_masking::PeekInterface;
+        use orbix_masking::PeekInterface;
         emails
             .into_iter()
             .map(|email| email.peek().to_owned())
@@ -209,8 +209,8 @@ impl EmailSettings {
     #[allow(missing_docs)]
     pub async fn decrypt_credentials(
         self,
-        client: &dyn hyperswitch_interfaces::secrets_interface::SecretManagementInterface,
-    ) -> CustomResult<Self, hyperswitch_interfaces::secrets_interface::SecretsManagementError> {
+        client: &dyn orbix_interfaces::secrets_interface::SecretManagementInterface,
+    ) -> CustomResult<Self, orbix_interfaces::secrets_interface::SecretsManagementError> {
         let client_config = match self.client_config {
             EmailClientConfigs::Smtp { smtp } => EmailClientConfigs::Smtp {
                 smtp: smtp.decrypt_credentials(client).await?,

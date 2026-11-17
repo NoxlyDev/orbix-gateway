@@ -2,7 +2,7 @@
 
 use cards::{CardExpiration, CardExpirationMonth, CardExpirationYear, CardSecurityCode};
 use common_utils::date_time;
-use hyperswitch_masking::PeekInterface;
+use orbix_masking::PeekInterface;
 
 #[test]
 fn test_card_security_code() {

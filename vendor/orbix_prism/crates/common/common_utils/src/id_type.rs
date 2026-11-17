@@ -91,7 +91,7 @@ impl TryFrom<Cow<'_, str>> for CustomerId {
     }
 }
 
-impl hyperswitch_masking::SerializableSecret for CustomerId {}
+impl orbix_masking::SerializableSecret for CustomerId {}
 
 #[derive(Debug, Clone, Serialize, Hash, PartialEq, Eq)]
 

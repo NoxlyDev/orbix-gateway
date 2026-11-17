@@ -8,7 +8,7 @@ use diesel_models::{
     configs,
 };
 use error_stack::ResultExt;
-use hyperswitch_masking::StrongSecret;
+use orbix_masking::StrongSecret;
 
 use super::{errors, transformers::generate_fingerprint_and_get_id, SessionState};
 use crate::{

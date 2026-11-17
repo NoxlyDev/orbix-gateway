@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     address::{Address, AddressDetails, PhoneDetails},
     payment_method_data::{Card, PaymentMethodData},
     router_request_types::AuthenticationData,
 };
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router::types::{self, storage::enums, PaymentAddress};
 
 use crate::{

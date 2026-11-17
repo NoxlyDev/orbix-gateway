@@ -12,10 +12,10 @@ use common_utils::{
     types::MinorUnit,
 };
 use error_stack::{report, Report, ResultExt};
-use hyperswitch_domain_models::payments::{
+use orbix_domain_models::payments::{
     split_payments, HeaderPayload, PaymentConfirmData, PaymentIntent,
 };
-use hyperswitch_masking::ExposeInterface;
+use orbix_masking::ExposeInterface;
 
 use super::errors::StorageErrorExt;
 use crate::{
@@ -255,7 +255,7 @@ pub(crate) async fn split_payments_execute_core(
     // Change the active_attempt_id_type of PaymentIntent to `GroupID`. This indicates that the customer
     // has attempted a split payment for this intent
     let payment_intent_update =
-        hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::AttemptGroupUpdate {
+        orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::AttemptGroupUpdate {
             updated_by: platform
                 .get_processor()
                 .get_account()
@@ -338,7 +338,7 @@ pub(crate) async fn split_payments_execute_core(
         // have succeeded, so reverting the state of Payment Intent
         if payment_data.payment_intent.is_succeeded() {
             let payment_intent_update =
-            hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::SplitPaymentStatusUpdate {
+            orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::SplitPaymentStatusUpdate {
                 status: common_enums::IntentStatus::RequiresPaymentMethod,
                 updated_by: platform
                     .get_processor()
@@ -430,7 +430,7 @@ pub(crate) async fn split_payments_execute_core(
         // have succeeded, so reverting the state of Payment Intent
         if payment_data.payment_intent.is_succeeded() {
             let payment_intent_update =
-            hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::SplitPaymentStatusUpdate {
+            orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::SplitPaymentStatusUpdate {
                 status: common_enums::IntentStatus::RequiresPaymentMethod,
                 updated_by: platform
                     .get_processor()
@@ -464,7 +464,7 @@ pub(crate) async fn split_payments_execute_core(
     }
 
     let payment_intent_update =
-        hyperswitch_domain_models::payments::payment_intent::PaymentIntentUpdate::SplitPaymentStatusUpdate {
+        orbix_domain_models::payments::payment_intent::PaymentIntentUpdate::SplitPaymentStatusUpdate {
             status: split_pm_response_data.get_intent_status(),
             updated_by: platform
                 .get_processor()
@@ -503,7 +503,7 @@ pub async fn create_domain_model_for_split_payment(
     cell_id: id_type::CellId,
     storage_scheme: enums::MerchantStorageScheme,
     request: &api_models::payments::PaymentsConfirmIntentRequest,
-    encrypted_data: hyperswitch_domain_models::payments::payment_attempt::DecryptedPaymentAttempt,
+    encrypted_data: orbix_domain_models::payments::payment_attempt::DecryptedPaymentAttempt,
     split_amount: MinorUnit,
     attempts_group_id: &id_type::GlobalAttemptGroupId,
     payment_method_type: enums::PaymentMethod,
@@ -532,7 +532,7 @@ pub async fn create_domain_model_for_split_payment(
     let connector_token = Some(diesel_models::ConnectorTokenDetails {
         connector_mandate_id: None,
         connector_token_request_reference_id: Some(common_utils::generate_id_with_len(
-            hyperswitch_domain_models::consts::CONNECTOR_MANDATE_REQUEST_REFERENCE_ID_LENGTH,
+            orbix_domain_models::consts::CONNECTOR_MANDATE_REQUEST_REFERENCE_ID_LENGTH,
         )),
     });
 
@@ -576,7 +576,7 @@ pub async fn create_domain_model_for_split_payment(
         customer_acceptance: request
             .customer_acceptance
             .clone()
-            .map(hyperswitch_masking::Secret::new),
+            .map(orbix_masking::Secret::new),
         profile_id: payment_intent.profile_id.clone(),
         organization_id: payment_intent.organization_id.clone(),
         payment_method_type,

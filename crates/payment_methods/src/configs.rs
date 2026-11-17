@@ -1,7 +1,7 @@
 pub mod payment_connector_required_fields;
 pub mod settings;
 
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use serde::Deserialize;
 use url::Url;
 
@@ -19,10 +19,10 @@ pub struct MicroServicesConfig {
 impl MicroServicesConfig {
     pub async fn decrypt_credentials(
         self,
-        client: &dyn hyperswitch_interfaces::secrets_interface::SecretManagementInterface,
+        client: &dyn orbix_interfaces::secrets_interface::SecretManagementInterface,
     ) -> common_utils::errors::CustomResult<
         Self,
-        hyperswitch_interfaces::secrets_interface::SecretsManagementError,
+        orbix_interfaces::secrets_interface::SecretsManagementError,
     > {
         let authentication_service = match self.authentication_service {
             Some(service) => Some(AuthenticationServiceConfig {

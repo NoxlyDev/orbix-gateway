@@ -2,7 +2,7 @@ use common_utils::{
     consts::DEFAULT_LOCALE,
     ext_traits::{OptionExt, ValueExt},
 };
-use hyperswitch_domain_models::payments::HeaderPayload;
+use orbix_domain_models::payments::HeaderPayload;
 use scheduler::{
     consumer::{self, workflows::ProcessTrackerWorkflow},
     errors,

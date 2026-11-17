@@ -1,5 +1,5 @@
 use common_utils::id_type;
-use hyperswitch_domain_models::address::{Address, AddressDetails};
+use orbix_domain_models::address::{Address, AddressDetails};
 use router::types::{self, domain, storage::enums};
 
 use crate::{

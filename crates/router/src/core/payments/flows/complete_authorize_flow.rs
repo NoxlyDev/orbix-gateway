@@ -5,17 +5,17 @@ use common_enums::connector_enums;
 use common_utils::{errors, id_type, ucs_types};
 use error_stack::ResultExt;
 use external_services::grpc_client;
-use hyperswitch_connectors::constants as connector_consts;
-use hyperswitch_domain_models::{
+use orbix_connectors::constants as connector_consts;
+use orbix_domain_models::{
     router_data,
     router_data_v2::{flow_common_types, PaymentFlowData},
     router_flow_types, router_request_types, router_response_types,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     api as api_interface, api::ConnectorSpecifications, consts as interface_consts,
     errors as interface_errors, unified_connector_service::transformers as ucs_transformers,
 };
-use hyperswitch_masking::{self, ExposeInterface, Secret};
+use orbix_masking::{self, ExposeInterface, Secret};
 use unified_connector_service_client::payments as payments_grpc;
 
 use super::{ConstructFlowSpecificData, Feature};
@@ -52,7 +52,7 @@ impl
         business_profile: &domain::Profile,
         merchant_connector_account: &helpers::MerchantConnectorAccountType,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _payment_method: Option<common_enums::PaymentMethod>,
         _payment_method_type: Option<common_enums::PaymentMethodType>,
         connector_callback_urls: &mut ConnectorCallbackUrls,
@@ -91,7 +91,7 @@ impl
         customer: &Option<domain::Customer>,
         merchant_connector_account: &domain::MerchantConnectorAccountTypeDetails,
         merchant_recipient_data: Option<types::MerchantRecipientData>,
-        header_payload: Option<hyperswitch_domain_models::payments::HeaderPayload>,
+        header_payload: Option<orbix_domain_models::payments::HeaderPayload>,
         _connector_callback_urls: &mut ConnectorCallbackUrls,
     ) -> RouterResult<
         types::RouterData<
@@ -119,7 +119,7 @@ impl Feature<api::CompleteAuthorize, types::CompleteAuthorizeData>
         call_connector_action: payments::CallConnectorAction,
         connector_request: Option<services::Request>,
         business_profile: &domain::Profile,
-        header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+        header_payload: orbix_domain_models::payments::HeaderPayload,
         _return_raw_connector_response: Option<bool>,
         gateway_context: gateway_context::RouterGatewayContext,
     ) -> RouterResult<Self> {
@@ -764,7 +764,7 @@ pub async fn call_unified_connector_service_authenticate(
         types::PaymentsResponseData,
     >,
     state: &SessionState,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
     lineage_ids: grpc_client::LineageIds,
     #[cfg(feature = "v1")] merchant_connector_account: helpers::MerchantConnectorAccountType,
     #[cfg(feature = "v2")] merchant_connector_account: domain::MerchantConnectorAccountTypeDetails,
@@ -894,7 +894,7 @@ pub async fn call_unified_connector_service_authenticate_proxy(
     >,
     external_vault_pmd: &domain::ExternalVaultPaymentMethodData,
     state: &SessionState,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
     lineage_ids: grpc_client::LineageIds,
     merchant_connector_account: helpers::MerchantConnectorAccountType,
     external_vault_merchant_connector_account: helpers::MerchantConnectorAccountType,
@@ -1035,7 +1035,7 @@ pub async fn call_unified_connector_service_post_authenticate(
         types::PaymentsResponseData,
     >,
     state: &SessionState,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
     lineage_ids: grpc_client::LineageIds,
     #[cfg(feature = "v1")] merchant_connector_account: helpers::MerchantConnectorAccountType,
     #[cfg(feature = "v2")] merchant_connector_account: domain::MerchantConnectorAccountTypeDetails,
@@ -1160,7 +1160,7 @@ pub async fn call_unified_connector_service_post_authenticate_proxy(
     >,
     external_vault_pmd: &domain::ExternalVaultPaymentMethodData,
     state: &SessionState,
-    header_payload: &hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: &orbix_domain_models::payments::HeaderPayload,
     lineage_ids: grpc_client::LineageIds,
     merchant_connector_account: helpers::MerchantConnectorAccountType,
     external_vault_merchant_connector_account: helpers::MerchantConnectorAccountType,
@@ -1345,7 +1345,7 @@ async fn process_capture_flow(
     connector: &api::ConnectorData,
     call_connector_action: payments::CallConnectorAction,
     business_profile: &domain::Profile,
-    header_payload: hyperswitch_domain_models::payments::HeaderPayload,
+    header_payload: orbix_domain_models::payments::HeaderPayload,
     gateway_context: gateway_context::RouterGatewayContext,
 ) -> RouterResult<
     types::RouterData<

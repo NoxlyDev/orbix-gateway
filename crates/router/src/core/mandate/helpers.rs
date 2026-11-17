@@ -4,7 +4,7 @@ use common_types::payments as common_payments_types;
 use common_utils::errors::CustomResult;
 use diesel_models::Mandate;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::mandates::MandateData;
+use orbix_domain_models::mandates::MandateData;
 
 use crate::{core::errors, types::api};
 #[cfg(feature = "v1")]
@@ -91,7 +91,7 @@ pub struct MandateGenericData {
     pub payment_method_type: Option<enums::PaymentMethodType>,
     pub mandate_data: Option<MandateData>,
     pub recurring_mandate_payment_data:
-        Option<hyperswitch_domain_models::router_data::RecurringMandatePaymentData>,
+        Option<orbix_domain_models::router_data::RecurringMandatePaymentData>,
     pub mandate_connector: Option<payments::MandateConnectorDetails>,
     pub payment_method_info: Option<domain::PaymentMethod>,
 }

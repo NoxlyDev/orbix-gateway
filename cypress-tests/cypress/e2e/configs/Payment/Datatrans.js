@@ -839,7 +839,7 @@ export const connectorDetails = {
         currency: "USD",
         setup_future_usage: "on_session",
         billing: billingWithNewline,
-        email: "hyperswitch.example@gmail.com",
+        email: "orbix.example@gmail.com",
       },
       Response: {
         status: 200,

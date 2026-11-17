@@ -1,5 +1,5 @@
 use diesel_models::callback_mapper::CallbackMapper as DieselCallbackMapper;
-use hyperswitch_domain_models::callback_mapper::CallbackMapper;
+use orbix_domain_models::callback_mapper::CallbackMapper;
 
 use crate::DataModelExt;
 

@@ -1,11 +1,11 @@
 {
   "api_key_create": {
-    "name": "Hyperswitch API Key",
+    "name": "Orbix Gateway API Key",
     "expiration": "",
     "description": null
   },
   "api_key_update": {
-    "description": "Hyperswitch Cypress specific API Key",
+    "description": "Orbix Gateway Cypress specific API Key",
     "expiration": ""
   }
 }

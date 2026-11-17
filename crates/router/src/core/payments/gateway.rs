@@ -23,8 +23,8 @@ pub mod setup_mandate;
 use std::sync;
 
 use common_enums;
-use hyperswitch_domain_models::{router_data_v2::PaymentFlowData, router_flow_types::payments};
-use hyperswitch_interfaces::{
+use orbix_domain_models::{router_data_v2::PaymentFlowData, router_flow_types::payments};
+use orbix_interfaces::{
     api::{gateway, Connector, ConnectorIntegration},
     connector_integration_interface::{BoxedConnectorIntegrationInterface, RouterDataConversion},
     connector_integration_v2::{ConnectorIntegrationV2, ConnectorV2},

@@ -14,9 +14,9 @@ use common_utils::{
 };
 use diesel_models::process_tracker::business_status;
 use error_stack::{report, Report, ResultExt};
-use hyperswitch_domain_models::type_encryption::{crypto_operation, CryptoOperation};
-use hyperswitch_interfaces::{consts, webhooks::WebhookResourceData};
-use hyperswitch_masking::{ExposeInterface, Mask, PeekInterface, Secret};
+use orbix_domain_models::type_encryption::{crypto_operation, CryptoOperation};
+use orbix_interfaces::{consts, webhooks::WebhookResourceData};
+use orbix_masking::{ExposeInterface, Mask, PeekInterface, Secret};
 use router_env::{instrument, tracing::Instrument};
 
 use super::{types, utils, MERCHANT_CONNECTOR_ACCOUNT_ID, MERCHANT_ID};
@@ -866,7 +866,7 @@ async fn update_payment_attempt_from_webhook_response(
             sale_notified: true,
             error_details: existing_details.error_details,
         };
-        let update = hyperswitch_domain_models::payments::payment_attempt::PaymentAttemptUpdate::ExternalSurchargeUpdate {
+        let update = orbix_domain_models::payments::payment_attempt::PaymentAttemptUpdate::ExternalSurchargeUpdate {
         external_surcharge_details: updated_details,
         updated_by: storage_scheme.inner().to_string(),
     };

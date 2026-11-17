@@ -16,10 +16,10 @@ use common_utils::{
 };
 use diesel_models::{refund as diesel_refund, ConnectorMandateReferenceId};
 use error_stack::{report, ResultExt};
-use hyperswitch_connectors::connectors::unified_authentication_service::transformers::WebhookResponse as UasWebhookResponse;
+use orbix_connectors::connectors::unified_authentication_service::transformers::WebhookResponse as UasWebhookResponse;
 #[cfg(feature = "payouts")]
-use hyperswitch_domain_models::payouts::payouts::PayoutsUpdate;
-use hyperswitch_domain_models::{
+use orbix_domain_models::payouts::payouts::PayoutsUpdate;
+use orbix_domain_models::{
     api::{IncomingWebhookEventMetadata, WebhookResponse},
     mandates::CommonMandateReference,
     payments::{payment_attempt::PaymentAttempt, HeaderPayload, PaymentIntent},
@@ -27,14 +27,14 @@ use hyperswitch_domain_models::{
     router_request_types::unified_authentication_service::UasAuthenticationResponseData,
     vault::PaymentMethodVaultingData,
 };
-use hyperswitch_interfaces::{
+use orbix_interfaces::{
     unified_connector_service::get_payments_response_from_ucs_webhook_content,
     webhooks::{
         IncomingWebhookFlowError, IncomingWebhookRequestDetails, WebhookContext,
         WebhookResourceData,
     },
 };
-use hyperswitch_masking::{ExposeInterface, PeekInterface, Secret};
+use orbix_masking::{ExposeInterface, PeekInterface, Secret};
 use router_env::{instrument, tracing, tracing::Instrument};
 use unified_connector_service_client::payments as payments_grpc;
 
@@ -507,7 +507,7 @@ async fn fetch_three_ds_execution_path(
 pub struct MerchantConnectorDetails {
     /// Merchant Connector Account
     pub merchant_connector_account:
-        Option<hyperswitch_domain_models::merchant_connector_account::MerchantConnectorAccount>,
+        Option<orbix_domain_models::merchant_connector_account::MerchantConnectorAccount>,
     /// Connector
     pub connector: ConnectorEnum,
     pub connector_name: String,
@@ -1574,7 +1574,7 @@ async fn relay_refunds_incoming_webhook_flow(
 
     // if source_verified then update relay status else trigger relay force sync
     let relay_response = if source_verified {
-        let relay_update = hyperswitch_domain_models::relay::RelayUpdate::StatusUpdate {
+        let relay_update = orbix_domain_models::relay::RelayUpdate::StatusUpdate {
             connector_reference_id: None,
             status: common_enums::RelayStatus::foreign_try_from(event_type)
                 .change_context(errors::ApiErrorResponse::WebhookProcessingFailure)
@@ -1604,7 +1604,7 @@ async fn relay_refunds_incoming_webhook_flow(
         .change_context(errors::ApiErrorResponse::InternalServerError)
         .attach_printable("Failed to force sync relay")?;
 
-        if let hyperswitch_domain_models::api::ApplicationResponse::Json(response) =
+        if let orbix_domain_models::api::ApplicationResponse::Json(response) =
             relay_force_sync_response
         {
             response
@@ -2017,7 +2017,7 @@ async fn external_authentication_incoming_webhook_flow(
             .get_external_authentication_details(request_details)
             .switch()?;
         let trans_status = authentication_details.trans_status;
-        let authentication_update = hyperswitch_domain_models::authentication::AuthenticationUpdate::PostAuthenticationUpdate {
+        let authentication_update = orbix_domain_models::authentication::AuthenticationUpdate::PostAuthenticationUpdate {
             authentication_status: common_enums::AuthenticationStatus::foreign_from(
                 trans_status.clone(),
             ),
@@ -3918,7 +3918,7 @@ async fn update_connector_mandate_details(
 
 fn insert_mandate_details(
     payment_attempt: &PaymentAttempt,
-    webhook_mandate_details: &hyperswitch_domain_models::router_flow_types::ConnectorMandateDetails,
+    webhook_mandate_details: &orbix_domain_models::router_flow_types::ConnectorMandateDetails,
     payment_method_mandate_details: Option<CommonMandateReference>,
     event_type: webhooks::IncomingWebhookEvent,
 ) -> CustomResult<Option<CommonMandateReference>, errors::ApiErrorResponse> {
@@ -3980,7 +3980,7 @@ pub async fn process_uas_incoming_webhook<'a>(
     connector_name: String,
     uas_connector: ConnectorEnum,
 ) -> errors::RouterResult<super::gateway::WebhookOutcome> {
-    use hyperswitch_masking::ErasedMaskSerialize;
+    use orbix_masking::ErasedMaskSerialize;
 
     let dimensions = dimension_state::Dimensions::new()
         .with_processor_merchant_id(platform.get_processor().get_processor_merchant_id())
@@ -3996,7 +3996,7 @@ pub async fn process_uas_incoming_webhook<'a>(
     let webhook_data =
         uas_utils::get_webhook_request_data_for_uas(request_details, Some(routing_region));
 
-    let webhook_router_data: hyperswitch_domain_models::types::UasProcessWebhookRouterData =
+    let webhook_router_data: orbix_domain_models::types::UasProcessWebhookRouterData =
         uas_utils::construct_uas_webhook_router_data(
             state,
             connector_name.to_string(),

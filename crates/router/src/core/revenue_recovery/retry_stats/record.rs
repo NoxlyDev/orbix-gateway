@@ -1,6 +1,6 @@
 use common_utils::errors::CustomResult;
 use error_stack::ResultExt;
-use hyperswitch_domain_models::revenue_recovery::{
+use orbix_domain_models::revenue_recovery::{
     retry_stats::RevenueRecoveryRetryStats as DomainRevenueRecoveryRetryStats,
     retry_stats_cluster_key::RetryStatsClusterKey, retry_stats_document::StatsDocument,
 };

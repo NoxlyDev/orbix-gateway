@@ -252,7 +252,7 @@ pub struct ConnectorWebhookRegisterDetailsConfig {
 pub enum WalletFlow {
     /// The wallet token is decrypted by the connector
     Encrypt,
-    /// The wallet token is decrypted by Hyperswitch or Merchant
+    /// The wallet token is decrypted by Orbix Gateway or Merchant
     Decrypt,
 }
 
@@ -301,7 +301,7 @@ pub struct ConnectorTomlConfig {
 pub struct ConnectorConfig {
     pub absa_sanlam: Option<ConnectorTomlConfig>,
     pub authipay: Option<ConnectorTomlConfig>,
-    pub juspaythreedsserver: Option<ConnectorTomlConfig>,
+    pub orbixthreedsserver: Option<ConnectorTomlConfig>,
     pub katapult: Option<ConnectorTomlConfig>,
     pub aci: Option<ConnectorTomlConfig>,
     pub adyen: Option<ConnectorTomlConfig>,
@@ -391,7 +391,7 @@ pub struct ConnectorConfig {
     pub hipay: Option<ConnectorTomlConfig>,
     pub hyperpg: Option<ConnectorTomlConfig>,
     pub helcim: Option<ConnectorTomlConfig>,
-    pub hyperswitch_vault: Option<ConnectorTomlConfig>,
+    pub orbix_vault: Option<ConnectorTomlConfig>,
     pub hyperwallet: Option<ConnectorTomlConfig>,
     pub inespay: Option<ConnectorTomlConfig>,
     pub interpayments: Option<ConnectorTomlConfig>,
@@ -582,7 +582,7 @@ impl ConnectorConfig {
             AuthenticationConnectors::UnifiedAuthenticationService => {
                 Ok(connector_data.unified_authentication_service)
             }
-            AuthenticationConnectors::Juspaythreedsserver => Ok(connector_data.juspaythreedsserver),
+            AuthenticationConnectors::Orbixthreedsserver => Ok(connector_data.orbixthreedsserver),
             AuthenticationConnectors::Cardinal => Ok(connector_data.cardinal),
         }
     }
@@ -687,13 +687,13 @@ impl ConnectorConfig {
             Connector::GotymeSanlam => Ok(connector_data.gotyme_sanlam),
             Connector::Gpayments => Ok(connector_data.gpayments),
             Connector::Hipay => Ok(connector_data.hipay),
-            Connector::HyperswitchVault => Ok(connector_data.hyperswitch_vault),
+            Connector::OrbixVault => Ok(connector_data.orbix_vault),
             Connector::Hyperpg => Ok(connector_data.hyperpg),
             Connector::Helcim => Ok(connector_data.helcim),
             Connector::Inespay => Ok(connector_data.inespay),
             Connector::Jpmorgan => Ok(connector_data.jpmorgan),
-            Connector::Juspay => Err("Configured through application config".to_string()),
-            Connector::Juspaythreedsserver => Ok(connector_data.juspaythreedsserver),
+            Connector::Orbix => Err("Configured through application config".to_string()),
+            Connector::Orbixthreedsserver => Ok(connector_data.orbixthreedsserver),
             Connector::Klarna => Ok(connector_data.klarna),
             Connector::Loonio => Ok(connector_data.loonio),
             Connector::Merchante => Ok(connector_data.merchante),

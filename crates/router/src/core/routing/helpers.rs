@@ -25,9 +25,9 @@ use external_services::grpc_client::dynamic_routing::{
     success_rate_client::SuccessBasedDynamicRouting,
 };
 #[cfg(all(feature = "v1", feature = "dynamic_routing"))]
-use hyperswitch_domain_models::api::ApplicationResponse;
+use orbix_domain_models::api::ApplicationResponse;
 #[cfg(all(feature = "v1", feature = "dynamic_routing"))]
-use hyperswitch_interfaces::events::routing_api_logs as routing_events;
+use orbix_interfaces::events::routing_api_logs as routing_events;
 use router_env::{instrument, logger};
 use rustc_hash::FxHashSet;
 use storage_impl::redis::cache;
@@ -1779,7 +1779,7 @@ impl ForeignFrom<common_enums::AttemptStatus> for open_router::TxnStatus {
         match attempt_status {
             common_enums::AttemptStatus::Started => Self::Started,
             common_enums::AttemptStatus::AuthenticationFailed => Self::AuthenticationFailed,
-            common_enums::AttemptStatus::RouterDeclined => Self::JuspayDeclined,
+            common_enums::AttemptStatus::RouterDeclined => Self::OrbixDeclined,
             common_enums::AttemptStatus::AuthenticationPending => Self::PendingVbv,
             common_enums::AttemptStatus::AuthenticationSuccessful => Self::VBVSuccessful,
             common_enums::AttemptStatus::Authorized

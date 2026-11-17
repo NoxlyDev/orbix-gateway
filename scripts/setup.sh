@@ -199,7 +199,7 @@ check_prerequisites() {
 
     if [ ${#unavailable_ports[@]} -ne 0 ]; then
         echo_warning "The following ports are already in use: ${unavailable_ports[*]}"
-        echo_warning "This might cause conflicts with Hyperswitch services."
+        echo_warning "This might cause conflicts with Orbix Gateway services."
         echo ""
         echo -n "Do you want to continue anyway? (y/n): "
         read -n 1 -r REPLY
@@ -284,7 +284,7 @@ start_services() {
 
     case $PROFILE in
     standalone)
-        $DOCKER_COMPOSE --env-file .oneclick-setup.env up -d pg redis-standalone migration_runner superposition superposition-init hyperswitch-server
+        $DOCKER_COMPOSE --env-file .oneclick-setup.env up -d pg redis-standalone migration_runner superposition superposition-init orbix-server
         ;;
     standard)
         $DOCKER_COMPOSE --env-file .oneclick-setup.env up -d
@@ -296,25 +296,25 @@ start_services() {
 }
 
 check_services_health() {
-    HYPERSWITCH_BASE_URL="http://localhost:8080"
-    HYPERSWITCH_HEALTH_URL="${HYPERSWITCH_BASE_URL}/health"
-    HYPERSWITCH_DEEP_HEALTH_URL="${HYPERSWITCH_BASE_URL}/health/ready"
+    ORBIX_BASE_URL="http://localhost:8080"
+    ORBIX_HEALTH_URL="${ORBIX_BASE_URL}/health"
+    ORBIX_DEEP_HEALTH_URL="${ORBIX_BASE_URL}/health/ready"
     local is_success=true
     # Basic health check
-    health_response=$(curl --silent --fail "${HYPERSWITCH_HEALTH_URL}") || is_success=false
+    health_response=$(curl --silent --fail "${ORBIX_HEALTH_URL}") || is_success=false
     if [ "${health_response}" != "health is good" ]; then
         is_success=false
     fi
 
     # Deep health check
-    deep_health_response=$(curl --silent --fail "${HYPERSWITCH_DEEP_HEALTH_URL}") || is_success=false
+    deep_health_response=$(curl --silent --fail "${ORBIX_DEEP_HEALTH_URL}") || is_success=false
     if [[ "$(echo "${deep_health_response}" | jq --raw-output '.error')" != "null" ]]; then
         is_success=false
     fi
 
     # Extract version
     if [ "${is_success}" = true ]; then
-        VERSION=$(curl --silent --output /dev/null --request GET --write-out '%header{x-hyperswitch-version}' "${HYPERSWITCH_BASE_URL}" | sed 's/-dirty$//')
+        VERSION=$(curl --silent --output /dev/null --request GET --write-out '%header{x-orbix-version}' "${ORBIX_BASE_URL}" | sed 's/-dirty$//')
         INSTALLATION_STATUS="success"
         scarf_call
     fi
@@ -324,11 +324,11 @@ check_services_health() {
 print_access_info() {
     printf "${BLUE}"
     printf "╔════════════════════════════════════════════════════════════════╗\n"
-    printf "║             Welcome to Juspay Hyperswitch!                     ║\n"
+    printf "║             Welcome to Orbix Orbix Gateway!                     ║\n"
     printf "╚════════════════════════════════════════════════════════════════╝\n"
     printf "${NC}\n"
 
-    printf "${GREEN}${BOLD}Setup complete! You can now access Hyperswitch services at:${NC}\n"
+    printf "${GREEN}${BOLD}Setup complete! You can now access Orbix Gateway services at:${NC}\n"
 
     if [ "$PROFILE" != "standalone" ]; then
         printf "  • ${GREEN}${BOLD}Control Center${NC}: ${BLUE}${BOLD}http://localhost:9000${NC}\n"
@@ -345,8 +345,8 @@ print_access_info() {
 
     # Default user credentials
     printf "            Use the following credentials:\n"
-    printf "            Email:    demo@hyperswitch.com\n"
-    printf "            Password: Hyperswitch@123\n"
+    printf "            Email:    demo@orbix.example\n"
+    printf "            Password: Orbix Gateway@123\n"
 
     printf "\n"
 
@@ -364,7 +364,7 @@ print_access_info() {
         ;;
     esac
     printf "\n"
-    printf "Reach out to us on ${BLUE}https://hyperswitch-io.slack.com${NC} in case you face any issues.\n"
+    printf "Reach out to us on ${BLUE}https://orbix-io.slack.com${NC} in case you face any issues.\n"
 }
 
 # Main execution flow

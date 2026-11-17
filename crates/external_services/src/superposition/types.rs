@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 use aws_smithy_types::Document;
 use common_utils::{errors::CustomResult, fp_utils::when};
 use error_stack::ResultExt;
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_masking::{ExposeInterface, Secret};
 
 use super::SuperpositionClient;
 
@@ -206,21 +206,21 @@ impl ConfigContext {
 
 #[cfg(feature = "superposition")]
 #[async_trait::async_trait]
-impl hyperswitch_interfaces::secrets_interface::secret_handler::SecretsHandler
+impl orbix_interfaces::secrets_interface::secret_handler::SecretsHandler
     for SuperpositionClientConfig
 {
     async fn convert_to_raw_secret(
-        value: hyperswitch_interfaces::secrets_interface::secret_state::SecretStateContainer<
+        value: orbix_interfaces::secrets_interface::secret_state::SecretStateContainer<
             Self,
-            hyperswitch_interfaces::secrets_interface::secret_state::SecuredSecret,
+            orbix_interfaces::secrets_interface::secret_state::SecuredSecret,
         >,
-        secret_management_client: &dyn hyperswitch_interfaces::secrets_interface::SecretManagementInterface,
+        secret_management_client: &dyn orbix_interfaces::secrets_interface::SecretManagementInterface,
     ) -> CustomResult<
-        hyperswitch_interfaces::secrets_interface::secret_state::SecretStateContainer<
+        orbix_interfaces::secrets_interface::secret_state::SecretStateContainer<
             Self,
-            hyperswitch_interfaces::secrets_interface::secret_state::RawSecret,
+            orbix_interfaces::secrets_interface::secret_state::RawSecret,
         >,
-        hyperswitch_interfaces::secrets_interface::SecretsManagementError,
+        orbix_interfaces::secrets_interface::SecretsManagementError,
     > {
         let superposition_config = value.get_inner();
         let token = secret_management_client

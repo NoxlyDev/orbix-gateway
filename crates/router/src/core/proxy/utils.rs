@@ -7,8 +7,8 @@ use common_utils::{
     id_type,
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::payment_methods;
-use hyperswitch_masking::{Mask, PeekInterface};
+use orbix_domain_models::payment_methods;
+use orbix_masking::{Mask, PeekInterface};
 use serde_json::Value;
 use storage_impl::behaviour::Conversion;
 
@@ -164,7 +164,7 @@ impl ProxyRequestWrapper {
         }
     }
 
-    pub fn get_headers(&self) -> Vec<(String, hyperswitch_masking::Maskable<String>)> {
+    pub fn get_headers(&self) -> Vec<(String, orbix_masking::Maskable<String>)> {
         self.0
             .headers
             .as_map()

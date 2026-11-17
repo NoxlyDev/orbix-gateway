@@ -3,7 +3,7 @@ info:
   title: Tartarus - OpenAPI 3.0
   description: |-
     This the the open API 3.0 specification for the card locker.
-    This is used by the [hyperswitch](https://github.com/juspay/hyperswitch) for storing card information securely.
+    This is used by the [orbix](https://github.com/orbix/orbix) for storing card information securely.
   version: "1.0"
 tags:
   - name: Key Custodian

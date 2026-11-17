@@ -55,7 +55,7 @@ common_enums = { version = "0.1.0", path = "../common_enums" }
 common_types = { version = "0.1.0", path = "../common_types" }
 common_utils = { version = "0.1.0", path = "../common_utils" }
 euclid = { version = "0.1.0", path = "../euclid" }
-hyperswitch_masking = { version = "0.0.1", default-features = false, features = [
+orbix_masking = { path = "../../vendor/orbix_framework/crates/orbix_masking", default-features = false, features = [
     "alloc",
     "serde",
     "time",

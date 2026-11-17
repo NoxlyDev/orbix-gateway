@@ -1,4 +1,4 @@
-use hyperswitch_domain_models::mandates;
+use orbix_domain_models::mandates;
 #[cfg(all(test, feature = "v1"))]
 mod tests;
 mod transformers;
@@ -34,18 +34,18 @@ use external_services::grpc_client::dynamic_routing::{
     elimination_based_client::EliminationBasedRouting,
     success_rate_client::SuccessBasedDynamicRouting, DynamicRoutingError,
 };
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     address::Address,
     routing::{PreRoutingConnectorChoice, RoutingData},
 };
 #[cfg(feature = "v1")]
-use hyperswitch_domain_models::{
+use orbix_domain_models::{
     router_flow_types::payments::is_external_three_ds_retry_eligible_flow,
     routing::PaymentRoutingInfo,
 };
 #[cfg(all(feature = "v1", feature = "dynamic_routing"))]
-use hyperswitch_interfaces::events::routing_api_logs::{ApiMethod, RoutingEngine};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_interfaces::events::routing_api_logs::{ApiMethod, RoutingEngine};
+use orbix_masking::{PeekInterface, Secret};
 use kgraph_utils::{
     mca as mca_graph,
     transformers::{IntoContext, IntoDirValue},
@@ -142,7 +142,7 @@ type SessionRoutingConnectorKey = Option<common_utils::id_type::MerchantConnecto
 
 type MerchantConnectorGraphs = HashMap<
     common_utils::id_type::MerchantConnectorAccountId,
-    hyperswitch_constraint_graph::ConstraintGraph<euclid_dir::DirValue>,
+    orbix_constraint_graph::ConstraintGraph<euclid_dir::DirValue>,
 >;
 
 #[cfg(feature = "v1")]
@@ -1070,7 +1070,7 @@ impl RoutingStage for SessionRoutingStage {
                 // The DE result is only load-bearing for a cut-over profile.
                 let chosen_connectors = if de_routing_effective {
                     // Only the connector list is swapped; `RoutingApproach` is left as the
-                    // Hyperswitch side derived it, matching `perform_static_routing_v1` --
+                    // Orbix Gateway side derived it, matching `perform_static_routing_v1` --
                     // it is persisted on the attempt and read by analytics, so relabelling
                     // it here would shift those numbers for cut-over merchants.
                     utils::select_routing_result(
@@ -1176,7 +1176,7 @@ pub struct PreRoutingInput<'a> {
     pub pre_routing_results:
         &'a Option<HashMap<api_enums::PaymentMethodType, PreRoutingConnectorChoice>>,
     pub payment_method_type: &'a storage_enums::PaymentMethodType,
-    pub connectors: &'a hyperswitch_interfaces::configs::Connectors,
+    pub connectors: &'a orbix_interfaces::configs::Connectors,
     pub processor: &'a domain::Processor,
     pub business_profile: &'a domain::Profile,
     pub creds_identifier: Option<&'a str>,
@@ -1217,7 +1217,7 @@ pub async fn resolve_pre_routed_connectors(
 }
 
 pub fn try_get_attempt_connector<F, D>(
-    connectors: &hyperswitch_interfaces::configs::Connectors,
+    connectors: &orbix_interfaces::configs::Connectors,
     payment_data: &D,
     routing_data: &mut RoutingData,
 ) -> errors::RouterResult<Option<api::ConnectorCallType>>
@@ -1255,7 +1255,7 @@ where
 }
 
 pub fn try_get_mandate_connector<F, D>(
-    connectors: &hyperswitch_interfaces::configs::Connectors,
+    connectors: &orbix_interfaces::configs::Connectors,
     payment_data: &D,
     routing_data: &mut RoutingData,
 ) -> errors::RouterResult<Option<api::ConnectorCallType>>
@@ -1292,7 +1292,7 @@ where
 
 #[cfg(feature = "v1")]
 pub fn try_get_pre_determined_connector<F, D>(
-    connectors: &hyperswitch_interfaces::configs::Connectors,
+    connectors: &orbix_interfaces::configs::Connectors,
     payment_data: &D,
     routing_data: &mut RoutingData,
     business_profile: &domain::Profile,
@@ -1318,7 +1318,7 @@ where
 
 #[cfg(feature = "v2")]
 pub fn try_get_pre_determined_connector<F, D>(
-    connectors: &hyperswitch_interfaces::configs::Connectors,
+    connectors: &orbix_interfaces::configs::Connectors,
     payment_data: &D,
     routing_data: &mut RoutingData,
     _business_profile: &domain::Profile,
@@ -1340,7 +1340,7 @@ where
 /// one re-entrant confirm.
 #[cfg(feature = "v1")]
 fn try_expand_predetermined_connector_for_external_three_ds_retry<F, D>(
-    connectors: &hyperswitch_interfaces::configs::Connectors,
+    connectors: &orbix_interfaces::configs::Connectors,
     payment_data: &D,
     predetermined: &api::ConnectorRoutingData,
     business_profile: &domain::Profile,
@@ -1762,12 +1762,12 @@ pub async fn perform_hybrid_routing_if_enabled(
     };
 
     // Flag-aware like every other consumer: with static_routing_enabled off the profile is
-    // Hyperswitch-routed, so this stage must not run.
+    // Orbix Gateway-routed, so this stage must not run.
     let is_decision_engine_cutover_enabled =
         utils::is_decision_engine_routing_effective(state, dimensions).await;
     let has_active_routing_algorithm = profile_has_active_routing_algorithm(business_profile);
 
-    // A cut-over profile's rules live on the Decision Engine, so a missing Hyperswitch
+    // A cut-over profile's rules live on the Decision Engine, so a missing Orbix Gateway
     // algorithm is the normal state and must not skip evaluation; for every other profile
     // there is nothing to evaluate against, so the DE call is skipped.
     if is_decision_engine_cutover_enabled {
@@ -1805,7 +1805,7 @@ pub async fn perform_hybrid_routing_if_enabled(
         .unwrap_or_else(|_| RoutingConnectorOutcomeWithApproach::empty());
 
         let selected_source = if hybrid_stage_outcome.connectors.is_empty() {
-            "hyperswitch_static"
+            "orbix_static"
         } else {
             "decision_engine"
         };
@@ -1828,7 +1828,7 @@ pub async fn perform_hybrid_routing_if_enabled(
         );
         logger::info!(
             business_profile_id=?business_profile.get_id(),
-            routing_source = "hyperswitch_static",
+            routing_source = "orbix_static",
             "decision_engine_euclid: selected routing source after hybrid stage"
         );
 
@@ -1840,7 +1840,7 @@ pub async fn perform_hybrid_routing_if_enabled(
         );
         logger::info!(
             business_profile_id=?business_profile.get_id(),
-            routing_source = "hyperswitch_static",
+            routing_source = "orbix_static",
             "decision_engine_euclid: selected routing source after hybrid stage"
         );
 
@@ -1979,7 +1979,7 @@ pub async fn perform_static_routing_v1(
         Ok(backend_input) => {
             // The engine result is load-bearing only for a cut-over profile, so nobody else
             // pays the round trip. Errors degrade to an empty result, which
-            // `select_routing_result` answers with the Hyperswitch result.
+            // `select_routing_result` answers with the Orbix Gateway result.
             let de_evaluated_connector = if !de_routing_effective {
                 Vec::default()
             } else {
@@ -2575,8 +2575,8 @@ fn filter_connector_choices(
             .check_value_validity(
                 dir_val,
                 context,
-                &mut hyperswitch_constraint_graph::Memoization::new(),
-                &mut hyperswitch_constraint_graph::CycleCheck::new(),
+                &mut orbix_constraint_graph::Memoization::new(),
+                &mut orbix_constraint_graph::CycleCheck::new(),
                 None,
             )
             .change_context(errors::RoutingError::KgraphAnalysisError)?;

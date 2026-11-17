@@ -6,7 +6,7 @@ use std::str::FromStr;
 use base64::Engine;
 use error_stack::ResultExt;
 use http::Method;
-use hyperswitch_masking::{PeekInterface, StrongSecret};
+use orbix_masking::{PeekInterface, StrongSecret};
 use once_cell::sync::OnceCell;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},

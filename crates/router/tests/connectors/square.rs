@@ -1,6 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
-use hyperswitch_masking::Secret;
+use orbix_masking::Secret;
 use router::types::{self, storage::enums, PaymentsResponseData};
 use test_utils::connector_auth::ConnectorAuthentication;
 

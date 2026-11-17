@@ -14,8 +14,8 @@ jobs:
         env:
           NODE_USE_ENV_PROXY: "1"
         with:
-          client-id: ${{ secrets.HYPERSWITCH_BOT_APP_ID }}
-          private-key: ${{ secrets.HYPERSWITCH_BOT_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.ORBIX_BOT_APP_ID }}
+          private-key: ${{ secrets.ORBIX_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
         uses: actions/checkout@v7

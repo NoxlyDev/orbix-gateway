@@ -4,8 +4,8 @@ use common_utils::{
     types::keymanager::{Identifier, KeyManagerState},
 };
 use error_stack::ResultExt;
-use hyperswitch_domain_models::type_encryption::{crypto_operation, CryptoOperation};
-use hyperswitch_masking::{PeekInterface, Secret};
+use orbix_domain_models::type_encryption::{crypto_operation, CryptoOperation};
+use orbix_masking::{PeekInterface, Secret};
 use time::PrimitiveDateTime;
 
 use crate::errors::{CustomResult, ValidationError};

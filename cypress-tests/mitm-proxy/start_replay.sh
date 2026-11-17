@@ -58,7 +58,7 @@ if [[ -t 1 ]]; then
   MITM_CERT=$(sed 's/$/\\r\\n/' "${MITM_CERT_PATH}" | tr -d '\n')
 
   echo ""
-  echo "Copy these exports into the Hyperswitch terminal, then start the router:"
+  echo "Copy these exports into the Orbix Gateway terminal, then start the router:"
   echo "──────────────────────────────────────────────────────────────────────"
   echo "export ROUTER__PROXY__HTTPS_URL=\"http://127.0.0.1:${PROXY_PORT}\""
   echo "export ROUTER__PROXY__HTTP_URL=\"http://127.0.0.1:${PROXY_PORT}\""
@@ -93,7 +93,7 @@ fi
 #   With the default (eager), mitmproxy dials the real connector host the
 #   instant the tunnel opens — to clone its TLS cert — before our replay
 #   hook runs. In CI that host resolves but egress is blocked, so the dial
-#   hangs until Hyperswitch's 30s client timeout fires → 502, cassette never
+#   hangs until Orbix Gateway's 30s client timeout fires → 502, cassette never
 #   served. lazy defers the dial so HIT/strict-MISS are served immediately;
 #   a permissive live-MISS still connects just-in-time.
 # upstream_cert=false: generate the client-facing cert from the SNI instead

@@ -2,10 +2,10 @@
 
 use common_utils::errors::CustomResult;
 use error_stack::ResultExt;
-use hyperswitch_interfaces::secrets_interface::{
+use orbix_interfaces::secrets_interface::{
     SecretManagementInterface, SecretsManagementError,
 };
-use hyperswitch_masking::{ExposeInterface, Secret};
+use orbix_masking::{ExposeInterface, Secret};
 
 use crate::hashicorp_vault::core::{HashiCorpVault, Kv2};
 

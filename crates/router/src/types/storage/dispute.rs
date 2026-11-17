@@ -3,7 +3,7 @@ use diesel::{associations::HasTable, BoolExpressionMethods, ExpressionMethods, Q
 pub use diesel_models::dispute::{Dispute, DisputeNew, DisputeUpdate};
 use diesel_models::{errors, query::generics::db_metrics, schema::dispute::dsl};
 use error_stack::ResultExt;
-use hyperswitch_domain_models::disputes;
+use orbix_domain_models::disputes;
 
 use crate::connection::DatabaseConnectionWithContext;
 

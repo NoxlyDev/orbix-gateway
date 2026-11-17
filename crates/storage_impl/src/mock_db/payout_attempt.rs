@@ -1,6 +1,6 @@
 use common_utils::errors::CustomResult;
 use diesel_models::enums as storage_enums;
-use hyperswitch_domain_models::payouts::{
+use orbix_domain_models::payouts::{
     payout_attempt::{
         PayoutAttempt, PayoutAttemptInterface, PayoutAttemptNew, PayoutAttemptUpdate,
     },
@@ -71,7 +71,7 @@ impl PayoutAttemptInterface for MockDb {
         _merchant_id: &common_utils::id_type::MerchantId,
         _storage_scheme: storage_enums::MerchantStorageScheme,
     ) -> CustomResult<
-        hyperswitch_domain_models::payouts::payout_attempt::PayoutListFilters,
+        orbix_domain_models::payouts::payout_attempt::PayoutListFilters,
         StorageError,
     > {
         Err(StorageError::MockDbError)?
