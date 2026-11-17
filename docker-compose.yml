@@ -78,7 +78,7 @@ services:
       - DATABASE_URL=postgresql://db_user:db_pass@pg:5432/orbix_db
 
   superposition:
-    image: ghcr.io/orbix/superposition-demo:0.113.0
+    image: ${SUPERPOSITION_IMAGE:-ghcr.io/juspay/superposition-demo:0.113.0}
     ports:
       - "8081:8080"
     networks:
@@ -120,8 +120,12 @@ services:
 
   ### Application services
   orbix-server:
-    image: docker.orbix.example/orbix/orbix-router:standalone
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BINARY: router
+    image: orbix/router:local
     command: /local/bin/router -f /local/config/docker_compose.toml
     ports:
       - "8080:8080"
@@ -149,8 +153,13 @@ services:
       timeout: 5s
 
   orbix-producer:
-    image: docker.orbix.example/orbix/orbix-producer:standalone
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BINARY: scheduler
+        SCHEDULER_FLOW: producer
+    image: orbix/producer:local
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
       - router_net
@@ -167,8 +176,13 @@ services:
       logs: "promtail"
 
   orbix-consumer:
-    image: docker.orbix.example/orbix/orbix-consumer:standalone
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BINARY: scheduler
+        SCHEDULER_FLOW: consumer
+    image: orbix/consumer:local
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
       - router_net
@@ -191,8 +205,12 @@ services:
       timeout: 10s
 
   orbix-drainer:
-    image: docker.orbix.example/orbix/orbix-drainer:standalone
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BINARY: drainer
+    image: orbix/drainer:local
     command: /local/bin/drainer -f /local/config/docker_compose.toml
     deploy:
       replicas: ${DRAINER_INSTANCE_COUNT:-1}
@@ -213,6 +231,8 @@ services:
   orbix-web:
     image: docker.orbix.example/orbix/orbix-web:latest
     pull_policy: always
+    profiles:
+      - ui   # upstream UI image; enable after forking & building the UI repos
     ports:
       - "9050:9050"
     networks:
@@ -232,6 +252,8 @@ services:
   orbix-control-center:
     image: docker.orbix.example/orbix/orbix-control-center:latest
     pull_policy: always
+    profiles:
+      - ui   # upstream UI image; enable after forking & building the UI repos
     ports:
       - "9000:9000"
     environment:
@@ -251,6 +273,8 @@ services:
   create-default-user:
     image: docker.io/curlimages/curl-base:latest
     container_name: create-default-user
+    profiles:
+      - ui
     depends_on:
       orbix-server:
         condition: service_healthy
@@ -529,7 +553,7 @@ services:
     networks:
       - router_net
     profiles:
-      - full_setup
+      - ui
     depends_on:
       orbix-server:
         condition: service_healthy

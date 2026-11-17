@@ -65,7 +65,7 @@ services:
       - DATABASE_URL=postgresql://db_user:db_pass@pg:5432/orbix_db
 
   superposition:
-    image: ghcr.io/orbix/superposition-demo:0.115.5
+    image: ghcr.io/juspay/superposition-demo:0.115.5
     ports:
       - "8081:8080"
     networks:
