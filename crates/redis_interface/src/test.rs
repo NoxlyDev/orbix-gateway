@@ -1799,7 +1799,7 @@ async fn test_consumer_group_set_last_id() {
 }
 
 /// Characterises the `XREADGROUP` behaviour that the scheduler consumer fix
-/// (orbix/orbix#13628) relies on: `XREADGROUP` registers its consumer in the group
+/// (juspay/orbix#13628) relies on: `XREADGROUP` registers its consumer in the group
 /// as a side effect of the read, even when there are no new entries to deliver, and Redis
 /// never expires these registrations on its own. A caller that generates a fresh consumer
 /// name on every poll therefore grows the consumer group without bound, while one that

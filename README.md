@@ -17,7 +17,7 @@
     <img src="https://github.com/orbix/orbix/workflows/CI-push/badge.svg" />
   </a>
   <a href="https://github.com/orbix/orbix/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/orbix/orbix" />
+    <img src="https://img.shields.io/github/license/juspay/orbix" />
   </a>
   <a href="https://github.com/orbix/orbix/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/Made_in-Rust-orange" />
@@ -174,7 +174,7 @@ We believe in:
 
 - <strong> Maximizing Value Creation:</strong> For developers, customers, and partners alike.
 
-- <strong> Community-Driven, Enterprise-Tested:</strong> Orbix Gateway is built in the open with real-world feedback from developers and contributors, and maintained by Orbix, the team powering payment infrastructure for 400+ leading enterprises worldwide.
+- <strong> Community-Driven, Enterprise-Tested:</strong> Orbix Gateway is built in the open with real-world feedback from developers and contributors, and maintained by Juspay, the team powering payment infrastructure for 400+ leading enterprises worldwide.
 
 ## Supported Connectors
 
@@ -219,7 +219,7 @@ How a browser talks to Orbix Gateway. [`orbix-client-core`](https://github.com/o
 |  | [orbix-web](https://github.com/orbix/orbix-web) | [client-core](https://github.com/orbix/orbix-client-core) | [react-hyper-js](https://github.com/orbix/react-hyper-js) | [sdk-utils](https://github.com/orbix/orbix-sdk-utils) |
 | :--- | :---: | :---: | :---: | :---: |
 | **Language** | ReScript | ReScript | ReScript | ReScript |
-| **Distribution** | npm | git submodule | [npm](https://www.npmjs.com/package/@orbix-tech/react-hyper-js) | git submodule |
+| **Distribution** | npm | git submodule | [npm](https://www.npmjs.com/package/@juspay-tech/react-hyper-js) | git submodule |
 | **Role** | Primary web SDK. ReScript-built React library for unified checkout. | Shared SDK core consumed transitively by every client SDK. | Idiomatic React wrapper around the Hyper JS loader. | Shared utilities and assets used across client-core and orbix-web. |
 | **Depends on** | orbix backend | None | orbix-web | None |
 

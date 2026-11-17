@@ -6,7 +6,7 @@
     "contact": {
       "name": "Orbix Gateway Support",
       "url": "https://orbix.example",
-      "email": "support.global@orbix.example"
+      "email": "support.global@juspay.io"
     },
     "license": {
       "name": "Apache-2.0"
@@ -7349,7 +7349,7 @@
           "gpayments",
           "ctp_mastercard",
           "unified_authentication_service",
-          "orbixthreedsserver",
+          "juspaythreedsserver",
           "ctp_visa",
           "cardinal"
         ]
@@ -12810,8 +12810,8 @@
           "itaubank",
           "jpmorgan",
           "jpmorgan_orbital",
-          "orbix",
-          "orbixthreedsserver",
+          "juspay",
+          "juspaythreedsserver",
           "klarna",
           "loonio",
           "merchante",
@@ -33832,7 +33832,7 @@
           "zift",
           "plaid",
           "zsl",
-          "orbixthreedsserver",
+          "juspaythreedsserver",
           "ctp_mastercard",
           "ctp_visa",
           "netcetera",

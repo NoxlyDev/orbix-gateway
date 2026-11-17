@@ -421,7 +421,7 @@ function cryptoRedirection(
       cy.get('input[type="email"], input[name="email"]', { timeout: 10000 })
         .should("be.visible")
         .clear()
-        .type("venkatakarthik.m@orbix.example", { delay: 50 });
+        .type("venkatakarthik.m@juspay.in", { delay: 50 });
 
       cy.get("body").then(($body) => {
         const continueBtn = $body
@@ -1186,8 +1186,8 @@ function affirmPayLaterRedirection(
                   cy.wrap(emailInputs.first())
                     .click()
                     .clear()
-                    .type("venkatakarthik.m@orbix.example", { delay: 50 });
-                  cy.log("Entered email venkatakarthik.m@orbix.example");
+                    .type("venkatakarthik.m@juspay.in", { delay: 50 });
+                  cy.log("Entered email venkatakarthik.m@juspay.in");
                 }
               });
               break;

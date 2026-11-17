@@ -119,7 +119,7 @@ inespay.base_url = "https://apiflow.inespay.com/san/v21"
 interpayments.base_url = "https://api-test.interpayments.com/v1"
 itaubank.base_url = "https://secure.api.itau/"
 jpmorgan.base_url = "https://api-ms.payments.jpmorgan.com/api/v2"
-orbixthreedsserver.base_url = "http://localhost:8000"
+juspaythreedsserver.base_url = "http://localhost:8000"
 katapult.base_url = "https://www.katapult.com/api/v3"
 jpmorgan.secondary_base_url="https://id.payments.jpmorgan.com"
 # JP Morgan Orbital (Chase Paymentech Orbital Gateway JSON API v4). Distinct from the
@@ -1107,7 +1107,7 @@ billing_connectors_which_requires_dispute_record_back_call = "chargebee"
 click_to_pay = {connector_list = "adyen, cybersource, trustpay"}
 
 [authentication_service_enabled_connectors]
-connector_list = "orbixthreedsserver, ctp_mastercard, ctp_visa"
+connector_list = "juspaythreedsserver, ctp_mastercard, ctp_visa"
 
 [grpc_client.unified_connector_service]
 ucs_only_connectors = "imerchantsolutions, paytm, phonepe, hyperpg, revolv3, fiservcommercehub, absa_sanlam, interpayments, payconex, dlocal, barclaycard, jpmorgan, datatrans, tsys_transit, givepayments, citigate, ilixium, moneris, elavon, worldpayraft, globalpay, rapyd, paynearme, jpmorgan_orbital, saferpay, d24, etisalat, globalpayments_heartland, paydotcom, merchante, nsure, elavon_pg, trustly, shift4, truelayer, gotyme_sanlam, paysafe, razorpay, globalpayments_realex, ecommpay, betterpayment"    # Comma-separated list of connectors that use UCS only

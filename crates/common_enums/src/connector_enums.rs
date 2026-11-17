@@ -144,8 +144,8 @@ pub enum Connector {
     Itaubank,
     Jpmorgan,
     JpmorganOrbital,
-    Orbix,
-    Orbixthreedsserver,
+    Juspay,
+    Juspaythreedsserver,
     Klarna,
     Loonio,
     Merchante,
@@ -432,8 +432,8 @@ impl Connector {
 			| Self::Inespay
             | Self::Itaubank
             | Self::Jpmorgan
-            | Self::Orbix
-            | Self::Orbixthreedsserver
+            | Self::Juspay
+            | Self::Juspaythreedsserver
             | Self::Klarna
             | Self::Loonio
             | Self::Merchante

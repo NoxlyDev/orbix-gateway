@@ -1779,7 +1779,7 @@ impl ForeignFrom<common_enums::AttemptStatus> for open_router::TxnStatus {
         match attempt_status {
             common_enums::AttemptStatus::Started => Self::Started,
             common_enums::AttemptStatus::AuthenticationFailed => Self::AuthenticationFailed,
-            common_enums::AttemptStatus::RouterDeclined => Self::OrbixDeclined,
+            common_enums::AttemptStatus::RouterDeclined => Self::JuspayDeclined,
             common_enums::AttemptStatus::AuthenticationPending => Self::PendingVbv,
             common_enums::AttemptStatus::AuthenticationSuccessful => Self::VBVSuccessful,
             common_enums::AttemptStatus::Authorized

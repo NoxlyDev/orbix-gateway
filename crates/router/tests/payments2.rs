@@ -47,7 +47,7 @@ async fn payments_create_core() {
     ))
     .await;
 
-    let merchant_id = id_type::MerchantId::try_from(Cow::from("orbix_merchant")).unwrap();
+    let merchant_id = id_type::MerchantId::try_from(Cow::from("juspay_merchant")).unwrap();
 
     let state = Arc::new(app_state)
         .get_session_state(
@@ -383,7 +383,7 @@ async fn payments_create_core_adyen_no_redirect() {
         .unwrap();
 
     let customer_id = format!("cust_{}", common_utils::generate_uuid_v4());
-    let merchant_id = id_type::MerchantId::try_from(Cow::from("orbix_merchant")).unwrap();
+    let merchant_id = id_type::MerchantId::try_from(Cow::from("juspay_merchant")).unwrap();
     let payment_id =
         id_type::PaymentId::try_from(Cow::Borrowed("pay_mbabizu24mvu3mela5njyhpit10")).unwrap();
 
@@ -456,7 +456,7 @@ async fn payments_create_core_adyen_no_redirect() {
             phone: None,
             email: None,
         }),
-        statement_descriptor_name: Some("Orbix".to_string()),
+        statement_descriptor_name: Some("Juspay".to_string()),
         statement_descriptor_suffix: Some("Router".to_string()),
         three_ds_data: None,
         ..Default::default()

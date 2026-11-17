@@ -50,7 +50,7 @@ curl --location "$BASE_URL/update-gateway-score" \
 ```
 
 `status` must be a transaction status value - `CHARGED`, `AUTHORIZATION_FAILED`,
-`AUTHENTICATION_FAILED`, `ORBIX_DECLINED`, `FAILURE`, and so on. Lowercase values such as
+`AUTHENTICATION_FAILED`, `JUSPAY_DECLINED`, `FAILURE`, and so on. Lowercase values such as
 `success` are rejected with a 400.
 
 Payment attributes (amount, currency, payment method, auth type) are **not** part of this

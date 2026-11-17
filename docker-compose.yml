@@ -125,6 +125,8 @@ services:
       dockerfile: Dockerfile
       args:
         BINARY: router
+        CARGO_BUILD_PROFILE: ${CARGO_BUILD_PROFILE:-release-fast}
+        CARGO_BUILD_JOBS: ${CARGO_BUILD_JOBS:-2}
     image: orbix/router:local
     command: /local/bin/router -f /local/config/docker_compose.toml
     ports:
@@ -159,6 +161,8 @@ services:
       args:
         BINARY: scheduler
         SCHEDULER_FLOW: producer
+        CARGO_BUILD_PROFILE: ${CARGO_BUILD_PROFILE:-release-fast}
+        CARGO_BUILD_JOBS: ${CARGO_BUILD_JOBS:-2}
     image: orbix/producer:local
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
@@ -182,6 +186,8 @@ services:
       args:
         BINARY: scheduler
         SCHEDULER_FLOW: consumer
+        CARGO_BUILD_PROFILE: ${CARGO_BUILD_PROFILE:-release-fast}
+        CARGO_BUILD_JOBS: ${CARGO_BUILD_JOBS:-2}
     image: orbix/consumer:local
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
@@ -210,6 +216,8 @@ services:
       dockerfile: Dockerfile
       args:
         BINARY: drainer
+        CARGO_BUILD_PROFILE: ${CARGO_BUILD_PROFILE:-release-fast}
+        CARGO_BUILD_JOBS: ${CARGO_BUILD_JOBS:-2}
     image: orbix/drainer:local
     command: /local/bin/drainer -f /local/config/docker_compose.toml
     deploy:

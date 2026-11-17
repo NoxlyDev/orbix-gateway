@@ -91,7 +91,7 @@ pub struct Connectors {
     pub interpayments: ConnectorParams,
     pub itaubank: ConnectorParams,
     pub jpmorgan: ConnectorParams,
-    pub orbixthreedsserver: ConnectorParams,
+    pub juspaythreedsserver: ConnectorParams,
     pub cardinal: NoParams,
     pub katapult: ConnectorParams,
     pub klarna: ConnectorParams,

@@ -1921,7 +1921,7 @@ mod tests {
             .map_err(|_| "failed to get session state")?;
 
         let merchant_id =
-            common_utils::id_type::MerchantId::try_from(std::borrow::Cow::from("orbix_merchant"))?;
+            common_utils::id_type::MerchantId::try_from(std::borrow::Cow::from("juspay_merchant"))?;
         let business_profile_id =
             common_utils::id_type::ProfileId::try_from(std::borrow::Cow::from("profile1"))?;
         let key_manager_state = &(&state).into();

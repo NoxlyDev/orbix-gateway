@@ -9696,7 +9696,7 @@ pub enum AuthenticationConnectors {
     Gpayments,
     CtpMastercard,
     UnifiedAuthenticationService,
-    Orbixthreedsserver,
+    Juspaythreedsserver,
     CtpVisa,
     Cardinal,
 }
@@ -9708,7 +9708,7 @@ impl AuthenticationConnectors {
             | Self::Netcetera
             | Self::CtpMastercard
             | Self::UnifiedAuthenticationService
-            | Self::Orbixthreedsserver
+            | Self::Juspaythreedsserver
             | Self::CtpVisa
             | Self::Cardinal => false,
             Self::Gpayments => true,
@@ -9721,7 +9721,7 @@ impl AuthenticationConnectors {
             | Self::Netcetera
             | Self::CtpMastercard
             | Self::UnifiedAuthenticationService
-            | Self::Orbixthreedsserver
+            | Self::Juspaythreedsserver
             | Self::CtpVisa
             | Self::Gpayments => false,
             Self::Cardinal => true,

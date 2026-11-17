@@ -104,14 +104,14 @@ impl ForeignTryFrom<api_enums::Connector> for euclid::enums::RoutableConnectors 
             api_enums::Connector::Interpayments => Self::Interpayments,
             api_enums::Connector::Itaubank => Self::Itaubank,
             api_enums::Connector::Jpmorgan => Self::Jpmorgan,
-            api_enums::Connector::Orbix => {
+            api_enums::Connector::Juspay => {
                 Err(common_utils::errors::ValidationError::InvalidValue {
-                    message: "orbix is not a routable connector".to_string(),
+                    message: "juspay is not a routable connector".to_string(),
                 })?
             }
-            api_enums::Connector::Orbixthreedsserver => {
+            api_enums::Connector::Juspaythreedsserver => {
                 Err(common_utils::errors::ValidationError::InvalidValue {
-                    message: "orbixthreedsserver is not a routable connector".to_string(),
+                    message: "juspaythreedsserver is not a routable connector".to_string(),
                 })?
             }
             api_enums::Connector::Klarna => Self::Klarna,

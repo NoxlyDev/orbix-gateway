@@ -323,7 +323,7 @@ pub struct UpdateScoreResponse {
 pub enum TxnStatus {
     Started,
     AuthenticationFailed,
-    OrbixDeclined,
+    JuspayDeclined,
     PendingVbv,
     VBVSuccessful,
     Authorized,

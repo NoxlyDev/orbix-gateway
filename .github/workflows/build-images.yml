@@ -1,0 +1,58 @@
+name: Build Orbix images
+
+on:
+  workflow_dispatch:        # jalankan manual dari tab Actions
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write           # push ke ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest   # repo public: 4 CPU / 16 GB RAM. repo private: 2 CPU / 7 GB (kurangi JOBS jadi 1)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: router,   binary: router,    flow: consumer }
+          - { name: consumer, binary: scheduler, flow: consumer }
+          - { name: producer, binary: scheduler, flow: producer }
+          - { name: drainer,  binary: drainer,   flow: consumer }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add swap (jaga-jaga OOM saat compile diesel)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase owner
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/orbix-${{ matrix.name }}:latest
+          build-args: |
+            BINARY=${{ matrix.binary }}
+            SCHEDULER_FLOW=${{ matrix.flow }}
+            CARGO_BUILD_PROFILE=release-fast
+            CARGO_BUILD_JOBS=2
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

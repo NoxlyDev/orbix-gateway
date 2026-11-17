@@ -324,7 +324,7 @@ check_services_health() {
 print_access_info() {
     printf "${BLUE}"
     printf "╔════════════════════════════════════════════════════════════════╗\n"
-    printf "║             Welcome to Orbix Orbix Gateway!                     ║\n"
+    printf "║             Welcome to Juspay Orbix Gateway!                     ║\n"
     printf "╚════════════════════════════════════════════════════════════════╝\n"
     printf "${NC}\n"
 

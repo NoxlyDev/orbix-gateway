@@ -2811,7 +2811,7 @@ connector = { position = 1, schema = { enum = [
     "iatapay",
     "itaubank",
     "jpmorgan",
-    "orbixthreedsserver",
+    "juspaythreedsserver",
     "klarna",
     "loonio",
     "mifinity",

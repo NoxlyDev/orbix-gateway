@@ -436,7 +436,7 @@ impl SecretsHandler for settings::OidcSettings {
     }
 }
 
-impl settings::OrbixAccountUpdaterConfig {
+impl settings::JuspayAccountUpdaterConfig {
     async fn convert_to_raw_secret(
         self,
         secret_management_client: &dyn SecretManagementInterface,
@@ -462,13 +462,13 @@ impl SecretsHandler for settings::AccountUpdaterConfig {
         value: SecretStateContainer<Self, SecuredSecret>,
         secret_management_client: &dyn SecretManagementInterface,
     ) -> CustomResult<SecretStateContainer<Self, RawSecret>, SecretsManagementError> {
-        let Self::Orbix(orbix) = value.get_inner().clone();
+        let Self::Juspay(juspay) = value.get_inner().clone();
 
-        let orbix = orbix
+        let juspay = juspay
             .convert_to_raw_secret(secret_management_client)
             .await?;
 
-        Ok(value.transition_state(|_| Self::Orbix(orbix)))
+        Ok(value.transition_state(|_| Self::Juspay(juspay)))
     }
 }
 

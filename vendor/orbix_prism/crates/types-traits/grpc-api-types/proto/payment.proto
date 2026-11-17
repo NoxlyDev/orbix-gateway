@@ -1,4 +1,4 @@
-// Copyright (c) Orbix Technologies. All rights reserved.
+// Copyright (c) Orbix. All rights reserved.
 //
 // Package: ucs.v2
 // File: payment.proto
@@ -643,7 +643,7 @@ enum Connector {
   IATAPAY = 41;
   ITAUBANK = 42;
   JPMORGAN = 43;
-  ORBIXTHREEDSSERVER = 44;
+  JUSPAYTHREEDSSERVER = 44;
   KLARNA = 45;
   MIFINITY = 46;
   MOLLIE = 47;
@@ -721,7 +721,7 @@ enum Connector {
   AXISBANK = 119;
   EASEBUZZ = 120;
   TWOC_TWOP_PACO = 121;
-  ORBIX = 122;
+  JUSPAY = 122;
   TAMARA = 123;
   PAYCONEX = 124;
   QWIKCILVER = 125;
@@ -5618,9 +5618,9 @@ message GivepaymentsConfig {
 
 message AxisbankConfig {
   SecretString merchant_kid = 3;
-  SecretString orbix_kid = 4;
+  SecretString juspay_kid = 4;
   SecretString merchant_private_key = 5;
-  SecretString orbix_public_key = 6;
+  SecretString juspay_public_key = 6;
   optional string base_url = 50;
 }
 
@@ -5717,11 +5717,11 @@ message InterpaymentsConfig {
   optional string base_url = 50;
 }
 
-message OrbixConfig {
+message JuspayConfig {
   SecretString api_key = 1;
   SecretString merchant_id = 2;
 
-  optional SecretString orbix_encryption_public_key = 3;
+  optional SecretString juspay_encryption_public_key = 3;
   optional SecretString response_decryption_private_key = 4;
   optional SecretString card_sync_key_id = 5;
 
@@ -6295,8 +6295,8 @@ message ConnectorSpecificConfig {
     // INTERPAYMENTS = 126
     InterpaymentsConfig interpayments = 126;
 
-    // ORBIX = 122
-    OrbixConfig orbix = 127;
+    // JUSPAY = 122
+    JuspayConfig juspay = 127;
     // TAMARA = 123
     TamaraConfig tamara = 128;
 

@@ -1,248 +1,248 @@
-* @orbix/orbix-maintainers
+* @juspay/orbix-maintainers
 
-docs/ @orbix/orbix-maintainers
-scripts/ @orbix/orbix-maintainers
-*.md @orbix/orbix-maintainers
-*.sh @orbix/orbix-maintainers
-LICENSE @orbix/orbix-maintainers
-NOTICE @orbix/orbix-maintainers
-.gitignore @orbix/orbix-maintainers
-Makefile @orbix/orbix-maintainers
+docs/ @juspay/orbix-maintainers
+scripts/ @juspay/orbix-maintainers
+*.md @juspay/orbix-maintainers
+*.sh @juspay/orbix-maintainers
+LICENSE @juspay/orbix-maintainers
+NOTICE @juspay/orbix-maintainers
+.gitignore @juspay/orbix-maintainers
+Makefile @juspay/orbix-maintainers
 
-.github/ @orbix/orbix-devops
+.github/ @juspay/orbix-devops
 
-config/ @orbix/orbix-framework
-crates/ @orbix/orbix-framework
-crates/router/src/types/ @orbix/orbix-framework
-crates/router/src/services/ @orbix/orbix-framework
-crates/router/src/db/ @orbix/orbix-framework
-crates/router/src/routes/ @orbix/orbix-framework
-migrations/ @orbix/orbix-framework @orbix/orbix-kv-team
-v2_migrations/ @orbix/orbix-framework @orbix/orbix-kv-team
-v2_compatible_migrations/ @orbix/orbix-framework @orbix/orbix-kv-team
-api-reference/ @orbix/orbix-framework
-Cargo.toml @orbix/orbix-framework
-Cargo.lock @orbix/orbix-framework
+config/ @juspay/orbix-framework
+crates/ @juspay/orbix-framework
+crates/router/src/types/ @juspay/orbix-framework
+crates/router/src/services/ @juspay/orbix-framework
+crates/router/src/db/ @juspay/orbix-framework
+crates/router/src/routes/ @juspay/orbix-framework
+migrations/ @juspay/orbix-framework @juspay/orbix-kv-team
+v2_migrations/ @juspay/orbix-framework @juspay/orbix-kv-team
+v2_compatible_migrations/ @juspay/orbix-framework @juspay/orbix-kv-team
+api-reference/ @juspay/orbix-framework
+Cargo.toml @juspay/orbix-framework
+Cargo.lock @juspay/orbix-framework
 
-postman/ @orbix/orbix-qa
-cypress-tests/ @orbix/orbix-qa
-cypress-tests-v2/ @orbix/orbix-qa
+postman/ @juspay/orbix-qa
+cypress-tests/ @juspay/orbix-qa
+cypress-tests-v2/ @juspay/orbix-qa
 
-crates/api_models/src/events/ @orbix/orbix-analytics
-crates/api_models/src/events.rs @orbix/orbix-analytics
-crates/api_models/src/analytics/ @orbix/orbix-analytics
-crates/api_models/src/analytics.rs @orbix/orbix-analytics
-crates/router/src/analytics.rs @orbix/orbix-analytics
-crates/router/src/events/ @orbix/orbix-analytics
-crates/router/src/events.rs @orbix/orbix-analytics
-crates/common_utils/src/events/ @orbix/orbix-analytics
-crates/common_utils/src/events.rs @orbix/orbix-analytics
-crates/analytics/ @orbix/orbix-analytics
+crates/api_models/src/events/ @juspay/orbix-analytics
+crates/api_models/src/events.rs @juspay/orbix-analytics
+crates/api_models/src/analytics/ @juspay/orbix-analytics
+crates/api_models/src/analytics.rs @juspay/orbix-analytics
+crates/router/src/analytics.rs @juspay/orbix-analytics
+crates/router/src/events/ @juspay/orbix-analytics
+crates/router/src/events.rs @juspay/orbix-analytics
+crates/common_utils/src/events/ @juspay/orbix-analytics
+crates/common_utils/src/events.rs @juspay/orbix-analytics
+crates/analytics/ @juspay/orbix-analytics
 
-scripts/add_connector.sh @orbix/orbix-connector
-connector-template/ @orbix/orbix-connector
-crates/router/src/connector/ @orbix/orbix-connector
-crates/router/tests/connectors/ @orbix/orbix-connector
-crates/test_utils/tests/connectors/ @orbix/orbix-connector
-crates/test_utils/tests/sample_auth.toml @orbix/orbix-connector
-crates/connector_configs/ @orbix/orbix-connector
-crates/orbix_connectors/ @orbix/orbix-connector
-crates/api_models/src/connector_enums.rs @orbix/orbix-connector
-crates/common_enums/src/connector_enums.rs @orbix/orbix-connector
-crates/router/src/configs/defaults/payment_connector_required_fields.rs @orbix/orbix-connector
-crates/orbix_interfaces/src/configs.rs @orbix/orbix-connector
-crates/orbix_domain_models/src/connector_endpoints.rs @orbix/orbix-connector
-crates/router/src/types/api/connector_mapping.rs @orbix/orbix-connector
-crates/router/src/types/connector_transformers.rs @orbix/orbix-connector
+scripts/add_connector.sh @juspay/orbix-connector
+connector-template/ @juspay/orbix-connector
+crates/router/src/connector/ @juspay/orbix-connector
+crates/router/tests/connectors/ @juspay/orbix-connector
+crates/test_utils/tests/connectors/ @juspay/orbix-connector
+crates/test_utils/tests/sample_auth.toml @juspay/orbix-connector
+crates/connector_configs/ @juspay/orbix-connector
+crates/orbix_connectors/ @juspay/orbix-connector
+crates/api_models/src/connector_enums.rs @juspay/orbix-connector
+crates/common_enums/src/connector_enums.rs @juspay/orbix-connector
+crates/router/src/configs/defaults/payment_connector_required_fields.rs @juspay/orbix-connector
+crates/orbix_interfaces/src/configs.rs @juspay/orbix-connector
+crates/orbix_domain_models/src/connector_endpoints.rs @juspay/orbix-connector
+crates/router/src/types/api/connector_mapping.rs @juspay/orbix-connector
+crates/router/src/types/connector_transformers.rs @juspay/orbix-connector
 
-crates/router/src/compatibility/ @orbix/orbix-compatibility
+crates/router/src/compatibility/ @juspay/orbix-compatibility
 
-crates/router/src/core/ @orbix/orbix-core
-crates/router/src/core/connector_validation.rs @orbix/orbix-connector
+crates/router/src/core/ @juspay/orbix-core
+crates/router/src/core/connector_validation.rs @juspay/orbix-connector
 
 # Unified Connector Service bridge ownership
-crates/router/src/core/unified_connector_service.rs @orbix/orbix-prism
-crates/router/src/core/unified_connector_service/* @orbix/orbix-prism
-crates/orbix_interfaces/src/unified_connector_service.rs @orbix/orbix-prism
-crates/orbix_interfaces/src/unified_connector_service/transformers.rs @orbix/orbix-prism
-crates/common_utils/src/ucs_types.rs @orbix/orbix-prism
-crates/external_services/src/grpc_client/unified_connector_service.rs @orbix/orbix-prism
+crates/router/src/core/unified_connector_service.rs @juspay/orbix-prism
+crates/router/src/core/unified_connector_service/* @juspay/orbix-prism
+crates/orbix_interfaces/src/unified_connector_service.rs @juspay/orbix-prism
+crates/orbix_interfaces/src/unified_connector_service/transformers.rs @juspay/orbix-prism
+crates/common_utils/src/ucs_types.rs @juspay/orbix-prism
+crates/external_services/src/grpc_client/unified_connector_service.rs @juspay/orbix-prism
 
-crates/external_services/Cargo.toml @orbix/orbix-framework @orbix/orbix-prism
-crates/orbix_interfaces/Cargo.toml @orbix/orbix-framework @orbix/orbix-prism
-crates/router/Cargo.toml @orbix/orbix-framework @orbix/orbix-prism
+crates/external_services/Cargo.toml @juspay/orbix-framework @juspay/orbix-prism
+crates/orbix_interfaces/Cargo.toml @juspay/orbix-framework @juspay/orbix-prism
+crates/router/Cargo.toml @juspay/orbix-framework @juspay/orbix-prism
 
-crates/api_models/src/routing.rs @orbix/orbix-routing
-crates/orbix_constraint_graph @orbix/orbix-routing
-crates/euclid @orbix/orbix-routing
-crates/euclid_macros @orbix/orbix-routing
-crates/euclid_wasm @orbix/orbix-routing
-crates/kgraph_utils @orbix/orbix-routing
-crates/pm_auth @orbix/orbix-routing
-crates/router/src/routes/routing.rs @orbix/orbix-routing
-crates/router/src/core/routing @orbix/orbix-routing
-crates/router/src/core/routing.rs @orbix/orbix-routing
-crates/router/src/core/payments/routing @orbix/orbix-routing
-crates/router/src/core/payments/routing.rs @orbix/orbix-routing
-crates/external_services/src/grpc_client/dynamic_routing.rs @orbix/orbix-routing
-crates/external_services/src/grpc_client/dynamic_routing/ @orbix/orbix-routing
-crates/external_services/src/grpc_client/health_check_client.rs @orbix/orbix-routing
+crates/api_models/src/routing.rs @juspay/orbix-routing
+crates/orbix_constraint_graph @juspay/orbix-routing
+crates/euclid @juspay/orbix-routing
+crates/euclid_macros @juspay/orbix-routing
+crates/euclid_wasm @juspay/orbix-routing
+crates/kgraph_utils @juspay/orbix-routing
+crates/pm_auth @juspay/orbix-routing
+crates/router/src/routes/routing.rs @juspay/orbix-routing
+crates/router/src/core/routing @juspay/orbix-routing
+crates/router/src/core/routing.rs @juspay/orbix-routing
+crates/router/src/core/payments/routing @juspay/orbix-routing
+crates/router/src/core/payments/routing.rs @juspay/orbix-routing
+crates/external_services/src/grpc_client/dynamic_routing.rs @juspay/orbix-routing
+crates/external_services/src/grpc_client/dynamic_routing/ @juspay/orbix-routing
+crates/external_services/src/grpc_client/health_check_client.rs @juspay/orbix-routing
 
-crates/redis_interface/ @orbix/orbix-kv-team
-crates/storage_impl/src/redis/* @orbix/orbix-kv-team
-crates/storage_impl/src/redis.rs @orbix/orbix-kv-team
-crates/storage_impl/src/mock_db/redis_conn.rs @orbix/orbix-kv-team
-crates/diesel_models/ @orbix/orbix-kv-team
+crates/redis_interface/ @juspay/orbix-kv-team
+crates/storage_impl/src/redis/* @juspay/orbix-kv-team
+crates/storage_impl/src/redis.rs @juspay/orbix-kv-team
+crates/storage_impl/src/mock_db/redis_conn.rs @juspay/orbix-kv-team
+crates/diesel_models/ @juspay/orbix-kv-team
 
-crates/api_models/src/payment_methods.rs @orbix/orbix-payment-methods
-crates/router/src/core/payment_methods.rs @orbix/orbix-payment-methods
-crates/router/src/routes/payment_methods.rs @orbix/orbix-payment-methods
-crates/router/src/types/api/payment_methods.rs @orbix/orbix-payment-methods
-crates/router/src/types/storage/payment_method.rs @orbix/orbix-payment-methods
-crates/router/src/db/payment_method.rs @orbix/orbix-payment-methods
-crates/diesel_models/src/payment_method.rs @orbix/orbix-payment-methods @orbix/orbix-kv-team
-crates/diesel_models/src/query/payment_method.rs @orbix/orbix-payment-methods @orbix/orbix-kv-team
-crates/storage_impl/src/payment_method.rs @orbix/orbix-payment-methods
-crates/openapi/src/routes/payment_method.rs @orbix/orbix-payment-methods
-crates/router/src/workflows/payment_method_status_update.rs @orbix/orbix-payment-methods
-crates/router/src/core/payments/tokenization.rs @orbix/orbix-payment-methods
-crates/router/src/core/payment_methods/ @orbix/orbix-payment-methods
-crates/payment_methods/ @orbix/orbix-payment-methods
+crates/api_models/src/payment_methods.rs @juspay/orbix-payment-methods
+crates/router/src/core/payment_methods.rs @juspay/orbix-payment-methods
+crates/router/src/routes/payment_methods.rs @juspay/orbix-payment-methods
+crates/router/src/types/api/payment_methods.rs @juspay/orbix-payment-methods
+crates/router/src/types/storage/payment_method.rs @juspay/orbix-payment-methods
+crates/router/src/db/payment_method.rs @juspay/orbix-payment-methods
+crates/diesel_models/src/payment_method.rs @juspay/orbix-payment-methods @juspay/orbix-kv-team
+crates/diesel_models/src/query/payment_method.rs @juspay/orbix-payment-methods @juspay/orbix-kv-team
+crates/storage_impl/src/payment_method.rs @juspay/orbix-payment-methods
+crates/openapi/src/routes/payment_method.rs @juspay/orbix-payment-methods
+crates/router/src/workflows/payment_method_status_update.rs @juspay/orbix-payment-methods
+crates/router/src/core/payments/tokenization.rs @juspay/orbix-payment-methods
+crates/router/src/core/payment_methods/ @juspay/orbix-payment-methods
+crates/payment_methods/ @juspay/orbix-payment-methods
 
-crates/api_models/src/connector_onboarding.rs @orbix/orbix-dashboard
-crates/api_models/src/user @orbix/orbix-dashboard
-crates/api_models/src/user.rs @orbix/orbix-dashboard
-crates/api_models/src/events/user.rs @orbix/orbix-dashboard
-crates/api_models/src/user_role.rs @orbix/orbix-dashboard
-crates/api_models/src/events/user_role.rs @orbix/orbix-dashboard
-crates/api_models/src/verify_connector.rs @orbix/orbix-dashboard
-crates/api_models/src/connector_onboarding.rs @orbix/orbix-dashboard
-crates/diesel_models/src/query/dashboard_metadata.rs @orbix/orbix-dashboard @orbix/orbix-kv-team
-crates/diesel_models/src/query/user @orbix/orbix-dashboard @orbix/orbix-kv-team
-crates/diesel_models/src/query/user_role.rs @orbix/orbix-dashboard @orbix/orbix-kv-team
-crates/diesel_models/src/query/user.rs @orbix/orbix-dashboard @orbix/orbix-kv-team
-crates/diesel_models/src/user @orbix/orbix-dashboard @orbix/orbix-kv-team
-crates/diesel_models/src/user.rs @orbix/orbix-dashboard @orbix/orbix-kv-team
-crates/diesel_models/src/user_role.rs @orbix/orbix-dashboard @orbix/orbix-kv-team
-crates/router/src/consts/user.rs @orbix/orbix-dashboard
-crates/router/src/consts/user_role.rs @orbix/orbix-dashboard
-crates/router/src/core/connector_onboarding @orbix/orbix-dashboard
-crates/router/src/core/connector_onboarding.rs @orbix/orbix-dashboard
-crates/router/src/core/errors/user.rs @orbix/orbix-dashboard
-crates/router/src/core/errors/user @orbix/orbix-dashboard
-crates/router/src/core/user @orbix/orbix-dashboard
-crates/router/src/core/user.rs @orbix/orbix-dashboard
-crates/router/src/core/user_role.rs @orbix/orbix-dashboard
-crates/router/src/core/verify_connector.rs @orbix/orbix-dashboard
-crates/router/src/db/dashboard_metadata.rs @orbix/orbix-dashboard
-crates/router/src/db/user @orbix/orbix-dashboard
-crates/router/src/db/user.rs @orbix/orbix-dashboard
-crates/router/src/db/user_role.rs @orbix/orbix-dashboard
-crates/router/src/routes/connector_onboarding.rs @orbix/orbix-dashboard
-crates/router/src/routes/dummy_connector @orbix/orbix-dashboard
-crates/router/src/routes/dummy_connector.rs @orbix/orbix-dashboard
-crates/router/src/routes/user.rs @orbix/orbix-dashboard
-crates/router/src/routes/user_role.rs @orbix/orbix-dashboard
-crates/router/src/routes/verify_connector.rs @orbix/orbix-dashboard
-crates/router/src/services/authentication.rs @orbix/orbix-dashboard
-crates/router/src/services/authorization @orbix/orbix-dashboard
-crates/router/src/services/authorization.rs @orbix/orbix-dashboard
-crates/router/src/services/jwt.rs @orbix/orbix-dashboard
-crates/router/src/services/email/types.rs @orbix/orbix-dashboard
-crates/router/src/types/api/connector_onboarding @orbix/orbix-dashboard
-crates/router/src/types/api/connector_onboarding.rs @orbix/orbix-dashboard
-crates/router/src/types/api/verify_connector @orbix/orbix-dashboard
-crates/router/src/types/api/verify_connector.rs @orbix/orbix-dashboard
-crates/router/src/types/domain/user @orbix/orbix-dashboard
-crates/router/src/types/domain/user.rs @orbix/orbix-dashboard
-crates/router/src/types/domain/role.rs @orbix/orbix-dashboard
-crates/router/src/types/storage/user.rs @orbix/orbix-dashboard
-crates/router/src/types/storage/user_role.rs @orbix/orbix-dashboard
-crates/router/src/types/storage/dashboard_metadata.rs @orbix/orbix-dashboard
-crates/router/src/utils/connector_onboarding @orbix/orbix-dashboard
-crates/router/src/utils/connector_onboarding.rs @orbix/orbix-dashboard
-crates/router/src/utils/user @orbix/orbix-dashboard
-crates/router/src/utils/user.rs @orbix/orbix-dashboard
-crates/router/src/utils/user_role.rs @orbix/orbix-dashboard
-crates/router/src/utils/verify_connector.rs @orbix/orbix-dashboard
+crates/api_models/src/connector_onboarding.rs @juspay/orbix-dashboard
+crates/api_models/src/user @juspay/orbix-dashboard
+crates/api_models/src/user.rs @juspay/orbix-dashboard
+crates/api_models/src/events/user.rs @juspay/orbix-dashboard
+crates/api_models/src/user_role.rs @juspay/orbix-dashboard
+crates/api_models/src/events/user_role.rs @juspay/orbix-dashboard
+crates/api_models/src/verify_connector.rs @juspay/orbix-dashboard
+crates/api_models/src/connector_onboarding.rs @juspay/orbix-dashboard
+crates/diesel_models/src/query/dashboard_metadata.rs @juspay/orbix-dashboard @juspay/orbix-kv-team
+crates/diesel_models/src/query/user @juspay/orbix-dashboard @juspay/orbix-kv-team
+crates/diesel_models/src/query/user_role.rs @juspay/orbix-dashboard @juspay/orbix-kv-team
+crates/diesel_models/src/query/user.rs @juspay/orbix-dashboard @juspay/orbix-kv-team
+crates/diesel_models/src/user @juspay/orbix-dashboard @juspay/orbix-kv-team
+crates/diesel_models/src/user.rs @juspay/orbix-dashboard @juspay/orbix-kv-team
+crates/diesel_models/src/user_role.rs @juspay/orbix-dashboard @juspay/orbix-kv-team
+crates/router/src/consts/user.rs @juspay/orbix-dashboard
+crates/router/src/consts/user_role.rs @juspay/orbix-dashboard
+crates/router/src/core/connector_onboarding @juspay/orbix-dashboard
+crates/router/src/core/connector_onboarding.rs @juspay/orbix-dashboard
+crates/router/src/core/errors/user.rs @juspay/orbix-dashboard
+crates/router/src/core/errors/user @juspay/orbix-dashboard
+crates/router/src/core/user @juspay/orbix-dashboard
+crates/router/src/core/user.rs @juspay/orbix-dashboard
+crates/router/src/core/user_role.rs @juspay/orbix-dashboard
+crates/router/src/core/verify_connector.rs @juspay/orbix-dashboard
+crates/router/src/db/dashboard_metadata.rs @juspay/orbix-dashboard
+crates/router/src/db/user @juspay/orbix-dashboard
+crates/router/src/db/user.rs @juspay/orbix-dashboard
+crates/router/src/db/user_role.rs @juspay/orbix-dashboard
+crates/router/src/routes/connector_onboarding.rs @juspay/orbix-dashboard
+crates/router/src/routes/dummy_connector @juspay/orbix-dashboard
+crates/router/src/routes/dummy_connector.rs @juspay/orbix-dashboard
+crates/router/src/routes/user.rs @juspay/orbix-dashboard
+crates/router/src/routes/user_role.rs @juspay/orbix-dashboard
+crates/router/src/routes/verify_connector.rs @juspay/orbix-dashboard
+crates/router/src/services/authentication.rs @juspay/orbix-dashboard
+crates/router/src/services/authorization @juspay/orbix-dashboard
+crates/router/src/services/authorization.rs @juspay/orbix-dashboard
+crates/router/src/services/jwt.rs @juspay/orbix-dashboard
+crates/router/src/services/email/types.rs @juspay/orbix-dashboard
+crates/router/src/types/api/connector_onboarding @juspay/orbix-dashboard
+crates/router/src/types/api/connector_onboarding.rs @juspay/orbix-dashboard
+crates/router/src/types/api/verify_connector @juspay/orbix-dashboard
+crates/router/src/types/api/verify_connector.rs @juspay/orbix-dashboard
+crates/router/src/types/domain/user @juspay/orbix-dashboard
+crates/router/src/types/domain/user.rs @juspay/orbix-dashboard
+crates/router/src/types/domain/role.rs @juspay/orbix-dashboard
+crates/router/src/types/storage/user.rs @juspay/orbix-dashboard
+crates/router/src/types/storage/user_role.rs @juspay/orbix-dashboard
+crates/router/src/types/storage/dashboard_metadata.rs @juspay/orbix-dashboard
+crates/router/src/utils/connector_onboarding @juspay/orbix-dashboard
+crates/router/src/utils/connector_onboarding.rs @juspay/orbix-dashboard
+crates/router/src/utils/user @juspay/orbix-dashboard
+crates/router/src/utils/user.rs @juspay/orbix-dashboard
+crates/router/src/utils/user_role.rs @juspay/orbix-dashboard
+crates/router/src/utils/verify_connector.rs @juspay/orbix-dashboard
 
-crates/router/src/scheduler/ @orbix/orbix-process-tracker
+crates/router/src/scheduler/ @juspay/orbix-process-tracker
 
-Dockerfile @orbix/orbix-infra
-docker-compose.yml @orbix/orbix-infra
-.dockerignore @orbix/orbix-infra
-monitoring/ @orbix/orbix-infra
+Dockerfile @juspay/orbix-infra
+docker-compose.yml @juspay/orbix-infra
+.dockerignore @juspay/orbix-infra
+monitoring/ @juspay/orbix-infra
 
 # Payout related ownership rules
-crates/router/src/core/payouts.rs @orbix/orbix-payouts
-crates/router/src/core/payouts/ @orbix/orbix-payouts
-crates/router/src/core/payout_link.rs @orbix/orbix-payouts
-crates/router/src/core/generic_link/payout_link/ @orbix/orbix-payouts
-crates/router/src/routes/payouts.rs @orbix/orbix-payouts
-crates/router/src/routes/payout_link.rs @orbix/orbix-payouts
-crates/router/src/configs/defaults/payout_required_fields.rs @orbix/orbix-payouts
-crates/router/src/services/kafka/payout.rs @orbix/orbix-payouts
-crates/router/src/workflows/attach_payout_account_workflow.rs @orbix/orbix-payouts
+crates/router/src/core/payouts.rs @juspay/orbix-payouts
+crates/router/src/core/payouts/ @juspay/orbix-payouts
+crates/router/src/core/payout_link.rs @juspay/orbix-payouts
+crates/router/src/core/generic_link/payout_link/ @juspay/orbix-payouts
+crates/router/src/routes/payouts.rs @juspay/orbix-payouts
+crates/router/src/routes/payout_link.rs @juspay/orbix-payouts
+crates/router/src/configs/defaults/payout_required_fields.rs @juspay/orbix-payouts
+crates/router/src/services/kafka/payout.rs @juspay/orbix-payouts
+crates/router/src/workflows/attach_payout_account_workflow.rs @juspay/orbix-payouts
 
-crates/api_models/src/payouts.rs @orbix/orbix-payouts
+crates/api_models/src/payouts.rs @juspay/orbix-payouts
 
-crates/common_utils/src/payout_method_utils.rs @orbix/orbix-payouts
+crates/common_utils/src/payout_method_utils.rs @juspay/orbix-payouts
 
-crates/diesel_models/src/payouts.rs @orbix/orbix-payouts @orbix/orbix-kv-team
-crates/diesel_models/src/payout_attempt.rs @orbix/orbix-payouts @orbix/orbix-kv-team
-crates/diesel_models/src/query/payouts.rs @orbix/orbix-payouts @orbix/orbix-kv-team
-crates/diesel_models/src/query/payout_attempt.rs @orbix/orbix-payouts @orbix/orbix-kv-team
-crates/orbix_domain_models/src/payouts/ @orbix/orbix-payouts
-crates/orbix_domain_models/src/payouts.rs @orbix/orbix-payouts
-crates/storage_impl/src/payouts/ @orbix/orbix-payouts
-crates/storage_impl/src/mock_db/payouts.rs @orbix/orbix-payouts
-crates/storage_impl/src/mock_db/payout_attempt.rs @orbix/orbix-payouts
+crates/diesel_models/src/payouts.rs @juspay/orbix-payouts @juspay/orbix-kv-team
+crates/diesel_models/src/payout_attempt.rs @juspay/orbix-payouts @juspay/orbix-kv-team
+crates/diesel_models/src/query/payouts.rs @juspay/orbix-payouts @juspay/orbix-kv-team
+crates/diesel_models/src/query/payout_attempt.rs @juspay/orbix-payouts @juspay/orbix-kv-team
+crates/orbix_domain_models/src/payouts/ @juspay/orbix-payouts
+crates/orbix_domain_models/src/payouts.rs @juspay/orbix-payouts
+crates/storage_impl/src/payouts/ @juspay/orbix-payouts
+crates/storage_impl/src/mock_db/payouts.rs @juspay/orbix-payouts
+crates/storage_impl/src/mock_db/payout_attempt.rs @juspay/orbix-payouts
 
-crates/openapi/src/routes/payouts.rs @orbix/orbix-payouts
+crates/openapi/src/routes/payouts.rs @juspay/orbix-payouts
 
-crates/orbix_connectors/src/connectors/adyenplatform/ @orbix/orbix-payouts
-crates/orbix_connectors/src/connectors/adyenplatform.rs @orbix/orbix-payouts
-crates/orbix_connectors/src/connectors/wise/ @orbix/orbix-payouts
-crates/orbix_connectors/src/connectors/wise.rs @orbix/orbix-payouts
-crates/orbix_connectors/src/connectors/stripe/transformers/connect.rs @orbix/orbix-payouts
+crates/orbix_connectors/src/connectors/adyenplatform/ @juspay/orbix-payouts
+crates/orbix_connectors/src/connectors/adyenplatform.rs @juspay/orbix-payouts
+crates/orbix_connectors/src/connectors/wise/ @juspay/orbix-payouts
+crates/orbix_connectors/src/connectors/wise.rs @juspay/orbix-payouts
+crates/orbix_connectors/src/connectors/stripe/transformers/connect.rs @juspay/orbix-payouts
 
-crates/router/tests/connectors/adyenplatform.rs @orbix/orbix-payouts
-crates/router/tests/connectors/wise.rs @orbix/orbix-payouts
+crates/router/tests/connectors/adyenplatform.rs @juspay/orbix-payouts
+crates/router/tests/connectors/wise.rs @juspay/orbix-payouts
 
 # Revenue recovery related ownerships
-crates/api_models/src/events/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/api_models/src/process_tracker/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/api_models/src/revenue_recovery_data_backfill.rs  @orbix/orbix-revenue-recovery
-crates/diesel_models/src/query/revenue_recovery_retry_stats.rs  @orbix/orbix-revenue-recovery
-crates/diesel_models/src/revenue_recovery_retry_stats.rs  @orbix/orbix-revenue-recovery
-crates/external_services/src/grpc_client/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/external_services/src/grpc_client/revenue_recovery/  @orbix/orbix-revenue-recovery
-crates/orbix_connectors/src/connectors/chargebee.rs  @orbix/orbix-revenue-recovery
-crates/orbix_connectors/src/connectors/chargebee/transformers.rs  @orbix/orbix-revenue-recovery
-crates/orbix_connectors/src/connectors/recurly.rs  @orbix/orbix-revenue-recovery
-crates/orbix_connectors/src/connectors/recurly/transformers.rs  @orbix/orbix-revenue-recovery
-crates/orbix_connectors/src/connectors/stripebilling.rs  @orbix/orbix-revenue-recovery
-crates/orbix_connectors/src/connectors/stripebilling/transformers.rs  @orbix/orbix-revenue-recovery
-crates/orbix_domain_models/src/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/orbix_domain_models/src/revenue_recovery/  @orbix/orbix-revenue-recovery
-crates/orbix_domain_models/src/router_flow_types/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/orbix_domain_models/src/router_request_types/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/orbix_domain_models/src/router_response_types/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/orbix_interfaces/src/api/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/orbix_interfaces/src/api/revenue_recovery_v2.rs  @orbix/orbix-revenue-recovery
-crates/openapi/src/routes/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/router/src/core/payments/operations/payment_attempt_record.rs  @orbix/orbix-revenue-recovery
-crates/router/src/core/payments/operations/proxy_payments_intent.rs  @orbix/orbix-revenue-recovery
-crates/router/src/core/revenue_recovery  @orbix/orbix-revenue-recovery
-crates/router/src/core/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/router/src/core/revenue_recovery_data_backfill.rs  @orbix/orbix-revenue-recovery
-crates/router/src/core/webhooks/recovery_incoming.rs  @orbix/orbix-revenue-recovery
-crates/router/src/routes/process_tracker/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/router/src/routes/recovery_webhooks.rs  @orbix/orbix-revenue-recovery
-crates/router/src/routes/revenue_recovery_data_backfill.rs  @orbix/orbix-revenue-recovery
-crates/router/src/routes/revenue_recovery_redis.rs  @orbix/orbix-revenue-recovery
-crates/router/src/services/kafka/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/router/src/types/storage/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/router/src/types/storage/revenue_recovery_redis_operation.rs  @orbix/orbix-revenue-recovery
-crates/router/src/workflows/revenue_recovery.rs  @orbix/orbix-revenue-recovery
-crates/storage_impl/src/revenue_recovery_retry_stats.rs  @orbix/orbix-revenue-recovery
+crates/api_models/src/events/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/api_models/src/process_tracker/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/api_models/src/revenue_recovery_data_backfill.rs  @juspay/orbix-revenue-recovery
+crates/diesel_models/src/query/revenue_recovery_retry_stats.rs  @juspay/orbix-revenue-recovery
+crates/diesel_models/src/revenue_recovery_retry_stats.rs  @juspay/orbix-revenue-recovery
+crates/external_services/src/grpc_client/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/external_services/src/grpc_client/revenue_recovery/  @juspay/orbix-revenue-recovery
+crates/orbix_connectors/src/connectors/chargebee.rs  @juspay/orbix-revenue-recovery
+crates/orbix_connectors/src/connectors/chargebee/transformers.rs  @juspay/orbix-revenue-recovery
+crates/orbix_connectors/src/connectors/recurly.rs  @juspay/orbix-revenue-recovery
+crates/orbix_connectors/src/connectors/recurly/transformers.rs  @juspay/orbix-revenue-recovery
+crates/orbix_connectors/src/connectors/stripebilling.rs  @juspay/orbix-revenue-recovery
+crates/orbix_connectors/src/connectors/stripebilling/transformers.rs  @juspay/orbix-revenue-recovery
+crates/orbix_domain_models/src/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/orbix_domain_models/src/revenue_recovery/  @juspay/orbix-revenue-recovery
+crates/orbix_domain_models/src/router_flow_types/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/orbix_domain_models/src/router_request_types/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/orbix_domain_models/src/router_response_types/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/orbix_interfaces/src/api/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/orbix_interfaces/src/api/revenue_recovery_v2.rs  @juspay/orbix-revenue-recovery
+crates/openapi/src/routes/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/router/src/core/payments/operations/payment_attempt_record.rs  @juspay/orbix-revenue-recovery
+crates/router/src/core/payments/operations/proxy_payments_intent.rs  @juspay/orbix-revenue-recovery
+crates/router/src/core/revenue_recovery  @juspay/orbix-revenue-recovery
+crates/router/src/core/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/router/src/core/revenue_recovery_data_backfill.rs  @juspay/orbix-revenue-recovery
+crates/router/src/core/webhooks/recovery_incoming.rs  @juspay/orbix-revenue-recovery
+crates/router/src/routes/process_tracker/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/router/src/routes/recovery_webhooks.rs  @juspay/orbix-revenue-recovery
+crates/router/src/routes/revenue_recovery_data_backfill.rs  @juspay/orbix-revenue-recovery
+crates/router/src/routes/revenue_recovery_redis.rs  @juspay/orbix-revenue-recovery
+crates/router/src/services/kafka/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/router/src/types/storage/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/router/src/types/storage/revenue_recovery_redis_operation.rs  @juspay/orbix-revenue-recovery
+crates/router/src/workflows/revenue_recovery.rs  @juspay/orbix-revenue-recovery
+crates/storage_impl/src/revenue_recovery_retry_stats.rs  @juspay/orbix-revenue-recovery

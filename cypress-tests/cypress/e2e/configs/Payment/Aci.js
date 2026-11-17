@@ -841,7 +841,7 @@ export const connectorDetails = {
             przelewy24: {
               bank_name: "citi",
               billing_details: {
-                email: "guest@orbix.example",
+                email: "guest@juspay.in",
               },
             },
           },
@@ -870,7 +870,7 @@ export const connectorDetails = {
         },
         billing: {
           ...billingAddress,
-          email: "guest@orbix.example",
+          email: "guest@juspay.in",
         },
       },
       Response: {
@@ -948,7 +948,7 @@ export const connectorDetails = {
         payment_method_data: {
           pay_later: {
             klarna_redirect: {
-              billing_email: "guest@orbix.example",
+              billing_email: "guest@juspay.in",
               billing_country: "DE",
             },
           },

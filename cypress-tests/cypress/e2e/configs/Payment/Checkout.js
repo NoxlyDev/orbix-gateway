@@ -857,7 +857,7 @@ export const connectorDetails = {
       Request: {
         currency: "USD",
         billing_descriptor: {
-          name: "Orbix",
+          name: "Juspay",
           city: "San Francisco",
         },
       },
@@ -882,7 +882,7 @@ export const connectorDetails = {
         body: {
           status: "succeeded",
           billing_descriptor: {
-            name: "Orbix",
+            name: "Juspay",
             city: "San Francisco",
             phone: null,
             statement_descriptor: null,
@@ -900,7 +900,7 @@ export const connectorDetails = {
           card: successfulNo3DSCardDetails,
         },
         billing_descriptor: {
-          name: "Orbix",
+          name: "Juspay",
           city: "San Francisco",
         },
         order_tax_amount: 500,

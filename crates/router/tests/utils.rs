@@ -218,7 +218,7 @@ fn mk_merchant_account(merchant_id: Option<String>) -> Value {
         "website": "www.example.com",
         "about_business": "Online Retail with a wide selection of organic products for North America",
         "address": {
-          "line1": "Orbix Router",
+          "line1": "Juspay Router",
           "line2": "Koramangala",
           "line3": "Stallion",
           "city": "Bangalore",

@@ -11822,7 +11822,7 @@ impl ForeignFrom<&router_request_types::StripeSplitRefund>
             // `charge_id` is a plain proto3 string, so prost leaves an empty value off the wire
             // entirely - which is how an unresolved charge id reaches connector-service as an
             // absent field. Requires the connector-service side to read it as optional
-            // (orbix/connector-service `optional string charge_id`), so that deploys first.
+            // (juspay/connector-service `optional string charge_id`), so that deploys first.
             charge_id: stripe.charge_id.clone().unwrap_or_default(),
             transfer_account_id: stripe.transfer_account_id.clone(),
             charge_type: payments_grpc::PaymentChargeType::foreign_from(&stripe.charge_type).into(),

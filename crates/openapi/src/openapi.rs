@@ -7,9 +7,9 @@ use crate::routes;
         contact(
             name = "Orbix Gateway Support",
             url = "https://orbix.example",
-            email = "support.global@orbix.example"
+            email = "support.global@juspay.io"
         ),
-        // terms_of_service = "https://www.orbix.example/terms",
+        // terms_of_service = "https://www.juspay.io/terms",
         description = r#"
 ## Get started
 

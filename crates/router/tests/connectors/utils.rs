@@ -1168,7 +1168,7 @@ impl Default for CustomerType {
                 CCardType::default().0,
             )),
             description: None,
-            email: Email::from_str("test@orbix.example").ok(),
+            email: Email::from_str("test@juspay.in").ok(),
             phone: None,
             name: None,
             preprocessing_id: None,

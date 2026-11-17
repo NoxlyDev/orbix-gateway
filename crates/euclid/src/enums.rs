@@ -381,7 +381,7 @@ pub enum RoutableConnectors {
     Zift,
     Plaid,
     Zsl,
-    Orbixthreedsserver,
+    Juspaythreedsserver,
     CtpMastercard,
     CtpVisa,
     Netcetera,
@@ -563,8 +563,8 @@ impl TryFrom<Connector> for RoutableConnectors {
             Connector::CtpMastercard
             | Connector::Gpayments
             | Connector::OrbixVault
-            | Connector::Orbix
-            | Connector::Orbixthreedsserver
+            | Connector::Juspay
+            | Connector::Juspaythreedsserver
             | Connector::Netcetera
             | Connector::Taxjar
             | Connector::Threedsecureio
@@ -745,7 +745,7 @@ impl From<RoutableConnectors> for Connector {
             RoutableConnectors::Phonepe => Self::Phonepe,
             RoutableConnectors::Payjustnow => Self::Payjustnow,
             RoutableConnectors::Payjustnowinstore => Self::Payjustnowinstore,
-            RoutableConnectors::Orbixthreedsserver => Self::Orbixthreedsserver,
+            RoutableConnectors::Juspaythreedsserver => Self::Juspaythreedsserver,
             RoutableConnectors::CtpMastercard => Self::CtpMastercard,
             RoutableConnectors::CtpVisa => Self::CtpVisa,
             RoutableConnectors::Netcetera => Self::Netcetera,

@@ -2909,7 +2909,7 @@ impl TryFrom<(&PaymentsAuthorizeRouterData, MinorUnit)> for PaymentIntentRequest
                 .request
                 .router_return_url
                 .clone()
-                .unwrap_or_else(|| "https://orbix.example/".to_string().into()),
+                .unwrap_or_else(|| "https://juspay.in/".to_string().into()),
             confirm: true, // Stripe requires confirm to be true if return URL is present
             description: item.description.clone(),
             shipping: shipping_address,

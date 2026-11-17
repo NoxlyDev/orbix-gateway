@@ -5,7 +5,7 @@ const successfulNo3DSCardDetails = {
   card_number: "4444333322221111",
   card_exp_month: "01",
   card_exp_year: "27",
-  card_holder_name: "Orbix Orbix Gateway",
+  card_holder_name: "Juspay Orbix Gateway",
   card_cvc: "123",
 };
 

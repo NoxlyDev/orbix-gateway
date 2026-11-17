@@ -1,4 +1,4 @@
-// Copyright (c) Orbix Technologies. All rights reserved.
+// Copyright (c) Orbix. All rights reserved.
 //
 // Dispute-specific request/response messages. DisputeService is in services.proto.
 // Shared dispute status, evidence, and response types remain in payment.proto.

@@ -431,18 +431,18 @@ impl super::settings::SageSettings {
 impl super::settings::AccountUpdaterConfig {
     pub fn validate(&self) -> Result<(), ApplicationError> {
         match self {
-            Self::Orbix(orbix) => orbix.validate(),
+            Self::Juspay(juspay) => juspay.validate(),
         }
     }
 }
 
-impl super::settings::OrbixAccountUpdaterConfig {
+impl super::settings::JuspayAccountUpdaterConfig {
     pub fn validate(&self) -> Result<(), ApplicationError> {
         use common_utils::fp_utils::when;
 
         when(!self.base_url.path().ends_with('/'), || {
             Err(ApplicationError::InvalidConfigurationValueError(
-                "account_updater.orbix.base_url must end with a trailing slash".into(),
+                "account_updater.juspay.base_url must end with a trailing slash".into(),
             ))
         })?;
 
@@ -463,21 +463,21 @@ impl super::settings::OrbixAccountUpdaterConfig {
         for (field, value) in required {
             when(value.trim().is_empty(), || {
                 Err(ApplicationError::InvalidConfigurationValueError(format!(
-                    "account_updater.orbix.{field} must not be empty"
+                    "account_updater.juspay.{field} must not be empty"
                 )))
             })?;
         }
 
         when(self.supported_card_networks.is_empty(), || {
             Err(ApplicationError::InvalidConfigurationValueError(
-                "account_updater.orbix.supported_card_networks must list at least one card network"
+                "account_updater.juspay.supported_card_networks must list at least one card network"
                     .into(),
             ))
         })?;
 
         when(self.refresh_timeout_in_secs == 0, || {
             Err(ApplicationError::InvalidConfigurationValueError(
-                "account_updater.orbix.refresh_timeout_in_secs must be greater than zero".into(),
+                "account_updater.juspay.refresh_timeout_in_secs must be greater than zero".into(),
             ))
         })?;
 

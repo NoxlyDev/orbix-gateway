@@ -34,6 +34,9 @@ ENV CARGO_NET_RETRY=10
 ENV RUSTUP_MAX_RETRIES=10
 # Don't emit giant backtraces in the CI logs.
 ENV RUST_BACKTRACE="short"
+# Limit parallel rustc processes: heavy crates (diesel, etc.) get OOM-killed on small Docker VMs.
+ARG CARGO_BUILD_JOBS=2
+ENV CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS}
 
 COPY . .
 RUN cargo build \

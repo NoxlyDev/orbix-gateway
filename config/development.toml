@@ -269,7 +269,7 @@ cards = [
     "inespay",
     "itaubank",
     "jpmorgan",
-    "orbixthreedsserver",
+    "juspaythreedsserver",
     "mollie",
     "moneris",
     "multisafepay",
@@ -435,7 +435,7 @@ inespay.base_url = "https://apiflow.inespay.com/san/v21"
 interpayments.base_url = "https://api-test.interpayments.com/v1"
 itaubank.base_url = "https://sandbox.devportal.itau.com.br/"
 jpmorgan.base_url = "https://api-mock.payments.jpmorgan.com/api/v2"
-orbixthreedsserver.base_url = "http://localhost:8000"
+juspaythreedsserver.base_url = "http://localhost:8000"
 katapult.base_url = "https://sandbox.katapult.com/api/v3"
 jpmorgan.secondary_base_url = "https://id.payments.jpmorgan.com"
 # JP Morgan Orbital (Chase Paymentech Orbital Gateway JSON API v4). Distinct from the
@@ -1683,7 +1683,7 @@ allow_connected_merchants = true
 click_to_pay = {connector_list = "adyen, cybersource, trustpay"}
 
 [authentication_service_enabled_connectors]
-connector_list = "orbixthreedsserver, ctp_mastercard, ctp_visa"
+connector_list = "juspaythreedsserver, ctp_mastercard, ctp_visa"
 
 [open_router]
 dynamic_routing_enabled = false

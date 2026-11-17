@@ -71,7 +71,7 @@ mod inespay;
 mod interpayments;
 mod itaubank;
 mod jpmorgan;
-mod orbixthreedsserver;
+mod juspaythreedsserver;
 mod katapult;
 mod loonio;
 mod mifinity;

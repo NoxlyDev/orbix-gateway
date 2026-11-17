@@ -10,13 +10,13 @@ export const connectorDetails = {
         payment_method_data: {
           pay_later: {
             klarna_redirect: {
-              billing_email: "guest@orbix.example",
+              billing_email: "guest@juspay.in",
               billing_country: "DE",
             },
           },
         },
         billing: {
-          email: "guest@orbix.example",
+          email: "guest@juspay.in",
           address: {
             line1: "1467",
             line2: "Harrison Street",

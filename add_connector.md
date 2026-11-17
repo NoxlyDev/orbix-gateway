@@ -53,7 +53,7 @@ This guide will walk you through your environment setup and configuration.
 ### Clone the Orbix Gateway monorepo
 
 ```bash
-git clone git@github.com:orbix/orbix.git
+git clone git@github.com:juspay/orbix.git
 cd orbix
 ```
 

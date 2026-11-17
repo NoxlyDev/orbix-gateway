@@ -344,8 +344,8 @@ pub struct NTEligibilityResponse {
     pub extended_card_type: Option<String>,
     /// card brand (like VISA, MASTERCARD etc)
     pub brand: Option<String>,
-    /// bank code as per orbix
-    pub orbix_bank_code: Option<String>,
+    /// bank code as per juspay
+    pub juspay_bank_code: Option<String>,
     /// object type
     pub object: Option<String>,
     /// card bin length

@@ -301,7 +301,7 @@ pub struct ConnectorTomlConfig {
 pub struct ConnectorConfig {
     pub absa_sanlam: Option<ConnectorTomlConfig>,
     pub authipay: Option<ConnectorTomlConfig>,
-    pub orbixthreedsserver: Option<ConnectorTomlConfig>,
+    pub juspaythreedsserver: Option<ConnectorTomlConfig>,
     pub katapult: Option<ConnectorTomlConfig>,
     pub aci: Option<ConnectorTomlConfig>,
     pub adyen: Option<ConnectorTomlConfig>,
@@ -582,7 +582,7 @@ impl ConnectorConfig {
             AuthenticationConnectors::UnifiedAuthenticationService => {
                 Ok(connector_data.unified_authentication_service)
             }
-            AuthenticationConnectors::Orbixthreedsserver => Ok(connector_data.orbixthreedsserver),
+            AuthenticationConnectors::Juspaythreedsserver => Ok(connector_data.juspaythreedsserver),
             AuthenticationConnectors::Cardinal => Ok(connector_data.cardinal),
         }
     }
@@ -692,8 +692,8 @@ impl ConnectorConfig {
             Connector::Helcim => Ok(connector_data.helcim),
             Connector::Inespay => Ok(connector_data.inespay),
             Connector::Jpmorgan => Ok(connector_data.jpmorgan),
-            Connector::Orbix => Err("Configured through application config".to_string()),
-            Connector::Orbixthreedsserver => Ok(connector_data.orbixthreedsserver),
+            Connector::Juspay => Err("Configured through application config".to_string()),
+            Connector::Juspaythreedsserver => Ok(connector_data.juspaythreedsserver),
             Connector::Klarna => Ok(connector_data.klarna),
             Connector::Loonio => Ok(connector_data.loonio),
             Connector::Merchante => Ok(connector_data.merchante),

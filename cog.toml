@@ -17,5 +17,5 @@ ci = { changelog_title = "Continuous Integration", omit_from_changelog = true }
 path = "CHANGELOG.md"
 template = ".github/cocogitto-changelog-template"
 remote = "github.com"
-owner = "orbix"
+owner = "juspay"
 repository = "orbix"

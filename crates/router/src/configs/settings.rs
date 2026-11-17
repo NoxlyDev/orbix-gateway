@@ -396,11 +396,11 @@ pub struct OnSessionConfig {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum AccountUpdaterConfig {
-    Orbix(OrbixAccountUpdaterConfig),
+    Juspay(JuspayAccountUpdaterConfig),
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct OrbixAccountUpdaterConfig {
+pub struct JuspayAccountUpdaterConfig {
     pub base_url: url::Url,
     pub api_key: Secret<String>,
     pub merchant_id: String,

@@ -42,7 +42,7 @@ async fn payments_create_stripe() {
     "customer_email" : "test@gmail.com",
     "customer_name" : "Test",
     "description" : "stripe",
-    "return_url" : "https://orbix.example/",
+    "return_url" : "https://juspay.in/",
     "payment_method_data" : {"card" : {"card_number":"4242424242424242","card_exp_month":"12","card_exp_year":"29","card_holder_name":"JohnDoe","card_cvc":"123"}},
     "payment_method" : "card",
     "statement_descriptor_name" : "Test Merchant",
@@ -111,7 +111,7 @@ async fn payments_create_adyen() {
     "customer_email" : "test@gmail.com",
     "customer_name" : "Test",
     "description" : "adyen",
-    "return_url" : "https://orbix.example/",
+    "return_url" : "https://juspay.in/",
     "payment_method_data" : {"card" : {"card_number":"5555 3412 4444 1115","card_exp_month":"03","card_exp_year":"2030","card_holder_name":"JohnDoe","card_cvc":"737"}},
     "payment_method" : "card",
     "statement_descriptor_name" : "Test Merchant",
@@ -184,7 +184,7 @@ async fn payments_create_fail() {
     "customer_email" : "test@gmail.com",
     "customer_name" : "Test",
     "description" : "adyen",
-    "return_url" : "https://orbix.example/",
+    "return_url" : "https://juspay.in/",
     "payment_method_data" : {"card" : {"card_number":"5555 3412 4444 1115","card_exp_month":"03","card_exp_year":"2030","card_holder_name":"JohnDoe","card_cvc":"737"}},
     "payment_method" : "card",
     "statement_descriptor_name" : "Test Merchant",
@@ -287,7 +287,7 @@ async fn payments_create_core() {
     ))
     .await;
 
-    let merchant_id = id_type::MerchantId::try_from(Cow::from("orbix_merchant")).unwrap();
+    let merchant_id = id_type::MerchantId::try_from(Cow::from("juspay_merchant")).unwrap();
 
     let state = Arc::new(app_state)
         .get_session_state(
@@ -618,7 +618,7 @@ async fn payments_create_core_adyen_no_redirect() {
         id_type::PaymentId::try_from(Cow::Borrowed("pay_mbabizu24mvu3mela5njyhpit10")).unwrap();
 
     let customer_id = format!("cust_{}", common_utils::generate_uuid_v4());
-    let merchant_id = id_type::MerchantId::try_from(Cow::from("orbix_merchant")).unwrap();
+    let merchant_id = id_type::MerchantId::try_from(Cow::from("juspay_merchant")).unwrap();
     let key_store = state
         .store
         .get_merchant_key_store_by_merchant_id(
@@ -687,7 +687,7 @@ async fn payments_create_core_adyen_no_redirect() {
             phone: None,
             email: None,
         }),
-        statement_descriptor_name: Some("Orbix".to_string()),
+        statement_descriptor_name: Some("Juspay".to_string()),
         statement_descriptor_suffix: Some("Router".to_string()),
         three_ds_data: None,
         ..Default::default()

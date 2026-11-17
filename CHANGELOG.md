@@ -1190,7 +1190,7 @@ All notable changes to Orbix Gateway will be documented here.
 
 ### Bug Fixes
 
-- **authentication:** Made threeds requestor id as necessary field for orbixThreeDS server ([#14041](https://github.com/orbix/orbix/pull/14041)) ([`aa47577`](https://github.com/orbix/orbix/commit/aa475770f45becf3db0cc510dbb7fe39f5f96053))
+- **authentication:** Made threeds requestor id as necessary field for juspayThreeDS server ([#14041](https://github.com/orbix/orbix/pull/14041)) ([`aa47577`](https://github.com/orbix/orbix/commit/aa475770f45becf3db0cc510dbb7fe39f5f96053))
 - **connector:**
   - [tsys_transit] add billing_name in required field ([#14020](https://github.com/orbix/orbix/pull/14020)) ([`40f6aa9`](https://github.com/orbix/orbix/commit/40f6aa9c52602c119a41ab2581b9698288bf79f6))
   - [Payshield] Use payment attempt creation time for FRM requests ([#14190](https://github.com/orbix/orbix/pull/14190)) ([`c1cb0ed`](https://github.com/orbix/orbix/commit/c1cb0edb8cbe519e9c58b57d5deb03c049ad6ab3))
@@ -3823,7 +3823,7 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 
 ### Miscellaneous Tasks
 
-- Update support email from orbix@orbix.example to support.glo… ([#11815](https://github.com/orbix/orbix/pull/11815)) ([`6f96091`](https://github.com/orbix/orbix/commit/6f96091a76f1a385caa7e543c939fa5c0cc7bfa7))
+- Update support email from orbix@juspay.in to support.glo… ([#11815](https://github.com/orbix/orbix/pull/11815)) ([`6f96091`](https://github.com/orbix/orbix/commit/6f96091a76f1a385caa7e543c939fa5c0cc7bfa7))
 
 **Full Changelog:** [`2026.04.16.0...2026.04.17.0`](https://github.com/orbix/orbix/compare/2026.04.16.0...2026.04.17.0)
 
@@ -6080,7 +6080,7 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 
 ### Features
 
-- **authentication:** Add force_3ds and exemption support for orbixThreeds Server ([#10181](https://github.com/orbix/orbix/pull/10181)) ([`e7a2c05`](https://github.com/orbix/orbix/commit/e7a2c0530133d0cc7ef85ac49603b970129fd1a6))
+- **authentication:** Add force_3ds and exemption support for juspayThreeds Server ([#10181](https://github.com/orbix/orbix/pull/10181)) ([`e7a2c05`](https://github.com/orbix/orbix/commit/e7a2c0530133d0cc7ef85ac49603b970129fd1a6))
 - **connectors:**
   - Tesouro recurring wallets & store expiry-date for decrypted Apple&Googlepay ([#10122](https://github.com/orbix/orbix/pull/10122)) ([`9773c0c`](https://github.com/orbix/orbix/commit/9773c0c299562920595869e4e693da42daf9f32e))
   - [payload] add source verification and handle webhook response ([#10204](https://github.com/orbix/orbix/pull/10204)) ([`6078798`](https://github.com/orbix/orbix/commit/60787986601fbec8098aa981602b58fc8926816b))
@@ -6752,8 +6752,8 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 ### Bug Fixes
 
 - **connectors:** [TSYS] change order of order_number in tsys auth request body ([#9579](https://github.com/orbix/orbix/pull/9579)) ([`0ff6c08`](https://github.com/orbix/orbix/commit/0ff6c08202e5aa19bad9f54a4199cbdbe6fa0ec1))
-- **core:** Add type for fields in orbix threeds server ([#9744](https://github.com/orbix/orbix/pull/9744)) ([`76da7b2`](https://github.com/orbix/orbix/commit/76da7b28bcce8bdeb023431cf69432b7cbaf9ac7))
-- **router:** Fix wasm bug orbix threeds ([#9757](https://github.com/orbix/orbix/pull/9757)) ([`3727995`](https://github.com/orbix/orbix/commit/3727995a0a5f94990ae0094117429c3156a330b5))
+- **core:** Add type for fields in juspay threeds server ([#9744](https://github.com/orbix/orbix/pull/9744)) ([`76da7b2`](https://github.com/orbix/orbix/commit/76da7b28bcce8bdeb023431cf69432b7cbaf9ac7))
+- **router:** Fix wasm bug juspay threeds ([#9757](https://github.com/orbix/orbix/pull/9757)) ([`3727995`](https://github.com/orbix/orbix/commit/3727995a0a5f94990ae0094117429c3156a330b5))
 
 ### Refactors
 
@@ -6772,7 +6772,7 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 
 ### Bug Fixes
 
-- **core:** Added wasm changes for orbixThreeds server metadata ([#9708](https://github.com/orbix/orbix/pull/9708)) ([`47f7e25`](https://github.com/orbix/orbix/commit/47f7e258bcddad62ef89bb896ae4117b5ac32038))
+- **core:** Added wasm changes for juspayThreeds server metadata ([#9708](https://github.com/orbix/orbix/pull/9708)) ([`47f7e25`](https://github.com/orbix/orbix/commit/47f7e258bcddad62ef89bb896ae4117b5ac32038))
 - **routing:** Cache redaction on updation of mca ([#9729](https://github.com/orbix/orbix/pull/9729)) ([`b52aafa`](https://github.com/orbix/orbix/commit/b52aafa8873fc4704bd69014cc457daf32d5523c))
 
 **Full Changelog:** [`2025.10.08.0...2025.10.08.1`](https://github.com/orbix/orbix/compare/2025.10.08.0...2025.10.08.1)
@@ -7089,7 +7089,7 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 - **connector:**
   - Add support for get plan prices for Chargebee ([#9300](https://github.com/orbix/orbix/pull/9300)) ([`e2f1a45`](https://github.com/orbix/orbix/commit/e2f1a456a17645b9ccac771d3608794c4956277d))
   - [Paysafe] add wasm changes ([#9455](https://github.com/orbix/orbix/pull/9455)) ([`0513c2c`](https://github.com/orbix/orbix/commit/0513c2cd719f59a23843104146e2f5f6863378a1))
-- **core:** Orbix 3DS Server via Payments API ([#9433](https://github.com/orbix/orbix/pull/9433)) ([`f906847`](https://github.com/orbix/orbix/commit/f906847bb9b477193d62f65c79f90ef96b24a957))
+- **core:** Juspay 3DS Server via Payments API ([#9433](https://github.com/orbix/orbix/pull/9433)) ([`f906847`](https://github.com/orbix/orbix/commit/f906847bb9b477193d62f65c79f90ef96b24a957))
 - **nuvei:** Applepay decrypt at orbix flow ([#9431](https://github.com/orbix/orbix/pull/9431)) ([`c59a66a`](https://github.com/orbix/orbix/commit/c59a66a5a4199a56316e99ae327cf6c6a67d9657))
 - **router:** Add flag to wait for post message in `threeDSMethodData` for `three_ds_invoke` next action in Payments Confirm ([#9454](https://github.com/orbix/orbix/pull/9454)) ([`0b26317`](https://github.com/orbix/orbix/commit/0b263179af1b9dc3186c09c53b700b6a1f754d0e))
 - Implement subscription create for Chargebee ([#9303](https://github.com/orbix/orbix/pull/9303)) ([`d978afd`](https://github.com/orbix/orbix/commit/d978afdc5d95babf99e7ce20d2528b9c3aea33ed))
@@ -7573,7 +7573,7 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 
 ### Bug Fixes
 
-- **authentication:** Changed required value for orbixThreedsserver config ([#8890](https://github.com/orbix/orbix/pull/8890)) ([`a56d78a`](https://github.com/orbix/orbix/commit/a56d78a46a3ee80cdb2b48f9abfd2cd7b297e328))
+- **authentication:** Changed required value for juspayThreedsserver config ([#8890](https://github.com/orbix/orbix/pull/8890)) ([`a56d78a`](https://github.com/orbix/orbix/commit/a56d78a46a3ee80cdb2b48f9abfd2cd7b297e328))
 
 **Full Changelog:** [`2025.08.20.0...2025.08.21.0`](https://github.com/orbix/orbix/compare/2025.08.20.0...2025.08.21.0)
 
@@ -10064,7 +10064,7 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 
 ### Bug Fixes
 
-- **dashboard:** Added auth key to orbix threeds server ([#7457](https://github.com/orbix/orbix/pull/7457)) ([`15ad6da`](https://github.com/orbix/orbix/commit/15ad6da0793be4bc149ae2e92f4805735be8712a))
+- **dashboard:** Added auth key to juspay threeds server ([#7457](https://github.com/orbix/orbix/pull/7457)) ([`15ad6da`](https://github.com/orbix/orbix/commit/15ad6da0793be4bc149ae2e92f4805735be8712a))
 - **openapi_v2:** Add missing struct in openapi v2 ([#7383](https://github.com/orbix/orbix/pull/7383)) ([`3cf529c`](https://github.com/orbix/orbix/commit/3cf529c4dc9eb7bf2753398f629b72d2655aae73))
 
 ### Miscellaneous Tasks
@@ -10721,7 +10721,7 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 ### Miscellaneous Tasks
 
 - Update creds ([#7054](https://github.com/orbix/orbix/pull/7054)) ([`37f10fb`](https://github.com/orbix/orbix/commit/37f10fb5b4363244bbe133407e632cece1d9a1c6))
-- Update readme with orbix's vision, product offering, architecture diagram, setup steps and output ([#7024](https://github.com/orbix/orbix/pull/7024)) ([`d01172a`](https://github.com/orbix/orbix/commit/d01172a613b8e74564eef792b8a6915c647854fc))
+- Update readme with juspay's vision, product offering, architecture diagram, setup steps and output ([#7024](https://github.com/orbix/orbix/pull/7024)) ([`d01172a`](https://github.com/orbix/orbix/commit/d01172a613b8e74564eef792b8a6915c647854fc))
 
 **Full Changelog:** [`2025.01.17.0...2025.01.20.0`](https://github.com/orbix/orbix/compare/2025.01.17.0...2025.01.20.0)
 
@@ -20152,14 +20152,14 @@ Co-authored-by: Gaurav Rawat <GauravRawat369> ([`b04d027`](https://github.com/or
 - **payments:** Add field manual_retry_allowed in payments response ([#1298](https://github.com/orbix/orbix/pull/1298)) ([`44b8da4`](https://github.com/orbix/orbix/commit/44b8da430c5e5b0114e73b80c5a49d06beebf350))
 - **router:**
   - Add requeue support for payments and fix duplicate entry error in process tracker for requeued payments ([#1567](https://github.com/orbix/orbix/pull/1567)) ([`b967d23`](https://github.com/orbix/orbix/commit/b967d232519b106d88d79da2d6baec550c9256df))
-  - Add metrics for webhooks ([#1266](https://github.com/orbix/orbix/pull/1266)) ([`d528132`](https://github.com/orbix/orbix/commit/d528132932266aaa793bfe27fa6f40dcd56a8e6a)) by shashank.attarde@orbix.example
+  - Add metrics for webhooks ([#1266](https://github.com/orbix/orbix/pull/1266)) ([`d528132`](https://github.com/orbix/orbix/commit/d528132932266aaa793bfe27fa6f40dcd56a8e6a)) by shashank.attarde@juspay.in
 - Feat: add `merchant_name` field in the response body ([#1280](https://github.com/orbix/orbix/pull/1280)) ([`dd4ba63`](https://github.com/orbix/orbix/commit/dd4ba63cc4940b3e968a2a8eaf841de2ae14b3f8))
 - Add `GenericNotFoundError` error response and `set_key_if_not_exists_with_expiry` Redis command ([#1526](https://github.com/orbix/orbix/pull/1526)) ([`9a88a32`](https://github.com/orbix/orbix/commit/9a88a32d5092cdacacc41bc8ec12ff56d4f53adf))
 
 ### Bug Fixes
 
 - **disputes:** Update 4xx error for Files - Delete endpoint ([#1531](https://github.com/orbix/orbix/pull/1531)) ([`eabe16c`](https://github.com/orbix/orbix/commit/eabe16cc8516335b402fdecfd299d26c89cd8ce7))
-- **payment_method:** Do not save card in locker in case of error from connector ([#1341](https://github.com/orbix/orbix/pull/1341)) ([`9794079`](https://github.com/orbix/orbix/commit/9794079c797dcb30edcd88e93e8448948321287c)) by karthikey.hegde@orbix.example
+- **payment_method:** Do not save card in locker in case of error from connector ([#1341](https://github.com/orbix/orbix/pull/1341)) ([`9794079`](https://github.com/orbix/orbix/commit/9794079c797dcb30edcd88e93e8448948321287c)) by karthikey.hegde@juspay.in
 - Return nick name for each card while listing saved cards ([#1391](https://github.com/orbix/orbix/pull/1391)) ([`4808af3`](https://github.com/orbix/orbix/commit/4808af37503ed9cf506ac16c5d7cc68a79e30050))
 - Add appropriate printable text for Result returned from delete_tokenized_data() ([#1369](https://github.com/orbix/orbix/pull/1369)) ([`cebe993`](https://github.com/orbix/orbix/commit/cebe993660c1afbbd0c442c0811f215286ccff8d))
 

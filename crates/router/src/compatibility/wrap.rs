@@ -85,7 +85,7 @@ where
                 Err(_) => api::http_response_err(
                     r#"{
                         "error": {
-                            "message": "Error converting orbix response to stripe response"
+                            "message": "Error converting juspay response to stripe response"
                         }
                     }"#,
                 ),
@@ -107,7 +107,7 @@ where
                 Err(_) => api::http_response_err(
                     r#"{
                         "error": {
-                            "message": "Error converting orbix response to stripe response"
+                            "message": "Error converting juspay response to stripe response"
                         }
                     }"#,
                 ),

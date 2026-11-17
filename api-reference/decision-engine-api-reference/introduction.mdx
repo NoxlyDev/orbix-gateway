@@ -15,7 +15,7 @@ Decision Engine is a Rust service that sits between your orchestrator and your p
 
 | Strategy | What it does |
 | --- | --- |
-| **Rule-based routing** | Priority order, single fixed connector, percentage volume split, or a full AND/OR/nested condition tree — authored via Euclid, Orbix's open rule engine, and evaluated in `POST /routing/create`/`/routing/evaluate`. |
+| **Rule-based routing** | Priority order, single fixed connector, percentage volume split, or a full AND/OR/nested condition tree — authored via Euclid, Juspay's open rule engine, and evaluated in `POST /routing/create`/`/routing/evaluate`. |
 | **Success-rate (auth-rate) based routing** | `SR_BASED_ROUTING` — ranks gateways by live transaction success rate, with hedging (exploration) and automatic downtime elimination for failing gateways. |
 | **Debit / network-based routing** | `NTW_BASED_ROUTING` — routes debit transactions by co-badged card network for cost/compliance reasons. |
 | **Network + SR hybrid routing** | `NTW_SR_HYBRID_ROUTING` — combines network eligibility with success-rate ranking. |

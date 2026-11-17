@@ -595,7 +595,7 @@ ensure_deployed() {
   fi
 
   info "Adding Orbix Gateway Helm repo..."
-  helm repo add orbix https://orbix.github.io/orbix-helm \
+  helm repo add orbix https://juspay.github.io/orbix-helm \
     >>"$LOG_FILE" 2>&1
   helm repo update >>"$LOG_FILE" 2>&1
   ok "Helm repo ready"

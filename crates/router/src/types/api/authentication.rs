@@ -107,8 +107,8 @@ impl AuthenticationConnectorData {
             enums::AuthenticationConnectors::UnifiedAuthenticationService => Ok(
                 ConnectorEnum::Old(Box::new(connector::UnifiedAuthenticationService::new())),
             ),
-            enums::AuthenticationConnectors::Orbixthreedsserver => Ok(ConnectorEnum::Old(
-                Box::new(connector::Orbixthreedsserver::new()),
+            enums::AuthenticationConnectors::Juspaythreedsserver => Ok(ConnectorEnum::Old(
+                Box::new(connector::Juspaythreedsserver::new()),
             )),
             enums::AuthenticationConnectors::Cardinal => Ok(ConnectorEnum::Old(Box::new(
                 connector::UnifiedAuthenticationService::new(),

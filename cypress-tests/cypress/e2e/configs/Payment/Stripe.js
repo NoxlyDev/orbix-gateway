@@ -1443,7 +1443,7 @@ export const connectorDetails = {
             przelewy24: {
               bank_name: "citi",
               billing_details: {
-                email: "guest@orbix.example",
+                email: "guest@juspay.in",
               },
             },
           },
