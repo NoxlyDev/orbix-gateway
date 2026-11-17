@@ -1,0 +1,11157 @@
+//! Replay engine for Déjà semantic events.
+//!
+//! Provides `ReplayHook` — a `DejaHook` that substitutes recorded responses
+//! instead of letting the real implementation hit external systems.
+//!
+//! Uses resilient replay: divergence is logged but control flow continues.
+//! Missing calls are recovered via sliding-window search; novel calls trigger
+//! graceful synthesis.
+
+use std::collections::{BTreeMap, HashMap};
+use std::path::Path;
+use std::sync::Mutex;
+
+use serde::{Deserialize, Serialize};
+
+use crate::Payload;
+use crate::{
+    correlation_matches, read_events, BoundaryEvent, BoundarySpec, CallsiteIdentity,
+    CallsiteSource, DejaHook, EffectKind, ExecuteMode, OperationKind, ReplayLookup, ReplayStrategy,
+    ReturnSemantics, RuntimeMode,
+};
+
+const STATE_KEY_V1_PREFIX: &str = "deja:state:v1";
+
+/// Typed representation of a boundary state key.
+///
+/// The on-event wire fields (`BoundaryEvent.read_set` / `write_set`) intentionally
+/// remain `Vec<String>` for compatibility; this type is the canonical internal
+/// representation for newly emitted keys. Unknown legacy strings parse as
+/// [`StateKey::Opaque`] and are never mined for DB table identity.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum StateKey {
+    /// A legacy or non-typed key. Seed planning preserves it exactly, but treats it
+    /// as opaque (no `table:sql` splitting).
+    Opaque(String),
+    /// Exact database row identity: the table's primary-key columns and their
+    /// values, in the schema's key order.
+    ///
+    /// Several pairs, because a primary key genuinely has several columns —
+    /// `payment_intent` is keyed by `(payment_id, merchant_id)` and
+    /// `payment_attempt` by `(attempt_id, merchant_id)`. A one-column grammar
+    /// could not address those rows at all, so they fell back to
+    /// query fingerprints and every row-exact consumer went blind on the two
+    /// busiest tables in the workload.
+    ///
+    /// The columns are part of the identity, not just the values, so a
+    /// non-unique value read from the wrong column can never group unrelated
+    /// rows.
+    DbRow {
+        table: String,
+        key: Vec<(String, String)>,
+    },
+    /// Database query fallback identity, used when the row primary key is not
+    /// available from the structured result.
+    DbQuery { table: String, fingerprint: String },
+    /// Redis physical key identity. `key` is the UTF-8 rendering used by existing
+    /// Redis instrumentation; byte-exact images can carry raw bytes separately.
+    RedisKey { key: String },
+}
+
+/// Parse error for malformed typed v1 state keys.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StateKeyParseError {
+    message: String,
+}
+
+impl StateKeyParseError {
+    fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+        }
+    }
+}
+
+impl std::fmt::Display for StateKeyParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for StateKeyParseError {}
+
+impl StateKey {
+    /// Parse a wire key. Unknown/legacy strings, including old typed-v1 shapes
+    /// that no longer carry enough identity, become [`StateKey::Opaque`].
+    pub fn parse(wire: &str) -> Result<Self, StateKeyParseError> {
+        let Some(rest) = wire.strip_prefix(STATE_KEY_V1_PREFIX) else {
+            return Ok(StateKey::Opaque(wire.to_owned()));
+        };
+        let rest = rest
+            .strip_prefix(':')
+            .ok_or_else(|| StateKeyParseError::new("typed state key missing kind separator"))?;
+        let parts: Vec<&str> = rest.split(':').collect();
+        match parts.as_slice() {
+            // `db_row:<table>:<column>:<value>[:<column>:<value>]*` — the key's
+            // columns appended in schema order, so a single-column key renders
+            // and parses byte-identically to the one-column grammar this
+            // replaced and recordings made under it still read.
+            ["db_row", table, pairs @ ..] if !pairs.is_empty() && pairs.len() % 2 == 0 => {
+                let mut key = Vec::with_capacity(pairs.len() / 2);
+                for pair in pairs.chunks_exact(2) {
+                    key.push((
+                        decode_hex_component(pair[0])?,
+                        decode_hex_component(pair[1])?,
+                    ));
+                }
+                Ok(StateKey::DbRow {
+                    table: decode_hex_component(table)?,
+                    key,
+                })
+            }
+            ["db_query", table, fingerprint] => Ok(StateKey::DbQuery {
+                table: decode_hex_component(table)?,
+                fingerprint: decode_hex_component(fingerprint)?,
+            }),
+            ["redis", key] => Ok(StateKey::RedisKey {
+                key: decode_hex_component(key)?,
+            }),
+            ["db_row", ..] | ["db_query", ..] | ["redis", ..] | [_, ..] => {
+                Ok(StateKey::Opaque(wire.to_owned()))
+            }
+            [] => Err(StateKeyParseError::new("typed state key missing kind")),
+        }
+    }
+
+    /// Render the deterministic wire string. Typed variants use the v1 prefix;
+    /// opaque keys preserve the original legacy string byte-for-byte.
+    pub fn to_wire(&self) -> String {
+        match self {
+            StateKey::Opaque(raw) => raw.clone(),
+            StateKey::DbRow { table, key } => {
+                let mut wire = format!(
+                    "{STATE_KEY_V1_PREFIX}:db_row:{}",
+                    encode_hex_component(table)
+                );
+                for (column, value) in key {
+                    wire.push(':');
+                    wire.push_str(&encode_hex_component(column));
+                    wire.push(':');
+                    wire.push_str(&encode_hex_component(value));
+                }
+                wire
+            }
+            StateKey::DbQuery { table, fingerprint } => format!(
+                "{STATE_KEY_V1_PREFIX}:db_query:{}:{}",
+                encode_hex_component(table),
+                encode_hex_component(fingerprint)
+            ),
+            StateKey::RedisKey { key } => {
+                format!("{STATE_KEY_V1_PREFIX}:redis:{}", encode_hex_component(key))
+            }
+        }
+    }
+
+    /// Returns the database table for DB state keys. Opaque legacy strings return
+    /// `None`; this is what keeps state keys out of lookup identity and prevents
+    /// legacy `table:sql` strings from being parsed as typed DB keys.
+    pub fn db_table(&self) -> Option<&str> {
+        match self {
+            StateKey::DbRow { table, .. } | StateKey::DbQuery { table, .. } => Some(table),
+            StateKey::Opaque(_) | StateKey::RedisKey { .. } => None,
+        }
+    }
+}
+
+fn encode_hex_component(input: &str) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let bytes = input.as_bytes();
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        out.push(HEX[(byte >> 4) as usize] as char);
+        out.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    out
+}
+
+fn decode_hex_component(input: &str) -> Result<String, StateKeyParseError> {
+    if input.len() % 2 != 0 {
+        return Err(StateKeyParseError::new("hex component has odd length"));
+    }
+    let mut bytes = Vec::with_capacity(input.len() / 2);
+    for chunk in input.as_bytes().chunks_exact(2) {
+        let hi = hex_nibble(chunk[0])?;
+        let lo = hex_nibble(chunk[1])?;
+        bytes.push((hi << 4) | lo);
+    }
+    String::from_utf8(bytes).map_err(|_| StateKeyParseError::new("hex component is not utf-8"))
+}
+
+fn hex_nibble(byte: u8) -> Result<u8, StateKeyParseError> {
+    match byte {
+        b'0'..=b'9' => Ok(byte - b'0'),
+        b'a'..=b'f' => Ok(byte - b'a' + 10),
+        b'A'..=b'F' => Ok(byte - b'A' + 10),
+        _ => Err(StateKeyParseError::new(
+            "hex component contains non-hex digit",
+        )),
+    }
+}
+
+fn canonical_state_key_wire(key: &str) -> String {
+    StateKey::parse(key)
+        .map(|state_key| state_key.to_wire())
+        .unwrap_or_else(|_| key.to_owned())
+}
+
+fn state_key_fnv1a_bytes(mut hash: u64, bytes: &[u8]) -> u64 {
+    const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    hash
+}
+
+/// Deterministic fingerprint for a DB query fallback state key.
+pub fn db_query_fingerprint(
+    operation: &str,
+    table: &str,
+    sql: &str,
+    inputs: &serde_json::Value,
+) -> String {
+    let mut hash = 0xcbf2_9ce4_8422_2325;
+    hash = state_key_fnv1a_bytes(hash, b"db-query-v1");
+    hash = state_key_fnv1a_bytes(hash, operation.as_bytes());
+    hash = state_key_fnv1a_bytes(hash, b"\0");
+    hash = state_key_fnv1a_bytes(hash, table.as_bytes());
+    hash = state_key_fnv1a_bytes(hash, b"\0");
+    hash = state_key_fnv1a_bytes(hash, sql.as_bytes());
+    hash = state_key_fnv1a_bytes(hash, b"\0");
+    hash = hash_value(hash, inputs);
+    format!("{hash:016x}")
+}
+
+/// Build the typed v1 DB query fallback key for a boundary event.
+pub fn db_query_state_key(
+    operation: &str,
+    table: &str,
+    sql: &str,
+    inputs: &serde_json::Value,
+) -> StateKey {
+    StateKey::DbQuery {
+        table: table.to_owned(),
+        fingerprint: db_query_fingerprint(operation, table, sql, inputs),
+    }
+}
+
+/// Extract the DB table from the structured DB event args/request envelope.
+pub fn db_table_from_event_args(args: &serde_json::Value) -> Option<&str> {
+    args.get("table").and_then(serde_json::Value::as_str)
+}
+
+/// The pragmatic primary-key column for a table, when known. Unknown tables
+/// return `None` and must use the query-fingerprint fallback — deliberately, so
+/// Rule A cannot group unrelated rows by a merely common column such as
+/// `merchant_id`. Public as a PRODUCER api: the facade's binds-parser derives
+/// row-exact read keys for reads whose result carries no row (e.g. NotFound).
+/// Primary-key columns per table, as reported by the database that holds them.
+///
+/// Row identity is a fact about the SCHEMA, so it is read from the schema —
+/// never listed in this library. A hardcoded `table → column` map was both
+/// application-specific (the tables of one particular product living in a
+/// generic engine) and structurally unable to describe what it claimed: a
+/// composite primary key has no single column, so every composite table it
+/// covered, it covered wrongly.
+///
+/// Populated by whoever holds a connection to the schema in question — the
+/// `deja-diesel` wrapper when recording, the orchestrator's catalog read when
+/// replaying — through [`register_table_identity`]. Empty until then, which
+/// makes row keys absent rather than wrong: consumers fall back to query
+/// fingerprints, the same path a table with an unknown key has always taken.
+static TABLE_IDENTITY: std::sync::RwLock<Option<BTreeMap<String, Vec<String>>>> =
+    std::sync::RwLock::new(None);
+
+/// The statement that answers "which columns identify a row of each table",
+/// asked of the database that owns the schema. Published here so every
+/// populator asks the same question rather than reinventing it:
+/// `pg_index.indisprimary` is the constraint the database enforces, so a
+/// composite key arrives as the several columns it actually has, in key order.
+/// Yields `(table_name, column_name)` rows.
+pub const TABLE_IDENTITY_SQL: &str =
+    "SELECT cls.relname AS table_name, attr.attname AS column_name \
+     FROM pg_catalog.pg_index idx \
+     JOIN pg_catalog.pg_class cls ON cls.oid = idx.indrelid \
+     JOIN pg_catalog.pg_namespace ns ON ns.oid = cls.relnamespace \
+     JOIN pg_catalog.pg_attribute attr \
+       ON attr.attrelid = cls.oid AND attr.attnum = ANY(idx.indkey) \
+     WHERE idx.indisprimary AND ns.nspname = 'public' \
+     ORDER BY cls.relname, array_position(idx.indkey, attr.attnum)";
+
+/// Register the primary-key columns of each table, keyed by table name. Merges
+/// into whatever is already known, so a process that learns about more schemas
+/// (a second store, a second database) accumulates rather than replaces.
+pub fn register_table_identity(entries: impl IntoIterator<Item = (String, Vec<String>)>) {
+    let Ok(mut guard) = TABLE_IDENTITY.write() else {
+        return;
+    };
+    let map = guard.get_or_insert_with(BTreeMap::new);
+    for (table, columns) in entries {
+        map.insert(table, columns);
+    }
+}
+
+/// The registered primary-key columns of a table, in key order.
+pub fn table_identity_columns(table: &str) -> Option<Vec<String>> {
+    TABLE_IDENTITY
+        .read()
+        .ok()?
+        .as_ref()?
+        .get(table)
+        .filter(|columns| !columns.is_empty())
+        .cloned()
+}
+
+/// Whether any schema identity has been registered — the difference between
+/// "this table has no single-column key" and "nobody has told us the schema".
+pub fn table_identity_is_registered() -> bool {
+    TABLE_IDENTITY
+        .read()
+        .ok()
+        .and_then(|guard| guard.as_ref().map(|map| !map.is_empty()))
+        .unwrap_or(false)
+}
+
+/// The row-identity columns and values for a serialized row, when the schema's
+/// key is fully present in it.
+///
+/// EVERY key column must be present and non-null: a partial key does not
+/// identify a row, so the caller falls back to the query fingerprint rather
+/// than addressing rows by a prefix of their key.
+fn db_row_key_for_table(
+    table: &str,
+    object: &serde_json::Map<String, serde_json::Value>,
+) -> Option<Vec<(String, String)>> {
+    let columns = table_identity_columns(table)?;
+    let mut key = Vec::with_capacity(columns.len());
+    for column in columns {
+        let value = object.get(&column).filter(|value| !value.is_null())?;
+        key.push((column, db_pk_wire_value(value)));
+    }
+    Some(key)
+}
+
+/// Build a row-exact DB state key from a serialized row/object, when the
+/// schema's key for this table is fully present in it. A table whose identity
+/// nobody registered, or a row missing part of its key, returns `None` and must
+/// use the query-fingerprint fallback.
+pub fn db_row_state_key(table: &str, row: &serde_json::Value) -> Option<StateKey> {
+    Some(StateKey::DbRow {
+        table: table.to_owned(),
+        key: db_row_key_for_table(table, row.as_object()?)?,
+    })
+}
+
+/// Row keys a statement names, from its query text and its bind values in
+/// position order: one per equality predicate on the table's first key column,
+/// completed by the other key columns' bound values. Empty unless EVERY key
+/// column is bound by equality: `db_row_state_key` refuses a partial row.
+pub fn row_keys_for_binds(table: &str, query: &str, binds: &[serde_json::Value]) -> Vec<StateKey> {
+    let Some(identity) = table_identity_columns(table) else {
+        return Vec::new();
+    };
+    fn bound_values<'a>(
+        query: &str,
+        binds: &'a [serde_json::Value],
+        column: &str,
+    ) -> Vec<&'a serde_json::Value> {
+        let needle = format!("\"{column}\" = $");
+        let mut values = Vec::new();
+        let mut cursor = 0;
+        while let Some(found) = query[cursor..].find(&needle) {
+            let digits_start = cursor + found + needle.len();
+            let digits: String = query[digits_start..]
+                .chars()
+                .take_while(char::is_ascii_digit)
+                .collect();
+            cursor = digits_start;
+            if let Some(value) = digits
+                .parse::<usize>()
+                .ok()
+                .and_then(|position| position.checked_sub(1))
+                .and_then(|index| binds.get(index))
+            {
+                values.push(value);
+            }
+        }
+        values
+    }
+    let mut per_column: Vec<(String, Vec<&serde_json::Value>)> = Vec::new();
+    for column in identity {
+        let values = bound_values(query, binds, &column);
+        per_column.push((column, values));
+    }
+    let Some((_, leading)) = per_column.first() else {
+        return Vec::new();
+    };
+    let mut keys: Vec<StateKey> = Vec::new();
+    for index in 0..leading.len() {
+        let row: serde_json::Map<String, serde_json::Value> = per_column
+            .iter()
+            .map(|(column, values)| {
+                let value = values.get(index).or_else(|| values.first());
+                (
+                    column.clone(),
+                    value.map_or(serde_json::Value::Null, |value| (*value).clone()),
+                )
+            })
+            .collect();
+        if let Some(key) = db_row_state_key(table, &serde_json::Value::Object(row)) {
+            if !keys.contains(&key) {
+                keys.push(key);
+            }
+        }
+    }
+    keys
+}
+
+/// Diesel's `-- binds: [...]` debug list read tolerantly: a newtype such as
+/// `ProfileId("pro_1")` is read as its inner value. Every item must reduce to
+/// a JSON scalar, or the whole list is refused rather than half-read.
+fn debug_bind_values(raw: &str) -> Option<Vec<serde_json::Value>> {
+    let inner = raw.trim().strip_prefix('[')?.strip_suffix(']')?;
+    if inner.trim().is_empty() {
+        return Some(Vec::new());
+    }
+    let mut items = Vec::new();
+    let (mut depth, mut in_str, mut escaped, mut start) = (0i32, false, false, 0usize);
+    for (i, c) in inner.char_indices() {
+        if in_str {
+            match c {
+                _ if escaped => escaped = false,
+                '\\' => escaped = true,
+                '"' => in_str = false,
+                _ => {}
+            }
+            continue;
+        }
+        match c {
+            '"' => in_str = true,
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => depth -= 1,
+            ',' if depth == 0 => {
+                items.push(&inner[start..i]);
+                start = i + 1;
+            }
+            _ => {}
+        }
+    }
+    items.push(&inner[start..]);
+    items
+        .into_iter()
+        .map(|item| {
+            let mut item = item.trim();
+            // `Name(inner)`, possibly nested: keep the inner value.
+            while let Some(open) = item.find('(') {
+                let name = &item[..open];
+                if item.ends_with(')')
+                    && !name.is_empty()
+                    && name
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == ':')
+                {
+                    item = item[open + 1..item.len() - 1].trim();
+                } else {
+                    break;
+                }
+            }
+            serde_json::from_str::<serde_json::Value>(item)
+                .ok()
+                .filter(|v| !v.is_object() && !v.is_array())
+        })
+        .collect()
+}
+
+/// The single row a db statement names, from its recorded SQL and debug binds.
+fn statement_row_key(table: &str, sql: &str) -> Option<String> {
+    let at = sql.rfind(" -- binds: ")?;
+    let (query, raw) = sql.split_at(at);
+    let binds = debug_bind_values(raw.trim_start_matches(" -- binds: "))?;
+    let mut keys = row_keys_for_binds(table, query, &binds);
+    (keys.len() == 1).then(|| keys.remove(0).to_wire())
+}
+
+/// Whether a db event's recorded result asserts presence without carrying the
+/// row: `Ok(true)`, as a delete that removed a row records.
+fn db_result_asserts_presence(event: &BoundaryEvent) -> bool {
+    // The same two shapes the seeder names `RecordedPresence`: an Ok envelope
+    // holding `true`, or a bare `true`.
+    let result = event.result.to_value();
+    let value = match result.get("version") {
+        Some(_) if result.get("result").and_then(serde_json::Value::as_str) == Some("Ok") => {
+            result.get("value")
+        }
+        Some(_) => None,
+        None => Some(&result),
+    };
+    event.boundary == "db" && value == Some(&serde_json::Value::Bool(true))
+}
+
+/// Every row image the run recorded, by row key, with its global sequence, so a
+/// presence-only delete can borrow the row's latest state before it.
+type RunRowImages = std::collections::HashMap<String, Vec<(u64, serde_json::Value)>>;
+
+fn run_row_images(events: &[BoundaryEvent]) -> RunRowImages {
+    let mut rows: RunRowImages = std::collections::HashMap::new();
+    for event in events.iter().filter(|e| !e.is_error) {
+        let Some(image) = &event.result_image else {
+            continue;
+        };
+        for row in image_rows(&image.to_value()) {
+            if let Some(key) = image_row_state_key(row) {
+                rows.entry(key)
+                    .or_default()
+                    .push((event.global_sequence, row.clone()));
+            }
+        }
+    }
+    rows
+}
+
+/// The row a presence-only delete removed, named by its statement: the key of
+/// a row the recording asserted without carrying.
+fn presence_row_key(event: &BoundaryEvent) -> Option<String> {
+    if !db_result_asserts_presence(event) {
+        return None;
+    }
+    let args = event.args.to_value();
+    let table = db_table_from_event_args(&args)?;
+    statement_row_key(table, args.get("sql")?.as_str()?)
+}
+
+/// The latest image of a row recorded before `before`, and the sequence it came
+/// from: the state the row was actually in at that point.
+fn latest_image_before(
+    rows: &RunRowImages,
+    key: &str,
+    before: u64,
+) -> Option<(u64, serde_json::Value)> {
+    // The row key names its table, so an image of another table never matches.
+    rows.get(key)?
+        .iter()
+        .filter(|(seq, _)| *seq < before)
+        .max_by_key(|(seq, _)| *seq)
+        .cloned()
+}
+
+/// Extract all row-exact DB state keys carried by a structured DB `Ok` value or
+/// row/object array. Non-row shapes and rows without pragmatic PK columns are
+/// ignored; callers can fall back to [`db_query_state_key`].
+pub fn db_row_state_keys(table: &str, value: &serde_json::Value) -> Vec<StateKey> {
+    fn visit(table: &str, value: &serde_json::Value, keys: &mut Vec<StateKey>) {
+        if let Some(key) = db_row_state_key(table, value) {
+            keys.push(key);
+            return;
+        }
+        match value {
+            serde_json::Value::Array(values) => {
+                for value in values {
+                    visit(table, value, keys);
+                }
+            }
+            serde_json::Value::Object(object) => {
+                if object.get("result").and_then(serde_json::Value::as_str) == Some("Ok") {
+                    if let Some(ok_value) = object.get("value") {
+                        visit(table, ok_value, keys);
+                    }
+                }
+                if let Some(ok_value) = object.get("Ok") {
+                    visit(table, ok_value, keys);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut keys = Vec::new();
+    visit(table, value, &mut keys);
+    keys
+}
+
+fn db_pk_wire_value(value: &serde_json::Value) -> String {
+    match value {
+        serde_json::Value::String(value) => value.clone(),
+        _ => serde_json::to_string(value).unwrap_or_else(|_| "null".to_owned()),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Divergence tracking
+// ---------------------------------------------------------------------------
+
+/// A single divergence detected during replay.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Divergence {
+    pub kind: DivergenceKind,
+    pub boundary: String,
+    pub trait_name: String,
+    pub method_name: String,
+    pub detail: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub baseline: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub candidate: Option<serde_json::Value>,
+    pub global_sequence: u64,
+}
+
+/// Classification of a replay divergence.
+///
+/// Note: not `Copy` because [`ValueDiverged`](DivergenceKind::ValueDiverged) and
+/// [`InconclusiveSeedGap`](DivergenceKind::InconclusiveSeedGap) carry owned
+/// payloads (recorded vs observed values, callsite). The unit variants are
+/// unaffected; comparisons still use `==`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DivergenceKind {
+    /// Arguments differ from the recorded baseline at the same position.
+    #[serde(rename = "field_mismatch")]
+    ArgsDiverged,
+    /// A call present in V1 was skipped in V2.
+    OmittedCall,
+    /// V2 made a call not present in V1.
+    NovelCall,
+    /// The recorded result could not be deserialized into the expected type.
+    DeserializationFailure,
+    /// Recovery succeeded but something was different along the way.
+    Recovered,
+    /// Correlation ID mismatch.
+    CorrelationMismatch,
+    /// A recorded result was available with mismatched args, but the
+    /// configured [`ArgMismatchPolicy`] forbade returning it. The cursor was
+    /// NOT advanced and the call falls through to the real implementation
+    /// (or a graceful synthesis) instead of silently lying.
+    ArgSkipBlocked,
+    /// The candidate ran the REAL boundary (execute mode) and produced a result
+    /// that differs in VALUE from the recorded baseline at the same args-free
+    /// call-site + occurrence. This is the total-derivative signal: a recorded
+    /// WRITE (Omitted) and the execute WRITE (Novel) are paired by args-free
+    /// identity into ONE divergence, since the diverging value (e.g. a doubled
+    /// amount) changes the args and would otherwise split them. `args_hash` is
+    /// used here as a DIFF signal, not a resolution key.
+    ValueDiverged {
+        /// The recorded baseline value for this call-site.
+        recorded: serde_json::Value,
+        /// The value the real boundary produced under execute mode.
+        observed: serde_json::Value,
+        /// Args-free call-site identity the two sides were paired on
+        /// (`boundary::trait::method`).
+        callsite: String,
+        /// Occurrence index within the correlation scope used for pairing.
+        occurrence: u32,
+    },
+    /// The candidate's execute-mode call could not be conclusively classified
+    /// because the recorded baseline it needed to compare against was absent — a
+    /// seed gap. Surfaced explicitly so a missing baseline is not silently
+    /// counted as a match (false negative) nor as a divergence (false positive).
+    InconclusiveSeedGap {
+        /// Args-free call-site identity (`boundary::trait::method`).
+        callsite: String,
+        /// Occurrence index within the correlation scope.
+        occurrence: u32,
+    },
+}
+
+/// Accumulated replay report for one session.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReplayReport {
+    pub total_calls: u64,
+    pub matched_calls: u64,
+    pub divergence_count: u64,
+    pub divergences: Vec<Divergence>,
+}
+
+impl ReplayReport {
+    pub fn has_divergences(&self) -> bool {
+        !self.divergences.is_empty()
+    }
+
+    /// Append a divergence and increment the counter.
+    pub fn push(&mut self, div: Divergence) {
+        self.divergence_count += 1;
+        self.divergences.push(div);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Replay configuration
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReplayConfig {
+    /// Maximum number of events to scan forward when an omitted call is
+    /// suspected.
+    pub sliding_window_size: usize,
+    /// Controls whether and when a recorded result is returned despite the
+    /// V2 args differing from the recorded baseline.
+    ///
+    /// Default (`OnlyForArgful`) fails closed on argless
+    /// boundaries (time, id, random) so they cannot silently lie, but allows
+    /// recovery for genuine business-logic boundaries that took meaningful
+    /// args.
+    pub arg_mismatch_policy: ArgMismatchPolicy,
+}
+
+impl Default for ReplayConfig {
+    fn default() -> Self {
+        Self {
+            sliding_window_size: 20,
+            arg_mismatch_policy: Default::default(),
+        }
+    }
+}
+
+/// Governs whether a recorded result may be returned when the V2 arguments
+/// differ from the recorded V1 arguments at the same call-site.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ArgMismatchPolicy {
+    /// Never return a recorded result if args don't match. Strictest. Required
+    /// for argless boundaries (time, id, random) to prevent silent lies.
+    Never,
+    /// Return a recorded result on arg mismatch ONLY if the method had args to
+    /// begin with. Default. Argless calls (null args, empty object) fall back
+    /// to `Never`.
+    #[default]
+    OnlyForArgful,
+    /// Return any plausible recorded result on arg mismatch. Permissive;
+    /// matches the pre-P2 behavior of `skip_arg_mismatch: true`.
+    Always,
+}
+
+impl ArgMismatchPolicy {
+    fn allow_arg_mismatch(self, args: &serde_json::Value) -> bool {
+        match self {
+            Self::Never => false,
+            Self::OnlyForArgful => !args_are_empty(args),
+            Self::Always => true,
+        }
+    }
+}
+
+/// Whether `boundary` is an entropy seam: a clock, an identifier or a source of
+/// randomness. A call there with other arguments is another value, never the
+/// same address with its arguments moved, so it is never served by address
+/// alone. The scorer's pure tier is this list.
+pub fn is_pure_boundary(boundary: &str) -> bool {
+    matches!(boundary, "time" | "id" | "id_generation" | "uuid" | "rng")
+}
+
+/// Returns true if `args` is JSON-null or an empty object (treated as
+/// "argless" for arg-mismatch policy purposes).
+fn args_are_empty(args: &serde_json::Value) -> bool {
+    args.is_null() || args.as_object().is_some_and(|m| m.is_empty())
+}
+
+/// Decides whether a given arg-mismatch case is allowed to fall back to the
+/// recorded result.
+fn allow_arg_mismatch(setting: ArgMismatchPolicy, args: &serde_json::Value) -> bool {
+    setting.allow_arg_mismatch(args)
+}
+
+// ---------------------------------------------------------------------------
+// Per-request replay state
+// ---------------------------------------------------------------------------
+
+/// Mutable cursor for one correlation scope.
+#[derive(Debug)]
+struct RequestCursor {
+    /// Index into the sorted event list for this request.
+    position: usize,
+    /// Events belonging to this correlation_id, sorted by request_sequence.
+    events: Vec<BoundaryEvent>,
+}
+
+/// Internal result of a single match attempt.
+#[derive(Debug, Clone)]
+enum MatchOutcome {
+    Exact,
+    RecoveredSkip(usize),         // advanced past N omitted calls
+    RecoveredWithMismatch(usize), // same but args differed
+    /// A method+args-relaxed match was available but the configured
+    /// [`ArgMismatchPolicy`] forbade returning it. Carries the recorded args
+    /// so the caller can record an [`DivergenceKind::ArgSkipBlocked`]
+    /// divergence with both baseline and candidate.
+    ArgSkipBlocked(serde_json::Value),
+    Novel,
+}
+
+// ---------------------------------------------------------------------------
+// ReplayHook
+// ---------------------------------------------------------------------------
+
+/// A `DejaHook` that replays recorded semantic events.
+///
+/// On each incoming call, searches the recorded tape for a matching event.
+/// Returns the recorded `result` JSON if found; otherwise logs a divergence
+/// and falls back to `None` (letting the delegation call the real impl).
+pub struct ReplayHook {
+    config: ReplayConfig,
+    /// All events loaded from the artifact.
+    all_events: Vec<BoundaryEvent>,
+    /// Per-correlation-id cursors.
+    cursors: Mutex<BTreeMap<Option<String>, RequestCursor>>,
+    /// Accumulated divergence report.
+    report: Mutex<ReplayReport>,
+    /// Global sequence counter so we still produce monotonic seq numbers.
+    global_seq: Mutex<u64>,
+    /// Per-(correlation, bucket, source, scope) monotonic occurrence counter mirroring
+    /// `RecordingHook::next_callsite_occurrence`. Replay-time occurrence
+    /// numbering MUST advance in lock-step with recording-time so that
+    /// `CallsiteIdentity { source: OperationOccurrence, occurrence }` lookups
+    /// land on the same event.
+    callsite_occurrence: Mutex<crate::CallsiteOccurrenceMap>,
+}
+
+impl ReplayHook {
+    /// Load a replay hook from a recorded artifact directory using
+    /// [`ReplayConfig::default`].
+    ///
+    /// Used by the env-driven runtime hook (`DEJA_MODE=replay`) where no
+    /// custom config is wired through. Construct with [`Self::with_config`]
+    /// when callers need to override the config.
+    pub fn from_artifact_dir(artifact_dir: &Path) -> std::io::Result<Self> {
+        Self::with_config(artifact_dir, ReplayConfig::default())
+    }
+
+    /// Load a replay hook from a recorded artifact directory with an explicit
+    /// [`ReplayConfig`].
+    pub fn with_config(artifact_dir: &Path, config: ReplayConfig) -> std::io::Result<Self> {
+        let events = read_events(artifact_dir)?;
+        let max_seq = events.iter().map(|e| e.global_sequence).max().unwrap_or(0);
+        Ok(Self::new(events, config, max_seq + 1))
+    }
+
+    /// Create a replay hook from an in-memory event list (useful for tests).
+    pub fn new(events: Vec<BoundaryEvent>, config: ReplayConfig, starting_global_seq: u64) -> Self {
+        Self {
+            config,
+            all_events: events,
+            cursors: Mutex::new(BTreeMap::new()),
+            report: Mutex::new(ReplayReport::default()),
+            global_seq: Mutex::new(starting_global_seq),
+            callsite_occurrence: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// Take the accumulated replay report.
+    pub fn take_report(&self) -> ReplayReport {
+        self.report
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
+    }
+
+    // -----------------------------------------------------------------
+    // Internal matching
+    // -----------------------------------------------------------------
+
+    fn cursor_for(
+        &self,
+        correlation_id: &Option<String>,
+    ) -> std::sync::MutexGuard<'_, BTreeMap<Option<String>, RequestCursor>> {
+        let mut guard = self.cursors.lock().unwrap_or_else(|p| p.into_inner());
+        if !guard.contains_key(correlation_id) {
+            let mut events: Vec<BoundaryEvent> = self
+                .all_events
+                .iter()
+                .filter(|e| correlation_matches(e, correlation_id.as_deref()))
+                .cloned()
+                .collect();
+            events.sort_by_key(|e| e.request_sequence);
+            guard.insert(
+                correlation_id.clone(),
+                RequestCursor {
+                    position: 0,
+                    events,
+                },
+            );
+        }
+        guard
+    }
+
+    fn method_matches(
+        event: &BoundaryEvent,
+        boundary: &str,
+        trait_name: &str,
+        method_name: &str,
+    ) -> bool {
+        event.boundary == boundary
+            && event.trait_name == trait_name
+            && event.method_name == method_name
+    }
+
+    /// Core matching logic. Returns the matched event (if any) plus an outcome
+    /// describing how the match was achieved.
+    fn find_match(
+        &self,
+        boundary: &str,
+        trait_name: &str,
+        method_name: &str,
+        args: &serde_json::Value,
+        correlation_id: &Option<String>,
+    ) -> (Option<BoundaryEvent>, MatchOutcome) {
+        let mut cursors = self.cursor_for(correlation_id);
+        let cursor = cursors
+            .get_mut(correlation_id)
+            .expect("cursor_for inserts the entry before returning the guard");
+        let pos = cursor.position;
+        let events = &cursor.events;
+
+        if pos >= events.len() {
+            return (None, MatchOutcome::Novel);
+        }
+
+        // 1. Exact match at current position.
+        if let Some(candidate) = events.get(pos) {
+            if Self::method_matches(candidate, boundary, trait_name, method_name)
+                && candidate.args == *args
+            {
+                cursor.position = pos + 1;
+                return (Some(candidate.clone()), MatchOutcome::Exact);
+            }
+        }
+
+        // 2. Sliding window: look for method + args match.
+        //
+        // First-pass: exact (method+args) match. If none is found, fall back
+        // to method-only and consult the arg-mismatch policy. Splitting the
+        // passes keeps a later same-method exact match from being shadowed
+        // by an earlier mismatched candidate.
+        let window_end = (pos + self.config.sliding_window_size).min(events.len());
+        for (idx, candidate) in events.iter().enumerate().take(window_end).skip(pos) {
+            if Self::method_matches(candidate, boundary, trait_name, method_name)
+                && candidate.args == *args
+            {
+                cursor.position = idx + 1;
+                return (
+                    Some(candidate.clone()),
+                    if idx == pos {
+                        MatchOutcome::Exact
+                    } else {
+                        MatchOutcome::RecoveredSkip(idx - pos)
+                    },
+                );
+            }
+        }
+
+        // Second-pass: method-only. Either return the recorded result with a
+        // mismatch divergence, or report `ArgSkipBlocked` WITHOUT advancing the
+        // cursor so the call falls through to the real implementation.
+        for (idx, candidate) in events.iter().enumerate().take(window_end).skip(pos) {
+            if Self::method_matches(candidate, boundary, trait_name, method_name) {
+                if allow_arg_mismatch(self.config.arg_mismatch_policy, args) {
+                    cursor.position = idx + 1;
+                    return (
+                        Some(candidate.clone()),
+                        MatchOutcome::RecoveredWithMismatch(idx - pos),
+                    );
+                } else {
+                    // The arg-mismatch guard blocks the fallback. Surface the
+                    // recorded args as the baseline so the divergence is
+                    // actionable. Do NOT
+                    // advance the cursor — the recorded event is still on
+                    // deck for a future (correctly-argued) call.
+                    let recorded_args = candidate.args.clone();
+                    return (None, MatchOutcome::ArgSkipBlocked(recorded_args.to_value()));
+                }
+            }
+        }
+
+        // 3. Nothing found in window — novel.
+        (None, MatchOutcome::Novel)
+    }
+
+    fn push_divergence(&self, div: Divergence) {
+        let mut report = self.report.lock().unwrap_or_else(|p| p.into_inner());
+        report.push(div);
+    }
+
+    /// Stable-identity lookup: scan the per-correlation event tape for
+    /// the first event whose `callsite_identity` matches `(source, id,
+    /// occurrence)`. On match, validate args under the policy and advance
+    /// the cursor.
+    ///
+    /// Returns `Some(result_json)` when the recorded event is appropriate to
+    /// hand back. Returns `None` when no identity match is found, when the
+    /// arg-mismatch policy blocks the fallback (an `ArgSkipBlocked`
+    /// divergence is recorded), or when no `id` is present on the identity.
+    fn lookup_by_identity(
+        &self,
+        identity: &CallsiteIdentity,
+        args: &serde_json::Value,
+    ) -> Option<serde_json::Value> {
+        let id = identity.id.as_deref()?;
+        let correlation_id = deja_context::current_correlation_id();
+        let corr = correlation_id.clone();
+
+        // Phase 1: hold the cursors guard JUST long enough to locate the
+        // event, clone it, and advance the cursor when fallback is allowed.
+        // Release before touching the report mutex so the two locks are
+        // never held simultaneously.
+        let outcome = {
+            let mut cursors = self.cursor_for(&corr);
+            let cursor = cursors
+                .get_mut(&corr)
+                .expect("cursor_for inserts the entry before returning the guard");
+            let pos = cursor.position;
+
+            // Scan from the current cursor forward (not just the window) — a
+            // stable id must not be silently lost behind unrelated calls.
+            let mut found_idx: Option<usize> = None;
+            for idx in pos..cursor.events.len() {
+                let ev = &cursor.events[idx];
+                let Some(ev_identity) = ev.callsite_identity.as_ref() else {
+                    continue;
+                };
+                if ev_identity.source == identity.source
+                    && ev_identity.id.as_deref() == Some(id)
+                    && ev_identity.occurrence == identity.occurrence
+                {
+                    found_idx = Some(idx);
+                    break;
+                }
+            }
+
+            let idx = found_idx?;
+            let candidate = cursor.events[idx].clone();
+
+            if candidate.args == *args {
+                cursor.position = idx + 1;
+                IdentityOutcome::Exact(candidate)
+            } else if allow_arg_mismatch(self.config.arg_mismatch_policy, args) {
+                cursor.position = idx + 1;
+                IdentityOutcome::Mismatch(candidate)
+            } else {
+                IdentityOutcome::Blocked(candidate)
+            }
+        };
+
+        match outcome {
+            IdentityOutcome::Exact(candidate) => {
+                let mut report = self.report.lock().unwrap_or_else(|p| p.into_inner());
+                report.matched_calls += 1;
+                Some(candidate.result.to_value())
+            }
+            IdentityOutcome::Mismatch(candidate) => {
+                self.push_divergence(Divergence {
+                    kind: DivergenceKind::ArgsDiverged,
+                    boundary: candidate.boundary.clone(),
+                    trait_name: candidate.trait_name.clone(),
+                    method_name: candidate.method_name.clone(),
+                    detail: "args differed; returned identity-matched recorded result anyway"
+                        .to_string(),
+                    baseline: Some(candidate.args.to_value()),
+                    candidate: Some(args.clone()),
+                    global_sequence: candidate.global_sequence,
+                });
+                let mut report = self.report.lock().unwrap_or_else(|p| p.into_inner());
+                report.matched_calls += 1;
+                Some(candidate.result.to_value())
+            }
+            IdentityOutcome::Blocked(candidate) => {
+                self.push_divergence(Divergence {
+                    kind: DivergenceKind::ArgSkipBlocked,
+                    boundary: candidate.boundary.clone(),
+                    trait_name: candidate.trait_name.clone(),
+                    method_name: candidate.method_name.clone(),
+                    detail: "arg mismatch fallback blocked".to_string(),
+                    baseline: Some(candidate.args.to_value()),
+                    candidate: Some(args.clone()),
+                    global_sequence: candidate.global_sequence,
+                });
+                None
+            }
+        }
+    }
+}
+
+/// Outcome of a stable-identity lookup, used to keep the
+/// cursors lock and the report lock acquisitions disjoint.
+enum IdentityOutcome {
+    Exact(BoundaryEvent),
+    Mismatch(BoundaryEvent),
+    Blocked(BoundaryEvent),
+}
+
+impl DejaHook for ReplayHook {
+    fn process_mode(&self) -> RuntimeMode {
+        RuntimeMode::Replay
+    }
+
+    fn record(&self, _event: BoundaryEvent) {
+        let mut report = self.report.lock().unwrap_or_else(|p| p.into_inner());
+        report.total_calls += 1;
+        // During replay, total_calls tracks how many calls the V2 made.
+    }
+
+    fn next_global_sequence(&self) -> u64 {
+        let mut seq = self.global_seq.lock().unwrap_or_else(|p| p.into_inner());
+        let current = *seq;
+        *seq += 1;
+        current
+    }
+
+    fn next_request_sequence(&self, correlation_id: Option<&str>) -> u64 {
+        let cursors = self.cursor_for(&correlation_id.map(String::from));
+        let cursor = cursors
+            .get(&correlation_id.map(String::from))
+            .expect("cursor_for inserts the entry before returning the guard");
+        cursor.position as u64
+    }
+
+    fn try_replay(
+        &self,
+        boundary: &str,
+        trait_name: &str,
+        method_name: &str,
+        args: &serde_json::Value,
+    ) -> Option<serde_json::Value> {
+        let correlation_id = deja_context::current_correlation_id();
+        let corr = correlation_id.clone();
+
+        let (maybe_event, outcome) =
+            self.find_match(boundary, trait_name, method_name, args, &corr);
+
+        match (maybe_event, outcome) {
+            (Some(event), MatchOutcome::Exact) => {
+                let mut report = self.report.lock().unwrap_or_else(|p| p.into_inner());
+                report.matched_calls += 1;
+                Some(event.result.to_value())
+            }
+            (Some(event), MatchOutcome::RecoveredSkip(skipped)) => {
+                self.push_divergence(Divergence {
+                    kind: DivergenceKind::OmittedCall,
+                    boundary: boundary.to_string(),
+                    trait_name: trait_name.to_string(),
+                    method_name: method_name.to_string(),
+                    detail: format!("skipped {} recorded call(s) to recover", skipped),
+                    baseline: None,
+                    candidate: None,
+                    global_sequence: event.global_sequence,
+                });
+                let mut report = self.report.lock().unwrap_or_else(|p| p.into_inner());
+                report.matched_calls += 1;
+                Some(event.result.to_value())
+            }
+            (Some(event), MatchOutcome::RecoveredWithMismatch(skipped)) => {
+                self.push_divergence(Divergence {
+                    kind: DivergenceKind::ArgsDiverged,
+                    boundary: boundary.to_string(),
+                    trait_name: trait_name.to_string(),
+                    method_name: method_name.to_string(),
+                    detail: format!(
+                        "args differed; skipped {} call(s) and returned recorded result anyway",
+                        skipped
+                    ),
+                    baseline: Some(event.args.to_value()),
+                    candidate: Some(args.clone()),
+                    global_sequence: event.global_sequence,
+                });
+                let mut report = self.report.lock().unwrap_or_else(|p| p.into_inner());
+                report.matched_calls += 1;
+                Some(event.result.to_value())
+            }
+            (None, MatchOutcome::Novel) => {
+                self.push_divergence(Divergence {
+                    kind: DivergenceKind::NovelCall,
+                    boundary: boundary.to_string(),
+                    trait_name: trait_name.to_string(),
+                    method_name: method_name.to_string(),
+                    detail: "call not found in recording — falling through to real implementation"
+                        .to_string(),
+                    baseline: None,
+                    candidate: Some(args.clone()),
+                    global_sequence: 0,
+                });
+                None
+            }
+            (None, MatchOutcome::ArgSkipBlocked(recorded_args)) => {
+                self.push_divergence(Divergence {
+                    kind: DivergenceKind::ArgSkipBlocked,
+                    boundary: boundary.to_string(),
+                    trait_name: trait_name.to_string(),
+                    method_name: method_name.to_string(),
+                    detail: "arg mismatch fallback blocked".to_string(),
+                    baseline: Some(recorded_args),
+                    candidate: Some(args.clone()),
+                    global_sequence: 0,
+                });
+                None
+            }
+            _ => None,
+        }
+    }
+
+    fn try_replay_with_context(&self, query: ReplayLookup<'_>) -> Option<serde_json::Value> {
+        // Identity-first cascade for this legacy in-process hook. (Its stages
+        // are independent of the 6-rank `Locus` ladder used by lookup-table
+        // replay.) A stable callsite-identity match is tried first; the
+        // positional strategies in `try_replay` (location-exact /
+        // sequence-method-args / sliding-window) are the fallback.
+
+        // Stage 1: stable identity — callsite.id-based, requires that the identity
+        // was derived from an annotation, a syntactic hash, or a lexical
+        // path (i.e. genuinely stable across line shifts).
+        if let Some(identity) = query.callsite_identity {
+            let stable_source = matches!(
+                identity.source,
+                CallsiteSource::Explicit
+                    | CallsiteSource::SyntacticHash
+                    | CallsiteSource::LexicalPath
+            );
+            if stable_source && identity.id.is_some() {
+                if let Some(result) = self.lookup_by_identity(identity, query.args) {
+                    return Some(result);
+                }
+            }
+        }
+
+        // Delegate Ranks 3/5/6 to the existing cursor-based matcher.
+        self.try_replay(
+            query.boundary,
+            query.trait_name,
+            query.method_name,
+            query.args,
+        )
+    }
+
+    fn next_callsite_occurrence(
+        &self,
+        correlation_id: Option<&str>,
+        source: CallsiteSource,
+        scope: Option<&str>,
+    ) -> u32 {
+        let crate::TaskMetadata {
+            task_bucket,
+            bucket_id,
+            ..
+        } = crate::current_task_metadata(correlation_id);
+        let bucket_id = bucket_id
+            .or(task_bucket)
+            .or_else(|| Some(crate::ROOT_TASK_ID.to_string()));
+        let key = (
+            correlation_id.map(String::from),
+            bucket_id,
+            source,
+            scope.map(String::from),
+        );
+        let mut guard = self
+            .callsite_occurrence
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let entry = guard.entry(key).or_insert(0);
+        let value = *entry;
+        *entry += 1;
+        value
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Lookup-table replay (pre-rendered table + observed-call capture)
+// ---------------------------------------------------------------------------
+//
+// The orchestrator pre-renders a `LookupTable` by walking the recording. The
+// candidate carries a thin `LookupTableHook` that does O(1) key→result lookups.
+// No cascade logic, no `ArgMismatchPolicy`, no `DivergenceKind` classification
+// lives in the candidate. Each call emits a `ObservedCall` to the configured
+// `ObservedCallSink`; the orchestrator runs post-hoc divergence detection
+// against the recording.
+//
+// The candidate does honour `OnlyForArgful`'s argless half, by construction
+// rather than by consulting a policy: its args-free fallback reads
+// `args_are_empty`, the predicate that variant is defined by, so a clock or an
+// identifier is never served another call's value. Nothing else about the policy
+// reaches here — the candidate cannot decide whether a mismatch is tolerable, so
+// it serves and marks, and the orchestrator decides.
+//
+// Trait surface is dependency-inversion: deja-record ships local-file
+// implementations of both source and sink. HTTP/Kafka variants are supplied
+// by the application (same pattern as the JSONL → KafkaSink split for
+// recording).
+
+/// A frozen lookup table produced by the orchestrator and consumed by the
+/// candidate's `LookupTableHook`. Serialized as a single JSON document or
+/// JSONL stream (one `LookupEntry` per line).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LookupTable {
+    pub recording_id: String,
+    pub policy_version: u32,
+    /// The event schema the recording was captured under, read by the renderer
+    /// off the recording's own events. `None` from a renderer that predates
+    /// this field, for a recording with no events, or for a JSONL table, which
+    /// carries no envelope; a candidate installing the table refuses all three.
+    #[serde(default)]
+    pub event_schema_version: Option<u16>,
+    pub entries: Vec<LookupEntry>,
+    /// The identity lookup: events keyed by the hash of their args' identity
+    /// ([`crate::identity`]), for the events identity applies to. A call
+    /// identity applies to is addressed by identity alone, as one sequence. A
+    /// candidate that predates it ignores it, so `entries` is unchanged by it
+    /// and the policy version does not move.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub identity_entries: Vec<LookupEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LookupEntry {
+    pub key: LookupKey,
+    /// Shared, so entries that recorded the same value hold one copy of it.
+    /// Serialized as the value itself.
+    #[serde(with = "shared_value")]
+    pub result: std::sync::Arc<serde_json::Value>,
+    pub source_event_global_sequence: u64,
+}
+
+/// Serde for an `Arc<Value>` field as the plain value, without serde's `rc`
+/// feature, which would reach every crate that links this one.
+mod shared_value {
+    use std::sync::Arc;
+
+    pub fn serialize<S: serde::Serializer>(
+        value: &Arc<serde_json::Value>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        serde::Serialize::serialize(&**value, serializer)
+    }
+
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Arc<serde_json::Value>, D::Error> {
+        <serde_json::Value as serde::Deserialize>::deserialize(deserializer).map(Arc::new)
+    }
+}
+
+/// A lookup table with each distinct result stored once
+/// ([`SHARED_RESULTS_POLICY_VERSION`]); entries point at their result by index.
+///
+/// The legacy form repeats a result in every entry that recorded it, once per
+/// address rank and again for every identical read, so its size tracked the
+/// number of lookups rather than the number of distinct values. An entry here
+/// has no `result` field at all: a loader that only knows the legacy form
+/// fails to parse it as well as refusing its version.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SharedResultsTable {
+    pub recording_id: String,
+    pub policy_version: u32,
+    #[serde(default)]
+    pub event_schema_version: Option<u16>,
+    pub results: Vec<serde_json::Value>,
+    pub entries: Vec<SharedResultsEntry>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub identity_entries: Vec<SharedResultsEntry>,
+    /// The one-result-per-entry table this was written from, when it is
+    /// written beside one. The loader serves this form only if the table
+    /// beside it still matches, so a file left from another run is never
+    /// read in its place.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub legacy_digest: Option<LegacyDigest>,
+}
+
+/// Length and FNV-1a of a one-result-per-entry table's bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LegacyDigest {
+    pub len: u64,
+    pub fnv1a: u64,
+}
+
+impl LegacyDigest {
+    pub fn of(bytes: &[u8]) -> Self {
+        Self {
+            len: bytes.len() as u64,
+            fnv1a: crate::fnv1a_bytes(crate::FNV_OFFSET_BASIS, bytes),
+        }
+    }
+
+    /// The digest of `value`'s compact serialization, computed as it is
+    /// written rather than from a buffer holding it.
+    pub fn of_serialized<T: Serialize>(value: &T) -> serde_json::Result<Self> {
+        struct Fold(LegacyDigest);
+        impl std::io::Write for Fold {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                self.0.len += bytes.len() as u64;
+                self.0.fnv1a = crate::fnv1a_bytes(self.0.fnv1a, bytes);
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut fold = Fold(Self {
+            len: 0,
+            fnv1a: crate::FNV_OFFSET_BASIS,
+        });
+        serde_json::to_writer(&mut fold, value)?;
+        Ok(fold.0)
+    }
+
+    /// The same digest of a file, read in pieces rather than held whole.
+    fn of_file(path: &Path) -> std::io::Result<Self> {
+        use std::io::Read;
+        let mut file = std::fs::File::open(path)?;
+        let mut buffer = vec![0u8; 1 << 16];
+        let (mut len, mut fnv1a) = (0u64, crate::FNV_OFFSET_BASIS);
+        loop {
+            let read = file.read(&mut buffer)?;
+            if read == 0 {
+                return Ok(Self { len, fnv1a });
+            }
+            len += read as u64;
+            fnv1a = crate::fnv1a_bytes(fnv1a, &buffer[..read]);
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SharedResultsEntry {
+    pub key: LookupKey,
+    pub result_index: usize,
+    pub source_event_global_sequence: u64,
+}
+
+impl SharedResultsTable {
+    /// Store each distinct result once, stamped with the digest of
+    /// `legacy_bytes`, the serialized `table` it is written beside. Two results
+    /// are the same when their serialized bytes are, so the value served is
+    /// byte-for-byte the value recorded.
+    pub fn from_table(table: &LookupTable, legacy_bytes: &[u8]) -> Result<Self, serde_json::Error> {
+        let mut results = Vec::new();
+        let mut by_pointer: HashMap<*const serde_json::Value, usize> = HashMap::new();
+        let mut by_bytes: HashMap<Vec<u8>, usize> = HashMap::new();
+        let mut share =
+            |from: &[LookupEntry]| -> Result<Vec<SharedResultsEntry>, serde_json::Error> {
+                let mut entries = Vec::with_capacity(from.len());
+                for entry in from {
+                    let pointer = std::sync::Arc::as_ptr(&entry.result);
+                    let result_index = match by_pointer.get(&pointer) {
+                        Some(&index) => index,
+                        None => {
+                            let bytes = serde_json::to_vec(&*entry.result)?;
+                            let index = *by_bytes.entry(bytes).or_insert_with(|| {
+                                results.push((*entry.result).clone());
+                                results.len() - 1
+                            });
+                            by_pointer.insert(pointer, index);
+                            index
+                        }
+                    };
+                    entries.push(SharedResultsEntry {
+                        key: entry.key.clone(),
+                        result_index,
+                        source_event_global_sequence: entry.source_event_global_sequence,
+                    });
+                }
+                Ok(entries)
+            };
+        let entries = share(&table.entries)?;
+        let identity_entries = share(&table.identity_entries)?;
+        Ok(Self {
+            recording_id: table.recording_id.clone(),
+            policy_version: SHARED_RESULTS_POLICY_VERSION,
+            event_schema_version: table.event_schema_version,
+            results,
+            entries,
+            identity_entries,
+            legacy_digest: Some(LegacyDigest::of(legacy_bytes)),
+        })
+    }
+
+    /// The table in memory, each entry holding a shared handle to its result.
+    pub fn into_table(self) -> std::io::Result<LookupTable> {
+        let results: Vec<std::sync::Arc<serde_json::Value>> =
+            self.results.into_iter().map(std::sync::Arc::new).collect();
+        let count = results.len();
+        let unshare = |from: Vec<SharedResultsEntry>| {
+            from.into_iter()
+                .map(|entry| match results.get(entry.result_index) {
+                    Some(result) => Ok(LookupEntry {
+                        key: entry.key,
+                        result: std::sync::Arc::clone(result),
+                        source_event_global_sequence: entry.source_event_global_sequence,
+                    }),
+                    None => Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        format!(
+                            "lookup table entry points at result {} of {count}",
+                            entry.result_index
+                        ),
+                    )),
+                })
+                .collect::<std::io::Result<Vec<_>>>()
+        };
+        let entries = unshare(self.entries)?;
+        let identity_entries = unshare(self.identity_entries)?;
+        Ok(LookupTable {
+            recording_id: self.recording_id,
+            policy_version: POLICY_VERSION,
+            event_schema_version: self.event_schema_version,
+            entries,
+            identity_entries,
+        })
+    }
+}
+
+/// Where the shared-results form of the table at `table_path` is written.
+/// The one place both the writer and the loader take the name from.
+pub fn shared_results_path(table_path: &Path) -> std::path::PathBuf {
+    let mut name = table_path
+        .file_name()
+        .map(std::ffi::OsStr::to_os_string)
+        .unwrap_or_default();
+    name.push(".shared.json");
+    table_path.with_file_name(name)
+}
+
+/// How a call site is addressed for replay matching, strongest (most stable)
+/// rank first. The renderer emits one `LookupEntry` per applicable rank; the
+/// hook queries the ranks it can construct strongest-first and takes the first
+/// hit. The decisive property is **iteration-order independence**: ranks 1–5
+/// identify a call by *what it is* (annotation, logical span-path, syntax,
+/// lexical position, source location) rather than *when it ran*, so a loop that
+/// visits its items in a different order than the recording still resolves —
+/// each iteration self-addresses by its args (see [`LookupKey::args_hash`]).
+/// Rank 6 is the positional last resort; a run that leans on it is fragile,
+/// which the divergence detector surfaces via per-rank counts.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Locus {
+    /// A name the AUTHOR gave this call site, used as its locus.
+    ///
+    /// Not really a rank, and it reads badly as one. The other variants are
+    /// DERIVED — deja works out where a call is from the span stack, the module
+    /// path, the source location. This one is the author telling it directly,
+    /// which makes it the most deterministic locus there is and the only one
+    /// that survives any refactor the author does not choose to break.
+    ///
+    /// It is the ESCAPE HATCH, and it exists because a derived locus can be
+    /// wrong for a particular site: a call made from many spans that should
+    /// nonetheless be treated as one site, or a site whose span path moves for
+    /// reasons unrelated to the call. Nothing emits it by default and nothing
+    /// should — it costs a name that then has to be kept stable by hand, which
+    /// is why it is ugly and why it is opt-in.
+    ///
+    /// It is still ordered first in the cascade (`rank() == 1`) because when an
+    /// author has said which site this is, no derived guess should outrank the
+    /// answer. But a tag present on only one side misses and falls through to
+    /// the derived loci rather than failing — adding a tag to a site must not
+    /// invalidate the tape.
+    DeclaredSite(String),
+    /// Rank 2 — logical span-path: the root→leaf chain of `tracing` span NAMES
+    /// the call fired within. The most version-independent locus — it survives
+    /// source-line shifts and benign signature edits, and is DISTINCT for
+    /// concurrent same-callsite calls in different spans, so the per-key
+    /// `occurrence` is span-scoped and cannot swap under async interleaving.
+    ///
+    /// It carried an `operation` field for exactly one commit (#145), added
+    /// because without it two operations sharing a span path shared a FIFO
+    /// occurrence counter. That was identity wearing a locus's clothes; the
+    /// identity now lives on [`LookupKey`] and this is a path again.
+    SpanPath { path: String },
+    /// Rank 3 — NO location claimed: match on identity, args and occurrence
+    /// alone, wherever the call is made from.
+    ///
+    /// This is what `SyntacticHash(hash(boundary::operation))` actually
+    /// provided. Half of it was identity and dissolves into the key's identity
+    /// fields — but the other half was a matching MODE, "resolve this call
+    /// regardless of where it is", and that does not dissolve. Dropping the
+    /// variant outright made an undeclared call fall from rank 3 to rank 6,
+    /// trading an identity match for a positional one; `v2_regression` caught
+    /// it, which is the whole reason that test exists.
+    ///
+    /// Emitted under the same condition the syntactic hash was — a seam with a
+    /// stable syntactic identity. The hash itself is redundant now (it is
+    /// `boundary::operation`, which the key carries), but its PRESENCE was the
+    /// licence for unlocated matching and still is.
+    Unlocated,
+
+    /// Rank 5 — `#[track_caller]` source location. Identity-bearing by accident
+    /// (a file:line names one call site and therefore one operation), which is
+    /// why it never collided — but by accident is not by construction.
+    SourceLocation {
+        file: String,
+        line: u32,
+        column: u32,
+    },
+}
+
+/// The IDENTITY half of a lookup key: what the call IS, independent of where it
+/// was made. Borrowed at the two construction sites so neither has to allocate
+/// on the hot path before it knows a key is needed.
+#[derive(Debug, Clone, Copy)]
+pub struct CallIdentity<'a> {
+    pub boundary: &'a str,
+    pub component: &'a str,
+    pub operation: &'a str,
+}
+
+impl CallIdentity<'_> {
+    fn owned(&self) -> (String, String, String) {
+        (
+            self.boundary.to_owned(),
+            self.component.to_owned(),
+            self.operation.to_owned(),
+        )
+    }
+}
+
+impl Locus {
+    /// Stability rank: 1 (strongest) … 6 (weakest). Used by the hook to query
+    /// strongest-first and by the divergence detector to score fragility.
+    ///
+    /// Rank numbers are unchanged from the `Address` ladder they replace, so
+    /// "rank 4" means what it meant in every scorecard and dashboard already
+    /// written.
+    pub fn rank(&self) -> u8 {
+        match self {
+            Locus::DeclaredSite(_) => 1,
+            Locus::SpanPath { .. } => 2,
+            Locus::Unlocated => 3,
+            Locus::SourceLocation { .. } => 5,
+        }
+    }
+}
+
+/// Composite key the orchestrator uses to register an entry and the candidate
+/// uses to look one up. A call is identified by its `address` (rank-specific),
+/// lineage bucket, the canonical hash of its arguments, and a tiebreaking
+/// `occurrence` index scoped to `(correlation_id, bucket_id, address, args_hash)`
+/// — so two argless-impure calls to the same site (e.g. `time::now`) only
+/// collide when the candidate makes the same call with the same args the same
+/// number of times inside the same lineage bucket.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LookupKey {
+    pub correlation_id: Option<String>,
+    /// Canonical lineage bucket. Additive/default so old lookup tables without
+    /// bucket-scoped keys still deserialize.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bucket_id: Option<String>,
+    /// Monotonic fork sequence for the task lineage that made this call.
+    #[serde(default)]
+    pub fork_seq: u64,
+    /// WHAT this call is — the boundary tag. Part of the key's IDENTITY half,
+    /// never inside a locus.
+    pub boundary: String,
+    /// WHAT this call is — the declaring component (`trait_name` on the wire).
+    ///
+    /// New in policy version 2. Rank 3 hashed `boundary::operation` and rank 6
+    /// used boundary + method, both dropping the component — so two components
+    /// declaring the same operation name collided by the same mechanism that
+    /// served `now_unix_timestamp_millis`'s value to `date_time::now`.
+    pub component: String,
+    /// WHAT this call is — the operation / method name.
+    pub operation: String,
+    /// WHERE this call is (see [`Locus`]). Location only: the identity fields
+    /// above are siblings, not members, so no locus CAN omit them.
+    pub locus: Locus,
+    /// Canonical hash of the call's serialized args: order-INDEPENDENT for
+    /// object keys (they are sorted before hashing) and order-DEPENDENT for
+    /// array elements (they are hashed in position). Both halves matter and the
+    /// distinction is load-bearing — this field sits on the key itself rather
+    /// than inside [`Locus`], so it is part of EVERY rank, and a permuted
+    /// array therefore misses at all of them at once. See [`hash_value`].
+    pub args_hash: u64,
+    /// Nth call to `(correlation_id, bucket_id, identity, locus, args_hash)`;
+    /// 0 for a unique call.
+    pub occurrence: u32,
+}
+
+/// A call the candidate actually made, with the lookup outcome. Streamed to
+/// an `ObservedCallSink` end-of-request; the orchestrator's post-hoc
+/// divergence detector compares the observed stream against the recording.
+///
+/// `boundary`/`trait_name`/`method_name` are carried explicitly (rather than
+/// being read off the resolved key) because no [`Locus`] encodes the boundary
+/// — yet the detector must attribute every call, hit or miss, to a boundary.
+/// `resolved_rank` records which [`Locus::rank`] won, so the detector can
+/// report how much of a run leans on its weakest matches. This runtime emits
+/// 1, 2, 3 or 5. Rank 6, a positional match, never produced a match in any
+/// measured run; the orchestrator still reads it when scoring older artifacts.
+fn is_zero_u64(value: &u64) -> bool {
+    *value == 0
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(from = "ObservedCallWire")]
+pub struct ObservedCall {
+    pub correlation_id: Option<String>,
+    pub boundary: String,
+    /// Structural role copied from the originating event (`Some("ingress")` on
+    /// the ingress finalizer marker). Lets the scorer recognize ingress rows
+    /// without hardcoding boundary names; `None` on ordinary resolved calls and
+    /// on artifacts written before the field existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub role: Option<String>,
+    pub trait_name: String,
+    pub method_name: String,
+    pub args: serde_json::Value,
+    pub resolved: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolved_rank: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_event_global_sequence: Option<u64>,
+    /// Replay-side wall-clock start timestamp for this observed call. This is
+    /// stamped by the candidate, not copied from the recording, so the scorer can
+    /// identify work that fires after the router response finalizer.
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    pub timestamp_ns: u64,
+    /// Replay-side wall-clock completion timestamp, when the observed row is a
+    /// finalizer marker (`http_incoming`) or another boundary can provide it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub end_timestamp_ns: Option<u64>,
+    /// Stable replay task id stamped by the runtime kernel.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_id: Option<String>,
+    /// Parent replay task id for calls made inside spawned detached work.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_task_id: Option<String>,
+    /// Correlation/task bucket for future lineage grouping.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_bucket: Option<String>,
+    /// Canonical lineage bucket. New consumers should read this first and fall
+    /// back to `task_bucket` for old tapes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bucket_id: Option<String>,
+    /// Monotonic fork sequence for the task lineage that made this call.
+    #[serde(default)]
+    pub fork_seq: u64,
+    /// Where the candidate made this call, captured at replay time so a
+    /// divergence (especially a NOVEL call with no recorded counterpart) can be
+    /// deep-linked to a callsite + placed on the replay execution graph. All
+    /// `#[serde(default)]` so pre-enrichment artifacts still parse.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub call_file: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub call_line: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub call_column: Option<u32>,
+    /// Root→leaf tracing span-name chain the call fired within — the same
+    /// span-path address used for lookup (rank 2), so a UI can align this
+    /// call to its node in BOTH the record and replay execution-graph trees.
+    /// Wire name pinned to `logical_context`.
+    #[serde(rename = "logical_context")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub span_path: Option<String>,
+    /// Replay-side execution-graph node id the call fired under (joins to
+    /// `ExecutionGraphNode.node_id` in the replay graph) — lets a novel call
+    /// self-place on the replay tree even though it has no recorded event.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub graph_node_id: Option<u64>,
+    /// V2 scaffold (Tier 2): set when the hook synthesized a safe default on a
+    /// miss. Always false in V1 (full mock) — the hook never synthesizes yet.
+    #[serde(default)]
+    pub synthesized: bool,
+    /// V2 scaffold (Tier 3): set when a miss falls through to a real impl that
+    /// is expected to fail in the harness environment (egress blocked). Always
+    /// false in V1.
+    #[serde(default)]
+    pub real_impl_will_fail: bool,
+    /// The result the recording carried for this call-site (substituted under
+    /// lookup mode). Under lookup this equals `observed_result`, so a value diff
+    /// is inert; under execute mode it is the recorded baseline to compare the
+    /// real boundary's fresh result against.
+    #[serde(default)]
+    pub recorded_result: Option<serde_json::Value>,
+    /// The result actually produced for this call. Under lookup this is the
+    /// substituted (== recorded) value; under execute mode it is the REAL
+    /// boundary's fresh result. The post-hoc tally classifies
+    /// [`ValueDiverged`](crate::DivergenceKind::ValueDiverged) when these differ.
+    #[serde(default)]
+    pub observed_result: Option<serde_json::Value>,
+    /// How this observed call was served: ordinary recorded substitution, or an
+    /// execute-shadow dispatch that ran the real boundary.
+    #[serde(default)]
+    pub provenance: crate::Provenance,
+    /// Set when the call could not be conclusively classified because the
+    /// recorded baseline needed to compare against was missing (a seed gap) —
+    /// surfaced as [`InconclusiveSeedGap`](crate::DivergenceKind::InconclusiveSeedGap)
+    /// rather than a false positive. Always false in M1 lookup mode.
+    #[serde(default)]
+    pub seed_gap: bool,
+    /// This call MISSED and the request carried on anyway, because the site
+    /// synthesized a value from the query.
+    ///
+    /// A derived view of [`Self::outcome`] — true exactly when the outcome is
+    /// [`SubstituteOutcome::Synthesized`](crate::SubstituteOutcome::Synthesized).
+    /// Kept as its own field because it is what the scorer reads and what every
+    /// existing tape carries; collapsing it (and `synthesized`, which is the
+    /// same fact under a different name) onto `outcome` is a follow-up that
+    /// touches the orchestrator, not the runtime.
+    ///
+    /// It used to be computed from the DECLARATION — `recorded.is_none() &&
+    /// miss_policy == Absorb` — because the observation was emitted before the
+    /// seam reached its miss branch. That was sound only while a declared
+    /// `on_miss` could not decline; `Reconstructed::NoValue` ends that, so the
+    /// value is now read off what the site actually returned.
+    ///
+    /// Only ever true together with `resolved == false`.
+    #[serde(default)]
+    pub absorbed: bool,
+    /// What the seam actually did with this lookup.
+    ///
+    /// Additive and not yet read by the scorer; `absorbed` and `synthesized` are
+    /// derived from it. Present so the record is self-describing — in particular
+    /// so a HIT that stopped the request (an unreconstructable payload) is
+    /// distinguishable from one that served it, which the two bools cannot say.
+    #[serde(default)]
+    pub outcome: crate::SubstituteOutcome,
+    /// The exact address MISSED and this call was served the recording's value
+    /// from the same address with different arguments.
+    ///
+    /// Only ever true together with `resolved == false`, and that pairing is the
+    /// point. `resolved` answers "did this call's own address and arguments find
+    /// their row", and the answer is no — so every consumer that already reads
+    /// `resolved` keeps scoring the call as the divergence it is, and a scorer
+    /// that has never heard of this field cannot be made quieter by it. What
+    /// this adds is only the reason the request did not die there.
+    ///
+    /// None of the other outcome fields can say it. `resolved` either hides the
+    /// miss or hides the serve; `resolved_rank` names the locus that matched and
+    /// a sentinel there would corrupt the rank histogram; `synthesized` and
+    /// `absorbed` mean a value derived from the query with no recorded
+    /// counterpart, which is the opposite of this; `seed_gap` means the baseline
+    /// was absent; and `outcome` is stamped by the seam, which cannot see that
+    /// the hook matched a different arguments bucket.
+    #[serde(default)]
+    pub arg_divergent: bool,
+    /// On an args-free serve, the recorded event whose value was served. The
+    /// row claims no twin (`source_event_global_sequence` is absent), because
+    /// which recorded call a re-keyed call belongs to is the scorer's to
+    /// decide; this names the candidate's pick so the two can be compared.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub served_event_global_sequence: Option<u64>,
+    /// This lookup's number, taken as it arrived: one per lookup, from one. The
+    /// scorer counts the lookups a run made from these, so a lookup that wrote
+    /// no observation is a gap between two of them. Absent from a candidate
+    /// that does not number its lookups.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lookup_ordinal: Option<u64>,
+    /// The lookup was dropped before it finished: the future carrying it went
+    /// away, so the call never completed. Written by the token it was left in,
+    /// so the lookup's number still reaches the stream; not scored.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub cancelled: bool,
+}
+
+#[derive(Deserialize)]
+struct ObservedCallWire {
+    correlation_id: Option<String>,
+    boundary: String,
+    #[serde(default)]
+    role: Option<String>,
+    trait_name: String,
+    method_name: String,
+    args: serde_json::Value,
+    resolved: bool,
+    #[serde(default)]
+    resolved_rank: Option<u8>,
+    #[serde(default)]
+    source_event_global_sequence: Option<u64>,
+    #[serde(default)]
+    timestamp_ns: u64,
+    #[serde(default)]
+    end_timestamp_ns: Option<u64>,
+    #[serde(default)]
+    task_id: Option<String>,
+    #[serde(default)]
+    parent_task_id: Option<String>,
+    #[serde(default)]
+    task_bucket: Option<String>,
+    #[serde(default)]
+    bucket_id: Option<String>,
+    #[serde(default)]
+    fork_seq: u64,
+    #[serde(default)]
+    call_file: Option<String>,
+    #[serde(default)]
+    call_line: Option<u32>,
+    #[serde(default)]
+    call_column: Option<u32>,
+    #[serde(default, rename = "logical_context")]
+    span_path: Option<String>,
+    #[serde(default)]
+    graph_node_id: Option<u64>,
+    #[serde(default)]
+    synthesized: bool,
+    #[serde(default)]
+    real_impl_will_fail: bool,
+    #[serde(default)]
+    recorded_result: Option<serde_json::Value>,
+    #[serde(default)]
+    observed_result: Option<serde_json::Value>,
+    #[serde(default)]
+    provenance: crate::Provenance,
+    #[serde(default)]
+    seed_gap: bool,
+    #[serde(default)]
+    absorbed: bool,
+    #[serde(default)]
+    outcome: crate::SubstituteOutcome,
+    #[serde(default)]
+    arg_divergent: bool,
+    #[serde(default)]
+    served_event_global_sequence: Option<u64>,
+    #[serde(default)]
+    lookup_ordinal: Option<u64>,
+    #[serde(default)]
+    cancelled: bool,
+}
+
+impl From<ObservedCallWire> for ObservedCall {
+    fn from(wire: ObservedCallWire) -> Self {
+        let bucket_id = wire.bucket_id.or_else(|| wire.task_bucket.clone());
+        let task_bucket = wire.task_bucket.or_else(|| bucket_id.clone());
+        Self {
+            correlation_id: wire.correlation_id,
+            boundary: wire.boundary,
+            role: wire.role,
+            trait_name: wire.trait_name,
+            method_name: wire.method_name,
+            args: wire.args,
+            resolved: wire.resolved,
+            resolved_rank: wire.resolved_rank,
+            source_event_global_sequence: wire.source_event_global_sequence,
+            timestamp_ns: wire.timestamp_ns,
+            end_timestamp_ns: wire.end_timestamp_ns,
+            task_id: wire.task_id,
+            parent_task_id: wire.parent_task_id,
+            task_bucket,
+            bucket_id,
+            fork_seq: wire.fork_seq,
+            call_file: wire.call_file,
+            call_line: wire.call_line,
+            call_column: wire.call_column,
+            span_path: wire.span_path,
+            graph_node_id: wire.graph_node_id,
+            synthesized: wire.synthesized,
+            real_impl_will_fail: wire.real_impl_will_fail,
+            recorded_result: wire.recorded_result,
+            observed_result: wire.observed_result,
+            provenance: wire.provenance,
+            seed_gap: wire.seed_gap,
+            absorbed: wire.absorbed,
+            outcome: wire.outcome,
+            arg_divergent: wire.arg_divergent,
+            served_event_global_sequence: wire.served_event_global_sequence,
+            lookup_ordinal: wire.lookup_ordinal,
+            cancelled: wire.cancelled,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Shared key construction (used by BOTH the renderer and the hook)
+//
+// The renderer lives in `deja-orchestrator` and the hook is compiled into the
+// candidate router — two separate binaries. If they constructed keys even
+// slightly differently (args canonicalization, rank selection, occurrence
+// numbering) every lookup would silently miss. So the canonical logic lives
+// here, in `deja-record`, and both sides call it.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// The decision: the per-site `replay_strategy` knob (design #28)
+//
+// The runtime routing decision is now: in replay mode, read the declared
+// [`ReplayStrategy`] off the [`BoundarySpec`]. `Execute` runs the real boundary;
+// `Substitute` serves the recorded result (and fails closed on a miss).
+// Outside replay, every site is Lookup because there is no recorded baseline to
+// shadow-compare against.
+// ---------------------------------------------------------------------------
+
+/// Map a per-site [`ReplayStrategy`] knob to the runtime [`ExecuteMode`].
+pub fn replay_strategy_to_execute_mode(strategy: ReplayStrategy) -> ExecuteMode {
+    match strategy {
+        ReplayStrategy::Execute => ExecuteMode::Execute,
+        ReplayStrategy::Substitute => ExecuteMode::Lookup,
+    }
+}
+
+/// Runtime entry point for the boundary-macro execute-mode decision under a
+/// concrete hook.
+pub fn boundary_execute_mode_for(hook: &dyn DejaHook, spec: &BoundarySpec) -> ExecuteMode {
+    if !hook.process_mode().is_replay() {
+        return ExecuteMode::Lookup;
+    }
+
+    replay_strategy_to_execute_mode(spec.semantics().replay_strategy)
+}
+
+/// Stable, order-independent hash of a call's serialized args.
+///
+/// Object keys are sorted recursively, so `{"a":1,"b":2}` and `{"b":2,"a":1}`
+/// hash identically. Type-tag bytes (`n`/`t`/`f`/`#`/`s`/`[`/`{`) disambiguate
+/// e.g. the string `"1"` from the number `1` and an empty array from an empty
+/// object. Built on the crate's FNV-1a basis so the value is identical across
+/// binaries on the same target — no random seed, no platform dependence.
+pub fn canonical_args_hash(args: &serde_json::Value) -> u64 {
+    hash_value(crate::FNV_OFFSET_BASIS, args)
+}
+
+/// Captured request bodies, by the `kind` the instrumented system records.
+///
+/// Matched as data, not reconstructed from a type: the strings are wire values
+/// produced by the recorded system, and this crate never sees its types.
+const JSON_REQUEST_BODY_KIND: &str = "JsonRequestBody";
+const FORM_URLENCODED_REQUEST_BODY_KIND: &str = "FormUrlEncodedRequestBody";
+
+/// Hash a captured request body by its CONTENT rather than by the bytes it was
+/// serialized into, returning `None` when the object is not a body this
+/// understands (the caller then hashes it generically).
+///
+/// A request body arrives as an ordered rendering — a byte array, and for JSON
+/// also its text — of a document that is unordered. Whether the recorded system
+/// emits `{"a":1,"b":2}` or `{"b":2,"a":1}` for the same values depends on how
+/// its map iterates, which is not stable across processes. Hashing those bytes
+/// therefore puts map iteration order into the call's identity, and a replay
+/// that builds exactly the same request with its fields in a different order
+/// does not match its own recording:
+///
+/// ```text
+/// recorded: …&metadata[login_date]=…&metadata[new_customer]=…&metadata[order_id]=…
+/// observed: …&metadata[order_id]=…&metadata[new_customer]=…&metadata[login_date]=…
+/// ```
+///
+/// Same fields, same values, same length, different hash — and since the hash is
+/// part of every address rank, every rank misses at once and the call cannot be
+/// substituted from the tape at all.
+///
+/// So the content is hashed instead: a JSON body by its parsed document, whose
+/// object keys already sort canonically here, and a form body by its fields
+/// sorted. The other members (`raw_bytes`, `text`, `utf8`, `bytes_len`) are
+/// renderings of that same content and are deliberately not hashed. The `kind`
+/// is, so two bodies that differ only in encoding stay distinct.
+fn hash_request_body(hash: u64, map: &serde_json::Map<String, serde_json::Value>) -> Option<u64> {
+    let kind = map.get("kind")?.as_str()?;
+    let hash = crate::fnv1a_str(crate::fnv1a_bytes(hash, b"B"), kind);
+    match kind {
+        JSON_REQUEST_BODY_KIND => {
+            // Only when the document was actually captured; an uncaptured body
+            // has nothing to hash and falls back to the generic path.
+            let json = map.get("json").filter(|value| !value.is_null())?;
+            Some(hash_value(hash, json))
+        }
+        FORM_URLENCODED_REQUEST_BODY_KIND => {
+            let text = request_body_text(map)?;
+            // Sorting the still-encoded fields is enough: both sides encode the
+            // same values with the same encoder, so only their order differs.
+            let mut fields: Vec<&str> = text.split('&').collect();
+            fields.sort_unstable();
+            let mut hash = crate::fnv1a_bytes(hash, b"[");
+            for field in fields {
+                hash = crate::fnv1a_str(crate::fnv1a_bytes(hash, b"s"), field);
+            }
+            Some(crate::fnv1a_bytes(hash, b"]"))
+        }
+        _ => None,
+    }
+}
+
+/// A captured body's bytes as text — the `text` member when the capture kept
+/// one, otherwise decoded from `raw_bytes`. `None` when neither is present or
+/// the bytes are not UTF-8.
+pub(crate) fn request_body_text(
+    map: &serde_json::Map<String, serde_json::Value>,
+) -> Option<String> {
+    if let Some(text) = map.get("text").and_then(serde_json::Value::as_str) {
+        return Some(text.to_owned());
+    }
+    let raw = map.get("raw_bytes")?.as_array()?;
+    let mut bytes = Vec::with_capacity(raw.len());
+    for byte in raw {
+        bytes.push(u8::try_from(byte.as_u64()?).ok()?);
+    }
+    String::from_utf8(bytes).ok()
+}
+
+pub(crate) fn hash_value(hash: u64, value: &serde_json::Value) -> u64 {
+    use serde_json::Value;
+    match value {
+        Value::Null => crate::fnv1a_bytes(hash, b"n"),
+        Value::Bool(true) => crate::fnv1a_bytes(hash, b"t"),
+        Value::Bool(false) => crate::fnv1a_bytes(hash, b"f"),
+        Value::Number(n) => crate::fnv1a_str(crate::fnv1a_bytes(hash, b"#"), &n.to_string()),
+        Value::String(s) => crate::fnv1a_str(crate::fnv1a_bytes(hash, b"s"), s),
+        Value::Array(items) => {
+            let mut h = crate::fnv1a_bytes(hash, b"[");
+            for item in items {
+                h = hash_value(h, item);
+            }
+            crate::fnv1a_bytes(h, b"]")
+        }
+        Value::Object(map) => {
+            // A captured request body hashes by its content, not by the bytes it
+            // was serialized into — see `hash_request_body`.
+            if let Some(hash) = hash_request_body(hash, map) {
+                return hash;
+            }
+            // Sort keys for canonical order regardless of serde_json's map impl
+            // (BTreeMap by default, IndexMap under `preserve_order`).
+            let mut keys: Vec<&String> = map.keys().collect();
+            keys.sort();
+            let mut h = crate::fnv1a_bytes(hash, b"{");
+            for key in keys {
+                h = crate::fnv1a_str(h, key);
+                if let Some(v) = map.get(key) {
+                    h = hash_value(h, v);
+                }
+            }
+            crate::fnv1a_bytes(h, b"}")
+        }
+    }
+}
+
+/// Build the rank-ordered list of addresses a call site supports, strongest
+/// first. Emits only the ranks for which identifying material exists: ranks
+/// 1–4 require the corresponding `CallsiteIdentity` fields, rank 5 requires a
+/// caller location, and rank 6 (sequence) is always present as the last
+/// resort. The renderer feeds this from a recorded `BoundaryEvent`; the hook
+/// feeds it from a live `ReplayLookup`. Identical inputs → identical output.
+/// Build the rank-ordered loci a call site supports, strongest first.
+///
+/// **This function cannot see the boundary, component or operation, and that is
+/// the point.** Identity lives on [`LookupKey`] as sibling fields, so a locus
+/// physically cannot carry it and no future variant can forget to. The previous
+/// shape took `boundary` and `method_name` and threaded them into two of the six
+/// variants; the two that were missed collided, the lookup SUCCEEDED, and
+/// `date_time::now` was served `now_unix_timestamp_millis`'s recorded value.
+/// Patching the remaining variants would have left the same fault available to
+/// the next variant anyone adds. Removing the parameters closes it by
+/// construction — the enforcement is the signature, not a rule to remember.
+pub fn loci_for(
+    identity: Option<&crate::CallsiteIdentity>,
+    location: Option<(&str, u32, u32)>,
+) -> Vec<Locus> {
+    let mut out = Vec::with_capacity(4);
+    if let Some(id) = identity {
+        if matches!(id.source, crate::CallsiteSource::Explicit) {
+            if let Some(tag) = &id.id {
+                out.push(Locus::DeclaredSite(tag.clone()));
+            }
+        }
+        // Rank 2 — logical span-path. Strongest non-explicit locus: stable
+        // across line/signature edits AND distinct per concurrent span, so the
+        // occurrence tiebreak is span-scoped (no positional swap).
+        if let Some(path) = &id.span_path {
+            out.push(Locus::SpanPath { path: path.clone() });
+        }
+    }
+    if let Some((file, line, column)) = location {
+        out.push(Locus::SourceLocation {
+            file: file.to_owned(),
+            line,
+            column,
+        });
+    }
+    // Rank 3 — the unlocated mode, and the FLOOR.
+    //
+    // Unconditional, which is a deliberate widening of the syntactic-hash gate
+    // it replaces, and the reason is a guarantee that would otherwise be lost
+    // silently. `Locus::Sequence` used to be pushed here on every call, so every
+    // call was guaranteed at least one address; six `loci_for` callers pass
+    // `identity: None`, and with no identity and no location they would now
+    // produce an EMPTY locus list — no keys, so the call could never resolve,
+    // silently, forever.
+    //
+    // `Unlocated` is the honest floor for that: it claims no location, which is
+    // exactly true of a call deja knows nothing about, and unlike `Sequence` it
+    // claims no POSITION either. The gate it replaces (`syntax_hash.is_some()`)
+    // was a proxy for "this is a real seam", which having a `BoundarySpec`
+    // already establishes.
+    //
+    // `no_call_is_left_without_an_address` pins the guarantee.
+    out.push(Locus::Unlocated);
+    out
+}
+
+/// Assigns the tiebreaking `occurrence` index to each address, turning a call
+/// site's rank-ordered addresses into fully-qualified [`LookupKey`]s.
+///
+/// MUST be advanced on every call/event — for **all** ranks, not just the one
+/// that resolves — so the renderer and hook keep identical occurrence
+/// numbering even when a stronger rank is absent from some events.
+/// What an occurrence counter is scoped to: the partition, the call's IDENTITY,
+/// its locus, and its args. Identity is in here as well as on the key — without
+/// it two operations sharing a locus would share a counter, which is how a FIFO
+/// over one bucket handed a clock read another operation's recorded row.
+type OccurrenceScope = (
+    Option<String>,
+    Option<String>,
+    (String, String, String),
+    Locus,
+    u64,
+);
+
+#[derive(Default)]
+pub struct KeyStamper {
+    occurrences: std::collections::HashMap<OccurrenceScope, u32>,
+}
+
+impl KeyStamper {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Stamp occurrence indices onto each locus, returning rank-ordered keys.
+    pub fn stamp(
+        &mut self,
+        correlation_id: Option<&str>,
+        bucket_id: Option<&str>,
+        fork_seq: u64,
+        identity: CallIdentity<'_>,
+        loci: &[Locus],
+        args_hash: u64,
+    ) -> Vec<LookupKey> {
+        let correlation_id = correlation_id.map(str::to_owned);
+        let bucket_id = bucket_id.map(str::to_owned);
+        loci.iter()
+            .map(|locus| {
+                // Identity participates in the occurrence scope as well as the
+                // key. Without it two operations sharing a locus would share a
+                // counter, which is how the FIFO over one bucket handed a clock
+                // read the wrong row.
+                let scope = (
+                    correlation_id.clone(),
+                    bucket_id.clone(),
+                    identity.owned(),
+                    locus.clone(),
+                    args_hash,
+                );
+                let counter = self.occurrences.entry(scope).or_insert(0);
+                let occurrence = *counter;
+                *counter += 1;
+                LookupKey {
+                    correlation_id: correlation_id.clone(),
+                    bucket_id: bucket_id.clone(),
+                    fork_seq,
+                    boundary: identity.boundary.to_owned(),
+                    component: identity.component.to_owned(),
+                    operation: identity.operation.to_owned(),
+                    locus: locus.clone(),
+                    args_hash,
+                    occurrence,
+                }
+            })
+            .collect()
+    }
+}
+
+/// The address an args-free lookup is made at: a [`LookupKey`] with `args_hash`
+/// dropped and `occurrence` renumbered over the calls that share everything
+/// else.
+///
+/// Only ever DERIVED — at load from the entries a table already carries, at
+/// replay from the loci a live call already has — so it is never written to a
+/// tape and there is no second producer to disagree with about what it holds.
+/// That is why it is a private type and not a `LookupKey` with a sentinel hash:
+/// a sentinel would be serializable, and a serializable args-free key is a wire
+/// format someone has to keep in step.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+struct ArgFreeKey {
+    correlation_id: Option<String>,
+    bucket_id: Option<String>,
+    fork_seq: u64,
+    boundary: String,
+    component: String,
+    operation: String,
+    locus: Locus,
+    occurrence: u32,
+}
+
+/// What an args-free occurrence counter is scoped to: exactly
+/// [`OccurrenceScope`] with the args left out.
+///
+/// `fork_seq` is absent here because it is absent there. The exact counter
+/// numbers a locus's calls ACROSS the forks of one lineage bucket and stamps
+/// each key with the fork the call was made on; an args-free counter that
+/// restarted per fork would walk a different sequence from the one the entries
+/// were numbered into.
+type ArgFreeScope = (
+    Option<String>,
+    Option<String>,
+    (String, String, String),
+    Locus,
+);
+
+/// The scope a [`LookupKey`]'s args-free counter belongs to.
+fn arg_free_scope(key: &LookupKey) -> ArgFreeScope {
+    (
+        key.correlation_id.clone(),
+        key.bucket_id.clone(),
+        (
+            key.boundary.clone(),
+            key.component.clone(),
+            key.operation.clone(),
+        ),
+        key.locus.clone(),
+    )
+}
+
+/// The occurrence assigner for args-free addresses, counting calls at a locus
+/// whatever arguments they carried.
+#[derive(Default)]
+struct ArgFreeStamper {
+    occurrences: std::collections::HashMap<ArgFreeScope, u32>,
+}
+
+impl ArgFreeStamper {
+    /// Stamp args-free occurrence indices onto each locus, strongest first.
+    fn stamp(
+        &mut self,
+        correlation_id: Option<&str>,
+        bucket_id: Option<&str>,
+        fork_seq: u64,
+        identity: CallIdentity<'_>,
+        loci: &[Locus],
+    ) -> Vec<ArgFreeKey> {
+        let correlation_id = correlation_id.map(str::to_owned);
+        let bucket_id = bucket_id.map(str::to_owned);
+        loci.iter()
+            .map(|locus| {
+                let scope = (
+                    correlation_id.clone(),
+                    bucket_id.clone(),
+                    identity.owned(),
+                    locus.clone(),
+                );
+                let counter = self.occurrences.entry(scope).or_insert(0);
+                let occurrence = *counter;
+                *counter += 1;
+                ArgFreeKey {
+                    correlation_id: correlation_id.clone(),
+                    bucket_id: bucket_id.clone(),
+                    fork_seq,
+                    boundary: identity.boundary.to_owned(),
+                    component: identity.component.to_owned(),
+                    operation: identity.operation.to_owned(),
+                    locus: locus.clone(),
+                    occurrence,
+                }
+            })
+            .collect()
+    }
+}
+
+/// The occurrence assigners: exact, by identity, and args-free. `stamp_call` is
+/// the only way to stamp any of them: a call advances the one EXACT sequence it
+/// is addressed by — an exact counter for args identity applies to is never
+/// read, so an identity-addressed call takes no exact stamp — and it always
+/// advances the args-free sequence.
+///
+/// The args-free counter sits here rather than inside [`KeyStamper`] because
+/// there is one args-free index over one population of entries, and a counter
+/// per `KeyStamper` would be two sequences over it — the hazard the exact/
+/// identity split already names, reached from the other side. `identity_applies`
+/// is a pure function of the arguments, so a call whose arguments changed shape
+/// can route exact where its recording routed by identity; both are numbered
+/// into the same args-free sequence, which is the whole point of dropping the
+/// arguments from the address.
+#[derive(Default)]
+struct Stampers {
+    exact: KeyStamper,
+    by_identity: KeyStamper,
+    arg_free: ArgFreeStamper,
+}
+
+impl Stampers {
+    /// Stamp one call, in the one exact sequence it is addressed by — its
+    /// identity occurrence when it is addressed by identity, its exact
+    /// occurrence otherwise — and in the args-free sequence, always. Returns
+    /// the keys the call is looked up by, exact first, args-free second.
+    ///
+    /// The args-free stamp is UNCONDITIONAL: not gated on the exact lookup
+    /// missing (which has not happened yet here), not on the arguments being
+    /// argful, not on which exact sequence the call took. A counter that
+    /// advances on some paths and not others numbers a different sequence from
+    /// the one the entries were numbered into, and every args-free address from
+    /// the first skip onwards points at another call's row — silently, since a
+    /// wrong row looks exactly like a right one.
+    #[allow(clippy::too_many_arguments)]
+    fn stamp_call(
+        &mut self,
+        correlation_id: Option<&str>,
+        bucket_id: Option<&str>,
+        fork_seq: u64,
+        identity: CallIdentity<'_>,
+        loci: &[Locus],
+        args_hash: u64,
+        identity_hash: Option<u64>,
+    ) -> (Vec<LookupKey>, Vec<ArgFreeKey>) {
+        let keys = match identity_hash {
+            Some(hash) => {
+                self.by_identity
+                    .stamp(correlation_id, bucket_id, fork_seq, identity, loci, hash)
+            }
+            None => self.exact.stamp(
+                correlation_id,
+                bucket_id,
+                fork_seq,
+                identity,
+                loci,
+                args_hash,
+            ),
+        };
+        let arg_free = self
+            .arg_free
+            .stamp(correlation_id, bucket_id, fork_seq, identity, loci);
+        (keys, arg_free)
+    }
+}
+
+/// Loader for a `LookupTable`. Called ONCE at candidate boot.
+pub trait LookupTableSource: Send {
+    fn load(&mut self) -> std::io::Result<LookupTable>;
+}
+
+/// Sink for `ObservedCall` records emitted by the candidate hook.
+///
+/// Implementations must be cheap on the hot path: `observed` runs inside
+/// every `#[deja::*]` call. Batching, flushing, or sending across the
+/// network should be done in `flush` (called at request scope exit) — not
+/// inline.
+pub trait ObservedCallSink: Send + Sync {
+    fn observed(&self, call: ObservedCall);
+    /// Execution-graph node captured during replay; rides the observed
+    /// stream. Default no-op: sinks that persist the stream must override,
+    /// assertion-only test sinks may ignore graph traffic.
+    fn graph_node(&self, _node: deja_core::ExecutionGraphNode) {}
+    fn flush(&self) -> std::io::Result<()>;
+}
+
+/// Local-file `LookupTableSource`. Prefers the shared-results form beside the
+/// given path when one was written ([`shared_results_path`]); otherwise reads
+/// the given file as a legacy document or a JSONL stream of `LookupEntry`.
+pub struct LocalFileLookupSource {
+    path: std::path::PathBuf,
+    loaded_from: Option<std::path::PathBuf>,
+}
+
+impl LocalFileLookupSource {
+    pub fn new(path: impl Into<std::path::PathBuf>) -> Self {
+        Self {
+            path: path.into(),
+            loaded_from: None,
+        }
+    }
+
+    /// The file the last `load` read: the shared-results sibling or the given
+    /// path.
+    pub fn loaded_from(&self) -> Option<&Path> {
+        self.loaded_from.as_deref()
+    }
+}
+
+/// The matching policy this build implements, and the version a
+/// one-result-per-entry table declares.
+///
+/// Bumped to 2 by the identity/locus split: a version-1 table addresses calls by
+/// an `Locus` carrying identity inside some of its variants, and its keys
+/// cannot be compared against the ones this build stamps.
+pub const POLICY_VERSION: u32 = 2;
+
+/// The version a [`SharedResultsTable`] declares. Its keys are stamped exactly
+/// as [`POLICY_VERSION`]'s; the different number is what makes a loader that
+/// knows only the one-result-per-entry form refuse it.
+pub const SHARED_RESULTS_POLICY_VERSION: u32 = 3;
+
+/// Refuse a table this build cannot match against, naming both versions.
+///
+/// This runs ONCE, at candidate boot, and the placement is the point. A
+/// version-1 table loaded by a version-2 build does not fail loudly on its own:
+/// every key simply fails to compare, so every call misses, every Substitute
+/// miss fail-stops, and the run presents as a total behavioural regression in
+/// the candidate — indistinguishable by inspection from a real one, and the
+/// exact shape of the outage this change exists to prevent, reached from the
+/// other direction. One refusal at load costs a line of logs and saves the
+/// diagnosis.
+///
+/// Keyed on the DECLARED version, never on sniffing the shape: a table whose
+/// entries happen to deserialize is not thereby matchable.
+fn check_policy_version(table: LookupTable) -> std::io::Result<LookupTable> {
+    if table.policy_version == POLICY_VERSION
+        || table.policy_version == SHARED_RESULTS_POLICY_VERSION
+    {
+        return Ok(table);
+    }
+    Err(std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!(
+            "lookup table declares matching policy version {} but this build \
+             reads {POLICY_VERSION} and {SHARED_RESULTS_POLICY_VERSION}; the recording must be re-rendered. \
+             Refusing at load rather than mismatching every key, which would \
+             present as a total candidate regression.",
+            table.policy_version
+        ),
+    ))
+}
+
+/// Refuse a recording captured under another event schema, naming both.
+///
+/// The schema decides what an argument's recorded image looks like, and the
+/// image is what its key hashes. Where two schemas encode a value differently —
+/// v10 marks a present `None` that v9 wrote as `null` — every such call misses,
+/// and the run presents as a regression in a candidate that changed nothing.
+/// Same reasoning as [`check_policy_version`]; this one is about the
+/// recording rather than the renderer, so it runs where a candidate installs
+/// the table to replay against ([`LookupTableHook::from_source`]), not where a
+/// file is read: the scorer reads the same file and must not be refused.
+fn check_event_schema_version(table: LookupTable) -> std::io::Result<LookupTable> {
+    let current = crate::CURRENT_EVENT_SCHEMA_VERSION;
+    let refusal = match table.event_schema_version {
+        Some(version) if version == current => return Ok(table),
+        Some(version) => format!(
+            "recording {} was captured under event schema v{version} but this build reads \
+             v{current}; re-record it with a build at v{current}.",
+            table.recording_id
+        ),
+        None => format!(
+            "lookup table for recording {} declares no event schema version, so it is \
+             treated as older than this build's v{current}: if the recording is v{current}, \
+             re-render it with a runner at this deja revision; otherwise re-record it.",
+            table.recording_id
+        ),
+    };
+    Err(std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!(
+            "{refusal} Refusing at install rather than missing wherever the two schemas \
+             encode an argument differently, which would present as a candidate regression."
+        ),
+    ))
+}
+
+impl LookupTableSource for LocalFileLookupSource {
+    fn load(&mut self) -> std::io::Result<LookupTable> {
+        let sibling = shared_results_path(&self.path);
+        if sibling.is_file() {
+            match shared_beside(&sibling, &self.path) {
+                Ok(table) => {
+                    eprintln!(
+                        "deja replay: lookup table loaded from {}",
+                        sibling.display()
+                    );
+                    self.loaded_from = Some(sibling);
+                    return check_policy_version(table);
+                }
+                Err(why) => eprintln!(
+                    "deja replay: not using {}: {why}; reading {} instead",
+                    sibling.display(),
+                    self.path.display()
+                ),
+            }
+        }
+        let path = self.path.clone();
+        let bytes = std::fs::read(&path)?;
+        eprintln!("deja replay: lookup table loaded from {}", path.display());
+        self.loaded_from = Some(path.clone());
+
+        // The declared version decides the shape; the peek skips everything
+        // else without building it.
+        #[derive(Deserialize)]
+        struct Declared {
+            policy_version: u32,
+        }
+        if let Ok(Declared { policy_version }) = serde_json::from_slice::<Declared>(&bytes) {
+            if policy_version == SHARED_RESULTS_POLICY_VERSION {
+                let shared: SharedResultsTable = serde_json::from_slice(&bytes).map_err(|e| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        format!(
+                            "lookup table at {} declares policy version {SHARED_RESULTS_POLICY_VERSION} \
+                                 but is not a shared-results table: {e}",
+                            path.display()
+                        ),
+                    )
+                })?;
+                return check_policy_version(shared.into_table()?);
+            }
+        }
+        let text = std::str::from_utf8(&bytes)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        // Try the whole-document LookupTable form first; fall back to JSONL
+        // (one LookupEntry per line) if that fails. Robust against either shape
+        // without needing a magic byte or extension.
+        //
+        // The enveloped error is KEPT rather than discarded, and that is the
+        // whole point of this shape. Discarding it turns a SCHEMA MISMATCH into
+        // a JSONL parse failure reported at line 1 of a pretty-printed document
+        // — which is `{` — so the operator is told "EOF while parsing an object
+        // at line 1 column 1" about a file that parsed perfectly well as a
+        // table this build cannot read. That message reads as "the table is
+        // empty" and sends the reader to the renderer, which is not where the
+        // fault is. It cost two separate investigations before anyone read this
+        // function. A compact, one-line table misleads the other way: its JSONL
+        // attempt reports a missing `key`, which is why this error leads.
+        let enveloped_error = match serde_json::from_str::<LookupTable>(text) {
+            Ok(table) => return check_policy_version(table),
+            Err(error) => error,
+        };
+        let entries = text
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .map(serde_json::from_str::<LookupEntry>)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|jsonl_error| {
+                std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!(
+                        "lookup table at {path} is neither an enveloped `LookupTable` nor \
+                         JSONL.\n  as an enveloped table: {enveloped_error}\n  as JSONL: \
+                         {jsonl_error}\nAn enveloped table that fails to parse here is \
+                         usually VERSION SKEW: the renderer and this build disagree about \
+                         `LookupKey`'s shape. This build is POLICY_VERSION {version}. Compare \
+                         the deja revision this candidate was compiled against with the one \
+                         the orchestrator rendered from.",
+                        path = path.display(),
+                        version = POLICY_VERSION,
+                    ),
+                )
+            })?;
+        // A bare JSONL stream carries no envelope and therefore no declared
+        // versions. Its entries are the legacy shape, so it is taken at the
+        // legacy policy rather than refused, which is sound only while nothing
+        // emits JSONL — a property of
+        // the RENDERER, stated at that end too, since that is where it would be
+        // broken. Its event schema is left undeclared: unknown is not current,
+        // so a candidate installing it refuses it as it refuses any table that
+        // does not say which schema it was recorded under.
+        Ok(LookupTable {
+            recording_id: String::new(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: None,
+            entries,
+            identity_entries: Vec::new(),
+        })
+    }
+}
+
+/// The shared form beside `table_path`, if it was written for the table that
+/// is there now; otherwise why not.
+fn shared_beside(sibling: &Path, table_path: &Path) -> Result<LookupTable, String> {
+    let bytes = std::fs::read(sibling).map_err(|e| format!("unreadable ({e})"))?;
+    let shared: SharedResultsTable =
+        serde_json::from_slice(&bytes).map_err(|e| format!("not a shared-results table ({e})"))?;
+    if shared.policy_version != SHARED_RESULTS_POLICY_VERSION {
+        return Err(format!("declares policy version {}", shared.policy_version));
+    }
+    let Some(stamped) = shared.legacy_digest else {
+        return Err("it does not say which table it was written from".to_owned());
+    };
+    let found =
+        LegacyDigest::of_file(table_path).map_err(|e| format!("cannot read the table ({e})"))?;
+    if found != stamped {
+        return Err(format!(
+            "it was written from a {}-byte table with FNV-1a {:016x}, and the table there is {} \
+             bytes with {:016x}",
+            stamped.len, stamped.fnv1a, found.len, found.fnv1a
+        ));
+    }
+    shared.into_table().map_err(|e| e.to_string())
+}
+
+/// In-memory `ObservedCallSink` for tests and standalone harness use.
+pub struct InMemoryObservedSink {
+    calls: std::sync::Arc<Mutex<Vec<ObservedCall>>>,
+    graph_nodes: std::sync::Arc<Mutex<Vec<deja_core::ExecutionGraphNode>>>,
+}
+
+impl Default for InMemoryObservedSink {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl InMemoryObservedSink {
+    pub fn new() -> Self {
+        Self {
+            calls: std::sync::Arc::new(Mutex::new(Vec::new())),
+            graph_nodes: std::sync::Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+
+    /// Graph nodes captured so far; useful for assertions in tests.
+    pub fn graph_nodes(&self) -> Vec<deja_core::ExecutionGraphNode> {
+        self.graph_nodes
+            .lock()
+            .map(|buf| buf.clone())
+            .unwrap_or_default()
+    }
+
+    /// Clone of the underlying buffer; useful for assertions in tests.
+    pub fn handle(&self) -> std::sync::Arc<Mutex<Vec<ObservedCall>>> {
+        std::sync::Arc::clone(&self.calls)
+    }
+
+    pub fn drain(&self) -> Vec<ObservedCall> {
+        self.calls
+            .lock()
+            .map(|mut buf| std::mem::take(&mut *buf))
+            .unwrap_or_default()
+    }
+}
+
+impl ObservedCallSink for InMemoryObservedSink {
+    fn observed(&self, call: ObservedCall) {
+        if let Ok(mut buf) = self.calls.lock() {
+            buf.push(call);
+        }
+    }
+    fn graph_node(&self, node: deja_core::ExecutionGraphNode) {
+        if let Ok(mut buf) = self.graph_nodes.lock() {
+            buf.push(node);
+        }
+    }
+    fn flush(&self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// Append-only JSONL `ObservedCallSink`. One line per call.
+pub struct FileObservedSink {
+    file: Mutex<std::fs::File>,
+}
+
+impl FileObservedSink {
+    pub fn create(path: impl AsRef<Path>) -> std::io::Result<Self> {
+        // Create the parent dir so a missing observed/ doesn't fail replay boot
+        // (which would silently fall back to the legacy ReplayHook).
+        if let Some(parent) = path.as_ref().parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path.as_ref())?;
+        Ok(Self {
+            file: Mutex::new(file),
+        })
+    }
+}
+
+impl FileObservedSink {
+    fn write_record(&self, record: &crate::DejaRecord) {
+        use std::io::Write;
+        if let Ok(mut guard) = self.file.lock() {
+            if let Ok(line) = serde_json::to_string(record) {
+                let _ = guard.write_all(line.as_bytes());
+                let _ = guard.write_all(b"\n");
+            }
+        }
+    }
+}
+
+impl ObservedCallSink for FileObservedSink {
+    fn observed(&self, call: ObservedCall) {
+        self.write_record(&crate::DejaRecord::Observed(Box::new(call)));
+    }
+    fn graph_node(&self, node: deja_core::ExecutionGraphNode) {
+        self.write_record(&crate::DejaRecord::GraphNode(Box::new(node)));
+    }
+    fn flush(&self) -> std::io::Result<()> {
+        use std::io::Write;
+        if let Ok(mut guard) = self.file.lock() {
+            guard.flush()?;
+        }
+        Ok(())
+    }
+}
+
+/// What the hook keeps per key: the key is the map's, not repeated here.
+struct HookEntry {
+    result: std::sync::Arc<serde_json::Value>,
+    source_event_global_sequence: u64,
+}
+
+/// Whether the caller can SERVE an args-free fallback, or only advance its
+/// counter.
+///
+/// Both substitute callers serve it: a lookup boundary with no executor under it
+/// either gets a value or the request stops there. The execute caller does NOT,
+/// and the distinction is not tidiness. An `ExecuteShadowToken`'s
+/// `recorded_result` is read by the macro to decide whether a site that declared
+/// its error state-neutral is served its own recorded `Err` instead of running
+/// ([`crate::serves_recorded_error`]) — and "its own" is the whole licence.
+/// Handing that decision an `Err` recorded under different arguments would put a
+/// second, unasked-for substitution on a path that otherwise runs the real
+/// boundary and compares.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ArgFreeFallback {
+    Serve,
+    Skip,
+}
+
+/// The args-free index: the same entries a table already carries, addressed with
+/// `args_hash` dropped and occurrence renumbered over the calls that share the
+/// rest of the address.
+///
+/// Derived at load, never transmitted — no renderer change, no wire change, no
+/// bytes on the tape. The renderer walks the recording in sequence order and
+/// numbers occurrences as it goes, so numbering each group by ascending
+/// `source_event_global_sequence` reproduces that walk from the entries
+/// themselves. The tiebreak after it makes the order TOTAL, so the index is the
+/// same map however the entries arrived: a table read back as JSONL, or iterated
+/// out of a `HashMap`, is not in the renderer's order.
+fn arg_free_index(table: &HashMap<LookupKey, HookEntry>) -> HashMap<ArgFreeKey, HookEntry> {
+    let mut groups: HashMap<ArgFreeScope, Vec<&LookupKey>> = HashMap::new();
+    for key in table.keys() {
+        groups.entry(arg_free_scope(key)).or_default().push(key);
+    }
+    let mut index = HashMap::with_capacity(table.len());
+    for keys in groups.values_mut() {
+        keys.sort_by_key(|key| {
+            (
+                table
+                    .get(*key)
+                    .map_or(0, |entry| entry.source_event_global_sequence),
+                key.args_hash,
+                key.occurrence,
+            )
+        });
+        for (occurrence, key) in keys.iter().enumerate() {
+            let Some(entry) = table.get(*key) else {
+                continue;
+            };
+            let Ok(occurrence) = u32::try_from(occurrence) else {
+                continue;
+            };
+            index.insert(
+                ArgFreeKey {
+                    correlation_id: key.correlation_id.clone(),
+                    bucket_id: key.bucket_id.clone(),
+                    // The entry's OWN fork, as the exact key carries it: the
+                    // counter is scoped across a bucket's forks, the address is
+                    // stamped with one.
+                    fork_seq: key.fork_seq,
+                    boundary: key.boundary.clone(),
+                    component: key.component.clone(),
+                    operation: key.operation.clone(),
+                    locus: key.locus.clone(),
+                    occurrence,
+                },
+                HookEntry {
+                    result: std::sync::Arc::clone(&entry.result),
+                    source_event_global_sequence: entry.source_event_global_sequence,
+                },
+            );
+        }
+    }
+    index
+}
+
+/// Where every lookup the hook served ended up. One counter per arm plus an
+/// independent total, so `total == exact + arg_free + missed` is an assertion
+/// that can FAIL rather than an identity restated: a total derived as the sum
+/// asserts nothing about the arms.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LookupTally {
+    /// Lookups made, counted once as each one arrives.
+    pub total: u64,
+    /// The call's own address and arguments found their row.
+    pub exact: u64,
+    /// The address matched and the arguments did not; the recording's value for
+    /// that address was served and the observation marked `arg_divergent`.
+    pub arg_free: u64,
+    /// Nothing was found, at any rank, with or without the arguments.
+    pub missed: u64,
+}
+
+impl LookupTally {
+    /// Whether every lookup is accounted for by exactly one arm.
+    pub fn balances(&self) -> bool {
+        self.exact + self.arg_free + self.missed == self.total
+    }
+}
+
+/// In-process side-effect player driven by a frozen `LookupTable`.
+///
+/// Does NOT run a cascade and does NOT classify divergences. It looks up a key
+/// by (correlation, boundary, trait, method, occurrence) — with optional
+/// `callsite_identity_id` fallback — emits an `ObservedCall`, and returns the
+/// result if found.
+pub struct LookupTableHook {
+    table: HashMap<LookupKey, HookEntry>,
+    /// Whether a call whose arguments moved may be served by its address
+    /// alone; see [`LookupTableHook::from_source_with_policy`].
+    arg_mismatch_policy: ArgMismatchPolicy,
+    /// The table's second lookup, by identity; see [`LookupTable::identity_entries`].
+    identity_table: HashMap<LookupKey, HookEntry>,
+    /// The args-free index, derived from `table` at load; see [`arg_free_index`].
+    ///
+    /// Derived from `table` alone and not from `identity_table`, because
+    /// `identity_entries` is a second addressing of events `entries` already
+    /// holds — additive, by its own contract — so the exact entries are the whole
+    /// population and the args-free sequence is one sequence over it.
+    arg_free_table: HashMap<ArgFreeKey, HookEntry>,
+    /// Occurrence assigners — exact, by identity, and args-free — under one
+    /// lock, so no interleaving can advance one without the other. Each call
+    /// advances the exact one it is addressed by, for every rank, in lockstep
+    /// with the renderer's, and the args-free one always. The exact one once
+    /// also fed rank 6, a positional
+    /// `Sequence` locus since removed, which never produced a match in any
+    /// measured run; the orchestrator still reads rank 6 when it scores older
+    /// artifacts.
+    stamper: Mutex<Stampers>,
+    /// Per-correlation global-event counter; sourced from `next_global_sequence`.
+    global_counter: std::sync::atomic::AtomicU64,
+    /// Per-(correlation, bucket, source, scope) occurrence counter mirroring
+    /// `RecordingHook::next_callsite_occurrence`. The boundary macro re-derives
+    /// the per-callsite occurrence at REPLAY time by calling
+    /// `next_callsite_occurrence` on this hook (the same hook that does the
+    /// lookup). It MUST advance in lock-step with recording — one bump per call
+    /// per scope and lineage bucket — so that the `CallsiteIdentity::occurrence`
+    /// the macro stamps into the rank-4 `Locus::Unlocated` matches the
+    /// occurrence the renderer read off the recorded event. Without this the
+    /// macro would receive the default `0` for every call and only the first
+    /// (occurrence-0) call at each callsite would resolve.
+    callsite_occurrence: Mutex<crate::CallsiteOccurrenceMap>,
+    observed_sink: std::sync::Arc<dyn ObservedCallSink>,
+    /// Sequence space for replay-side graph nodes on the observed stream;
+    /// separate from the lookup counters so replay addressing stays in
+    /// lockstep with the recorder whether or not graph capture is on.
+    graph_counter: std::sync::atomic::AtomicU64,
+    /// Lookups arriving, counted before anything is decided about them, and the
+    /// three arms one can end in. Read back as a [`LookupTally`].
+    lookups: std::sync::atomic::AtomicU64,
+    exact_hits: std::sync::atomic::AtomicU64,
+    arg_free_hits: std::sync::atomic::AtomicU64,
+    misses: std::sync::atomic::AtomicU64,
+}
+
+impl LookupTableHook {
+    /// Construct from any `LookupTableSource` (typically `LocalFileLookupSource`)
+    /// and any `ObservedCallSink` (typically `InMemoryObservedSink` for tests
+    /// or `FileObservedSink` for harness runs). Loading happens once at
+    /// construction; failures bubble up as `io::Error`.
+    ///
+    /// Under the default [`ArgMismatchPolicy`]; see
+    /// [`LookupTableHook::from_source_with_policy`] for a deployment's own.
+    pub fn from_source<S, K>(source: S, sink: K) -> std::io::Result<Self>
+    where
+        S: LookupTableSource,
+        K: ObservedCallSink + 'static,
+    {
+        Self::from_source_with_policy(source, sink, ArgMismatchPolicy::default())
+    }
+
+    /// [`LookupTableHook::from_source`] with the arg-mismatch policy given, as
+    /// the embedder reads it from its own settings. `Never` restores the
+    /// fail-stop: a call whose arguments moved misses.
+    pub fn from_source_with_policy<S, K>(
+        mut source: S,
+        sink: K,
+        arg_mismatch_policy: ArgMismatchPolicy,
+    ) -> std::io::Result<Self>
+    where
+        S: LookupTableSource,
+        K: ObservedCallSink + 'static,
+    {
+        // Checked here rather than in the source: the scorer reads the same
+        // table for what the recording held, and that is valid under any schema.
+        let table = check_event_schema_version(source.load()?)?;
+        let index = |entries: Vec<LookupEntry>| {
+            let mut map = HashMap::with_capacity(entries.len());
+            for entry in entries {
+                map.insert(
+                    entry.key,
+                    HookEntry {
+                        result: entry.result,
+                        source_event_global_sequence: entry.source_event_global_sequence,
+                    },
+                );
+            }
+            map
+        };
+        // Derived from the indexed map rather than the entry list, so a table
+        // that repeated a key contributes it once to both indexes: the exact map
+        // collapses a repeat, and an args-free sequence that counted it twice
+        // would be one longer than the sequence the calls walk.
+        let exact = index(table.entries);
+        let arg_free_table = arg_free_index(&exact);
+        Ok(Self {
+            table: exact,
+            arg_mismatch_policy,
+            identity_table: index(table.identity_entries),
+            arg_free_table,
+            stamper: Mutex::new(Stampers::default()),
+            global_counter: std::sync::atomic::AtomicU64::new(0),
+            callsite_occurrence: Mutex::new(HashMap::new()),
+            observed_sink: std::sync::Arc::new(sink),
+            graph_counter: std::sync::atomic::AtomicU64::new(0),
+            lookups: std::sync::atomic::AtomicU64::new(0),
+            exact_hits: std::sync::atomic::AtomicU64::new(0),
+            arg_free_hits: std::sync::atomic::AtomicU64::new(0),
+            misses: std::sync::atomic::AtomicU64::new(0),
+        })
+    }
+
+    /// Number of entries loaded. Useful for assertions.
+    pub fn entry_count(&self) -> usize {
+        self.table.len()
+    }
+
+    /// Where the lookups this hook has served ended up. Every one is in exactly
+    /// one arm; [`LookupTally::balances`] is the check.
+    pub fn lookup_tally(&self) -> LookupTally {
+        use std::sync::atomic::Ordering::Relaxed;
+        LookupTally {
+            total: self.lookups.load(Relaxed),
+            exact: self.exact_hits.load(Relaxed),
+            arg_free: self.arg_free_hits.load(Relaxed),
+            missed: self.misses.load(Relaxed),
+        }
+    }
+
+    /// Force-flush the underlying observed-call sink. The hook does NOT
+    /// auto-flush on drop; orchestrators should call this at run end.
+    pub fn flush(&self) -> std::io::Result<()> {
+        self.observed_sink.flush()
+    }
+
+    /// Replay-side execution-graph capture: nodes ride the observed stream.
+    pub fn record_graph_node(&self, mut node: deja_core::ExecutionGraphNode) {
+        node.global_sequence = self
+            .graph_counter
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        self.observed_sink.graph_node(node);
+    }
+
+    /// Resolve one replay call to its recorded baseline.
+    ///
+    /// SINGLE source of truth shared by [`Self::try_replay_with_context`]
+    /// (lookup) and [`Self::execute_shadow_peek`] (execute): it bumps the
+    /// per-correlation request sequence, stamps occurrences for EVERY rank, and
+    /// queries the table strongest-first. Because BOTH modes route through here,
+    /// the stamper / sequence counters advance EXACTLY ONCE per call regardless
+    /// of mode, so numbering never drifts between a lookup boundary and an execute
+    /// boundary in the same run. It does NOT emit an observation — the caller
+    /// shapes and emits the `ObservedCall` (Recorded vs Shadow).
+    fn resolve(&self, query: &ReplayLookup<'_>, fallback: ArgFreeFallback) -> Resolution {
+        let lookup_ordinal = self
+            .lookups
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            + 1;
+        // The candidate carries no notion of "current correlation" in
+        // ReplayLookup; pull it from the ambient deja-context scope set up
+        // by the request middleware.
+        let correlation_id = deja_context::current_correlation_id();
+        let crate::TaskMetadata {
+            task_id,
+            parent_task_id,
+            task_bucket,
+            bucket_id,
+            fork_seq,
+        } = crate::current_task_metadata(correlation_id.as_deref());
+        let bucket_id = bucket_id
+            .or_else(|| task_bucket.clone())
+            .or_else(|| Some(crate::ROOT_TASK_ID.to_string()));
+        let fork_seq = fork_seq.unwrap_or(0);
+        let args_hash = canonical_args_hash(query.args);
+
+        let location = query
+            .caller_location
+            .map(|loc| (loc.file(), loc.line(), loc.column()));
+        let loci = loci_for(query.callsite_identity, location);
+        let identity = CallIdentity {
+            boundary: query.boundary,
+            component: query.trait_name,
+            operation: query.method_name,
+        };
+
+        // Stamp occurrences for EVERY rank (not just the one that resolves) so
+        // the numbering stays aligned with the renderer, then query
+        // strongest-first and take the first hit.
+        // A call identity applies to (a set among its args, or a document in a
+        // string) is addressed by its identity alone, as one sequence: the k-th
+        // call with that identity is served the k-th recording with it,
+        // whichever exact form either side wrote. It advances no exact
+        // occurrence, since no call ever reads an exact counter for args
+        // identity applies to; two sequences over one population could serve
+        // one recording twice. Only when the table carries identity entries;
+        // an older table is read exactly as before.
+        let by_identity =
+            !self.identity_table.is_empty() && crate::identity::identity_applies(query.args);
+        // A pure function of this call's own args, so it is computed before the
+        // lock; the lock guards the occurrence counters, and the one sequence
+        // this call is addressed by advances under it.
+        let identity_hash = by_identity.then(|| crate::identity::identity_args_hash(query.args));
+        let (keys, arg_free_keys) = match self.stamper.lock() {
+            Ok(mut stampers) => stampers.stamp_call(
+                correlation_id.as_deref(),
+                bucket_id.as_deref(),
+                fork_seq,
+                identity,
+                &loci,
+                args_hash,
+                identity_hash,
+            ),
+            Err(_) => (Vec::new(), Vec::new()),
+        };
+        let table = if by_identity {
+            &self.identity_table
+        } else {
+            &self.table
+        };
+        let mut hit: Option<(&HookEntry, u8)> = None;
+        for key in &keys {
+            if let Some(entry) = table.get(key) {
+                hit = Some((entry, key.locus.rank()));
+                break;
+            }
+        }
+
+        // The address matched and only the arguments did not: serve the
+        // recording's value for that address, and say so.
+        //
+        // This used to be refused outright, and the reason it was refused is the
+        // reason it is marked now. Serving a re-keyed call its recorded value is
+        // the partial-derivative substitution that masks transitive effects — the
+        // eu-overcharge lie, "the function behaves as if the argument were the
+        // original, not the changed one" — and a serve that claimed to have
+        // RESOLVED would launder exactly that into a pass. So the observation
+        // says the call did not resolve, which is true of its address and its
+        // arguments both, and every consumer that already reads `resolved` keeps
+        // scoring it as the divergence it is; the orchestrator pairs it args-free
+        // and judges what it SENT, not what it got back. What changes is only
+        // that the request lives long enough for the divergence to be attributed
+        // to the call that caused it, instead of dying here and turning
+        // everything below it into a pruned subtree with no observed side.
+        //
+        // Argless calls are excluded, and that exclusion is the safety property.
+        // A boundary with no arguments is a clock, an identifier or a source of
+        // randomness; there is no "same address, different arguments" case for
+        // one, only a different call at the same site, and serving it another
+        // call's recorded value is a silent lie about a timestamp. `args_are_empty`
+        // is the same predicate `ArgMismatchPolicy::OnlyForArgful` is defined by,
+        // read here rather than restated.
+        let mut arg_divergent = false;
+        if hit.is_none()
+            && fallback == ArgFreeFallback::Serve
+            && self.arg_mismatch_policy.allow_arg_mismatch(query.args)
+            && !is_pure_boundary(query.boundary)
+        {
+            for key in &arg_free_keys {
+                if let Some(entry) = self.arg_free_table.get(key) {
+                    hit = Some((entry, key.locus.rank()));
+                    arg_divergent = true;
+                    break;
+                }
+            }
+        }
+
+        use std::sync::atomic::Ordering::Relaxed;
+        if arg_divergent {
+            self.arg_free_hits.fetch_add(1, Relaxed);
+        } else if hit.is_some() {
+            self.exact_hits.fetch_add(1, Relaxed);
+        } else {
+            self.misses.fetch_add(1, Relaxed);
+        }
+
+        // "Where" for the diff UI + graph placement. `location` is already
+        // resolved above (rank-5 SourceLocation); the span path is the rank-2
+        // logical address; the graph node is the replay-side execution-graph
+        // node this call fired under.
+        let (_, graph_node_id) = crate::current_execution_graph_context();
+        Resolution {
+            correlation_id,
+            task_id,
+            parent_task_id,
+            task_bucket: task_bucket.or_else(|| bucket_id.clone()),
+            bucket_id,
+            fork_seq,
+            location: location.map(|(f, l, c)| (f.to_owned(), l, c)),
+            graph_node_id,
+            resolved_rank: hit.map(|(_, rank)| rank),
+            // Left absent on an args-free serve. The sequence is a claim that
+            // THIS call is the recorded event at it, and an args-free serve is
+            // not that claim: the arguments differ. Which event the value came
+            // from is a different fact, and it rides separately as
+            // `served_event_global_sequence`, so the orchestrator pairs the call
+            // with the event it was actually served rather than guessing it again.
+            source_event_global_sequence: hit
+                .filter(|_| !arg_divergent)
+                .map(|(entry, _)| entry.source_event_global_sequence),
+            recorded_result: hit.map(|(entry, _)| (*entry.result).clone()),
+            served_event_global_sequence: hit
+                .filter(|_| arg_divergent)
+                .map(|(entry, _)| entry.source_event_global_sequence),
+            lookup_ordinal,
+            arg_divergent,
+        }
+    }
+}
+
+/// Outcome of [`LookupTableHook::resolve`]: the recorded baseline for one call
+/// plus the call-site metadata both modes carry into their `ObservedCall`.
+struct Resolution {
+    correlation_id: Option<String>,
+    task_id: Option<String>,
+    parent_task_id: Option<String>,
+    task_bucket: Option<String>,
+    bucket_id: Option<String>,
+    fork_seq: u64,
+    location: Option<(String, u32, u32)>,
+    graph_node_id: Option<u64>,
+    resolved_rank: Option<u8>,
+    source_event_global_sequence: Option<u64>,
+    recorded_result: Option<serde_json::Value>,
+    /// `recorded_result` came from the same address with different arguments.
+    arg_divergent: bool,
+    /// The recorded event an args-free serve took its value from.
+    served_event_global_sequence: Option<u64>,
+    /// This lookup's number; see [`ObservedCall::lookup_ordinal`].
+    lookup_ordinal: u64,
+}
+
+impl Resolution {
+    /// The recorded baseline value, if the call resolved.
+    fn recorded_result(&self) -> Option<serde_json::Value> {
+        self.recorded_result.clone()
+    }
+
+    /// Shape an [`ObservedCall`] from this resolution, the originating query, the
+    /// `observed_result` for this mode (the substituted recorded value under
+    /// lookup, or `None`/the-real-result under execute), and the `provenance`.
+    fn into_observed_call(
+        self,
+        query: &ReplayLookup<'_>,
+        observed_result: Option<serde_json::Value>,
+        provenance: crate::Provenance,
+    ) -> ObservedCall {
+        ObservedCall {
+            correlation_id: self.correlation_id,
+            boundary: query.boundary.to_owned(),
+            // Resolved calls are egress by construction — only the ingress
+            // finalizer marker (ReplayHook::record) carries a role.
+            role: None,
+            trait_name: query.trait_name.to_owned(),
+            method_name: query.method_name.to_owned(),
+            args: query.args.clone(),
+            // An args-free serve did NOT resolve: this call's own address and
+            // arguments found no row, and only the mark says why the request
+            // continued anyway.
+            resolved: self.recorded_result.is_some() && !self.arg_divergent,
+            resolved_rank: self.resolved_rank,
+            source_event_global_sequence: self.source_event_global_sequence,
+            timestamp_ns: crate::now_ns(),
+            end_timestamp_ns: None,
+            task_id: self.task_id,
+            parent_task_id: self.parent_task_id,
+            task_bucket: self.task_bucket,
+            bucket_id: self.bucket_id,
+            fork_seq: self.fork_seq,
+            call_file: self.location.as_ref().map(|(f, _, _)| f.clone()),
+            call_line: self.location.as_ref().map(|(_, l, _)| *l),
+            call_column: self.location.as_ref().map(|(_, _, c)| *c),
+            span_path: crate::current_span_path(),
+            graph_node_id: self.graph_node_id,
+            // Outcome fields are stamped by `stamp_outcome` once the seam has
+            // decided; a hook that emits eagerly leaves them at these defaults.
+            synthesized: false,
+            real_impl_will_fail: false,
+            recorded_result: self.recorded_result,
+            observed_result,
+            provenance,
+            seed_gap: false,
+            absorbed: false,
+            outcome: crate::SubstituteOutcome::default(),
+            arg_divergent: self.arg_divergent,
+            served_event_global_sequence: self.served_event_global_sequence,
+            lookup_ordinal: Some(self.lookup_ordinal),
+            cancelled: false,
+        }
+    }
+}
+
+impl ObservedCall {
+    /// Stamp what the seam actually did with this lookup.
+    ///
+    /// Called from [`SubstituteToken::into_observed`](crate::SubstituteToken::into_observed)
+    /// after the site's reconstruct closure has run, which is the first moment
+    /// the outcome exists. `absorbed` and `synthesized` are kept in step here so
+    /// there is exactly one place the three representations can agree.
+    pub(crate) fn stamp_outcome(&mut self, outcome: crate::SubstituteOutcome) {
+        let synthesized = outcome == crate::SubstituteOutcome::Synthesized;
+        self.outcome = outcome;
+        self.absorbed = synthesized;
+        self.synthesized = synthesized;
+    }
+}
+
+impl crate::graph::GraphNodeSink for LookupTableHook {
+    fn graph_node(&self, node: deja_core::ExecutionGraphNode) {
+        self.record_graph_node(node);
+    }
+}
+
+impl DejaHook for LookupTableHook {
+    fn process_mode(&self) -> RuntimeMode {
+        RuntimeMode::Replay
+    }
+
+    fn try_replay_with_context(&self, query: ReplayLookup<'_>) -> Option<serde_json::Value> {
+        // Resolve the recorded baseline (advancing the stamper / sequence
+        // counters EXACTLY ONCE, shared with the execute path so numbering never
+        // drifts between lookup and execute boundaries), then emit a `Recorded`
+        // observation: under lookup mode the observed result IS the substituted
+        // recorded result, so the two sides are identical and ValueDiverged is
+        // inert.
+        let resolution = self.resolve(&query, ArgFreeFallback::Serve);
+        let recorded = resolution.recorded_result();
+        self.observed_sink.observed(resolution.into_observed_call(
+            &query,
+            // Lookup mode: observed == recorded (the substituted value).
+            recorded.clone(),
+            crate::Provenance::Recorded,
+        ));
+        recorded
+    }
+
+    fn substitute_peek(&self, query: ReplayLookup<'_>) -> crate::SubstitutePeek {
+        // Same resolution as `try_replay_with_context` — the stamper / sequence
+        // / occurrence counters advance EXACTLY ONCE, identically — but the
+        // observation is held back rather than emitted, so the seam can stamp
+        // what it actually did before it goes out.
+        let resolution = self.resolve(&query, ArgFreeFallback::Serve);
+        let recorded = resolution.recorded_result();
+        let observed = resolution.into_observed_call(
+            &query,
+            // Lookup mode: observed == recorded (the substituted value).
+            recorded.clone(),
+            crate::Provenance::Recorded,
+        );
+        crate::SubstitutePeek {
+            recorded,
+            token: Some(
+                crate::SubstituteToken::new(observed)
+                    .written_on_cancel_to(std::sync::Arc::clone(&self.observed_sink)),
+            ),
+        }
+    }
+
+    fn substitute_observe(&self, token: crate::SubstituteToken, outcome: crate::SubstituteOutcome) {
+        self.observed_sink.observed(token.into_observed(outcome));
+    }
+
+    fn flush(&self) -> std::io::Result<()> {
+        LookupTableHook::flush(self)
+    }
+
+    fn execute_shadow_peek(&self, query: ReplayLookup<'_>) -> Option<crate::ExecuteShadowToken> {
+        // First half of an execute-mode dispatch. Resolve the recorded baseline
+        // through the SAME path the lookup uses (so the stamper / sequence /
+        // occurrence counters advance identically — a run mixing lookup and
+        // execute boundaries keeps aligned numbering), but do NOT substitute and
+        // do NOT emit yet. Build the shadow observation with `observed_result =
+        // None`; the macro fills it after the real boundary call and hands the
+        // token back to `execute_shadow_observe`.
+        //
+        // `Skip`, so this path never SERVES an args-free value while its counter
+        // still advances with everything else: an execute site has the real
+        // boundary under it, so a miss here is already survivable, and the one
+        // thing the token's `recorded_result` decides — serving this call's own
+        // recorded `Err` for a state-neutral error — must mean its own.
+        let resolution = self.resolve(&query, ArgFreeFallback::Skip);
+        let observed = resolution.into_observed_call(
+            &query,
+            // Filled in by `execute_shadow_observe` from the real result.
+            None,
+            crate::Provenance::Shadow,
+        );
+        // NO `seed_gap` flagging here. At this layer `recorded_result.is_none()`
+        // means `resolve` found NO recorded event for this call AT ALL — i.e. the
+        // candidate made a NOVEL call with no recorded counterpart (e.g. the
+        // extra-call scenario: an extra db `find` the recording never had). That
+        // MUST surface as a blocking NovelCall divergence, NOT be swallowed as a
+        // non-blocking InconclusiveSeedGap (which masked the catch under #28's
+        // unconditional-Execute knob). With `seed_gap = false` and `resolved =
+        // false`, the post-hoc tally — finding no recorded twin to pair against —
+        // classifies it as NovelCall, exactly as the #26 lookup-miss path did.
+        // A recorded counterpart, when present, is resolved by the lookup table;
+        // seed planning is a separate precondition-materialization pass and does
+        // not decide whether this observation has a baseline.
+        Some(
+            crate::ExecuteShadowToken::new(observed)
+                .written_on_cancel_to(std::sync::Arc::clone(&self.observed_sink)),
+        )
+    }
+
+    fn execute_shadow_observe(
+        &self,
+        token: crate::ExecuteShadowToken,
+        observed_result: serde_json::Value,
+    ) {
+        // Second half: stamp the real boundary's result onto the carried
+        // observation and emit it. The post-hoc tally pairs this Shadow
+        // observation against the recorded baseline by args-free identity +
+        // occurrence and classifies ValueDiverged on a value diff.
+        let observed = token.into_observed(observed_result);
+        self.observed_sink.observed(observed);
+    }
+
+    fn try_replay(
+        &self,
+        boundary: &str,
+        trait_name: &str,
+        method_name: &str,
+        args: &serde_json::Value,
+    ) -> Option<serde_json::Value> {
+        // Delegate to try_replay_with_context with a stub query so legacy
+        // call paths still get a lookup attempt.
+        self.try_replay_with_context(ReplayLookup {
+            boundary,
+            trait_name,
+            method_name,
+            args,
+            callsite_identity: None,
+            caller_location: None,
+        })
+    }
+
+    fn record(&self, event: BoundaryEvent) {
+        // Lookup-table replay does not record back; the orchestrator's
+        // post-hoc divergence detector consumes the ObservedCall stream instead.
+        //
+        // The one exception is the ingress-side response finalizer. It reaches this
+        // hook through `LazyEventFinalizer::finalize()` rather than the lookup
+        // path, and its replay-side end timestamp is the scorer's authoritative
+        // "response finalized" boundary for undeclared-concurrency warnings.
+        // Ingress is self-described (`role: "ingress"`), with the legacy
+        // `http_incoming` name accepted for tapes/recorders that predate `role`.
+        if !event.is_ingress() {
+            return;
+        }
+        let event_lineage = serde_json::to_value(&event).unwrap_or(serde_json::Value::Null);
+        let raw_bucket_id = event_lineage
+            .get("bucket_id")
+            .and_then(serde_json::Value::as_str);
+        let fork_seq = event_lineage
+            .get("fork_seq")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0);
+        let bucket_id = raw_bucket_id
+            .or(event.task_bucket.as_deref())
+            .unwrap_or(crate::ROOT_TASK_ID)
+            .to_owned();
+        let task_bucket = event
+            .task_bucket
+            .clone()
+            .or_else(|| Some(bucket_id.clone()));
+        self.observed_sink.observed(ObservedCall {
+            correlation_id: event.correlation_id,
+            boundary: event.boundary,
+            role: event.role,
+            trait_name: event.trait_name,
+            method_name: event.method_name,
+            args: event.args.to_value(),
+            resolved: false,
+            resolved_rank: None,
+            source_event_global_sequence: None,
+            timestamp_ns: event.timestamp_ns,
+            end_timestamp_ns: event.end_timestamp_ns,
+            task_id: event.task_id,
+            parent_task_id: event.parent_task_id,
+            task_bucket,
+            bucket_id: Some(bucket_id),
+            fork_seq,
+            call_file: Some(event.call_file),
+            call_line: Some(event.call_line),
+            call_column: Some(event.call_column),
+            span_path: None,
+            graph_node_id: event.graph_node_id,
+            synthesized: false,
+            real_impl_will_fail: false,
+            recorded_result: None,
+            observed_result: Some(event.result.to_value()),
+            provenance: crate::Provenance::Recorded,
+            seed_gap: false,
+            // The ingress finalizer marker, not a lookup — there was no miss to
+            // absorb and no substitution to describe.
+            absorbed: false,
+            outcome: crate::SubstituteOutcome::default(),
+            arg_divergent: false,
+            served_event_global_sequence: None,
+            lookup_ordinal: None,
+            cancelled: false,
+        });
+    }
+
+    fn next_global_sequence(&self) -> u64 {
+        self.global_counter
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+    }
+
+    fn next_request_sequence(&self, _correlation_id: Option<&str>) -> u64 {
+        // The hot path (try_replay_with_context) bumps its own counter for
+        // key construction. This method is called by codegen that records
+        // events — we don't record at replay time, so the return value
+        // doesn't matter, but it must be a valid u64.
+        0
+    }
+
+    fn next_callsite_occurrence(
+        &self,
+        correlation_id: Option<&str>,
+        source: CallsiteSource,
+        scope: Option<&str>,
+    ) -> u32 {
+        // SINGLE source of truth for per-callsite occurrence at replay. The
+        // boundary macro / DB codegen calls this once per call to build the
+        // `CallsiteIdentity::occurrence` it stamps into the lookup identity.
+        // It MUST advance in lock-step with `RecordingHook` (one bump per call
+        // per `(correlation, bucket, source, scope)`) so the occurrence the renderer
+        // read off each recorded event lines up with the occurrence re-derived
+        // here at replay. The default trait impl returns a constant `0`, which
+        // would collapse every repeated callsite onto occurrence 0 and break
+        // rank-4 (`LexicalPath`) resolution after the first call.
+        let crate::TaskMetadata {
+            task_bucket,
+            bucket_id,
+            ..
+        } = crate::current_task_metadata(correlation_id);
+        let bucket_id = bucket_id
+            .or(task_bucket)
+            .or_else(|| Some(crate::ROOT_TASK_ID.to_string()));
+        let key = (
+            correlation_id.map(String::from),
+            bucket_id,
+            source,
+            scope.map(String::from),
+        );
+        let mut guard = self
+            .callsite_occurrence
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let entry = guard.entry(key).or_insert(0);
+        let value = *entry;
+        *entry += 1;
+        value
+    }
+}
+
+// ===========================================================================
+// Generic SEEDING pipeline (PURE, replay-side)
+// Replay re-runs selected boundaries against reconstructed state. The
+// preconditions come from facts recorded on each event: explicit `read_set` keys,
+// explicit `write_set` keys, typed state-key images, and additive declaration
+// metadata. Legacy string/method-name fallbacks are deliberately gone: old
+// opaque keys stay opaque, string values stay values, and DB creates are
+// recognized only when declared as [`OperationKind::Create`]. The functions
+// below read only `&[BoundaryEvent]` and produce plain data, so they are fully
+// unit-testable without docker. Materialization
+// is a separate, thin wiring step (see `deja-orchestrator` lifecycle) that walks
+// a `SeedPlan`.
+//
+// Design source: docs/design/recording-capture-decoupled.md §2.D, §5, §7.1.
+// ===========================================================================
+
+/// One precondition to materialize before a correlation is re-executed: the
+/// recorded `boundary`/`key` must hold `value`. Derived from explicit read-set
+/// captures and/or merged from an ambient template.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SeedEntry {
+    /// Recorded boundary this key belongs to.
+    pub boundary: String,
+    /// The state key from the recorded `read_set`.
+    pub key: String,
+    /// The recorded legacy value the key held when the correlation read it.
+    pub value: serde_json::Value,
+    /// Optional typed state image/precondition to materialize instead of `value`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image: Option<serde_json::Value>,
+    /// The recorded event's `method_name`, when the entry derives from the
+    /// recording (`None` for ambient entries). Materialization consults it
+    /// where the value alone is ambiguous — a redis `Array` is an `RPUSH`
+    /// list unless the method that read it names a sorted set (`ZADD`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub method: Option<String>,
+    /// How this entry entered the plan: derived from the recording's read-set,
+    /// or supplied by the ambient/config template.
+    pub origin: SeedOrigin,
+    /// `global_sequence` of the recorded event this entry's value came from
+    /// (`0` for ambient entries). Materialization orders by it: a tape can
+    /// carry TWO versions of one row under different state keys (an early
+    /// read's image and a post-update read's image), one store can only hold
+    /// one, and `ON CONFLICT DO NOTHING` keeps whichever lands first — so
+    /// first must mean FIRST OBSERVED, not first in key-string order.
+    /// Otherwise a later version can land before an earlier read's version
+    /// and every read of the early state diverges by the update's delta
+    /// (run-0811: 13 payment_methods timestamp divergences + 13 readback
+    /// misses from exactly this).
+    #[serde(default)]
+    pub source_sequence: u64,
+}
+
+/// Where a [`SeedEntry`] came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SeedOrigin {
+    /// Reconstructed from a recorded event's `read_set` + `result`.
+    #[default]
+    Recording,
+    /// Supplied by the static ambient/config template (deliverable 4).
+    Ambient,
+    /// A row the recording asserted without carrying (a delete's `Ok(true)`),
+    /// planted from the latest image of that row recorded before the delete,
+    /// in any correlation of the run. The value is a real row in the wrong
+    /// place and cannot look planted, so its provenance is recorded instead:
+    /// the global sequence of the event whose image was borrowed.
+    Borrowed { global_sequence: u64 },
+}
+
+/// The set of `(boundary, key, value)` preconditions to materialize for a
+/// correlation before re-execution, keyed by `(boundary, key)` so a later
+/// read-set occurrence (or an ambient default) resolves deterministically.
+///
+/// Built by [`build_seed_plan`] (deliverable 1) over a recording's events,
+/// optionally pre-loaded with an [`AmbientTemplate`] (deliverable 4). Consult it
+/// with [`Self::resolve`] / [`Self::classify_read`] (deliverable 3) to decide
+/// whether a candidate's diverged read is reconstructable.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SeedPlan {
+    /// `(boundary, key) -> entry`. A BTreeMap keeps materialization order stable
+    /// (so a `redis-cli SET` sequence is deterministic across runs).
+    entries: BTreeMap<(String, String), SeedEntry>,
+    /// Reads the planner concluded are NOT preconditions, with the rule that
+    /// reached each conclusion. The conclusions are correct — a read after this
+    /// correlation's own write observes the post-write value, and a read of a
+    /// table this correlation created collides with the replayed create — but a
+    /// drop with no record made `planned` silently under-count the tape's
+    /// reads, and "the planner declined on purpose" was indistinguishable from
+    /// "the planner never saw it". Deduped on `(boundary, key, reason)`: the
+    /// COUNT of these reads is uninteresting, the set of keys is the audit
+    /// surface.
+    non_preconditions: BTreeMap<(String, String, NotPreconditionReason), ()>,
+}
+
+/// Why [`build_seed_plan`] concluded a read it saw is not a precondition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NotPreconditionReason {
+    /// A prior event in this correlation WROTE the key; the read observes the
+    /// post-write value, not a precondition.
+    ReadAfterWrite,
+    /// This correlation CREATED rows in the table and the create or the read
+    /// names no rows, so the read cannot be told from a read-back of a created
+    /// row and is declined.
+    SelfCreatedTable,
+    /// The read returned a row this correlation CREATED, which its replayed
+    /// create rebuilds; seeding this key would collide with it.
+    SelfCreatedRow,
+    /// A delete that found NO key. The reply proves absence, so there is
+    /// nothing to seed — and seeding the reply as a value would create the key.
+    DeleteProvedAbsence,
+    /// The boundary declared it found nothing. There is no value to seed, and
+    /// the recording says the key was not there.
+    ReadFoundNothing,
+    /// The read ERRORED. Most such errors are not-founds, which would be
+    /// evidence of absence — but the boundary does not declare which of its
+    /// errors mean that, so the planner cannot tell one from a real failure
+    /// and draws no conclusion from either.
+    ReadErrored,
+    /// A delete that found the key, after an earlier op in this correlation
+    /// on it. The delete then proves only what that op left behind, so the
+    /// earlier op decides the precondition.
+    EarlierOpDecided,
+}
+
+impl SeedPlan {
+    /// An empty plan.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Insert (or overwrite) one precondition. Recording-derived entries take
+    /// precedence over ambient defaults for the SAME key (so a key actually
+    /// observed in the recording is seeded with what the recording saw, not the
+    /// template default); ambient never clobbers a recording entry.
+    pub fn upsert(&mut self, entry: SeedEntry) {
+        let k = (entry.boundary.clone(), entry.key.clone());
+        match self.entries.get(&k) {
+            // A recording-derived entry (recorded or borrowed) always wins over
+            // Ambient, and over a later recorded value: the FIRST is the
+            // precondition the correlation observed before it began mutating
+            // the key.
+            Some(existing) if existing.origin != SeedOrigin::Ambient => {}
+            _ => {
+                self.entries.insert(k, entry);
+            }
+        }
+    }
+
+    /// Number of preconditions in the plan.
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    /// Whether the plan is empty.
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    /// Resolve the seeded value for a `(boundary, key)`, if the plan has one.
+    pub fn resolve(&self, boundary: &str, key: &str) -> Option<&SeedEntry> {
+        self.entries.get(&(boundary.to_owned(), key.to_owned()))
+    }
+
+    /// Whether the plan (recording-derived OR ambient) covers this key.
+    pub fn contains(&self, boundary: &str, key: &str) -> bool {
+        self.resolve(boundary, key).is_some()
+    }
+
+    /// Iterate the preconditions in deterministic `(boundary, key)` order — the
+    /// materialization order the harness shells into the store.
+    pub fn iter(&self) -> impl Iterator<Item = &SeedEntry> {
+        self.entries.values()
+    }
+
+    /// Record a read the planner saw and concluded is not a precondition.
+    fn note_non_precondition(&mut self, boundary: &str, key: &str, reason: NotPreconditionReason) {
+        self.non_preconditions
+            .insert((boundary.to_owned(), key.to_owned(), reason), ());
+    }
+
+    /// The reads this plan concluded are not preconditions, in deterministic
+    /// order: `(boundary, key, why)`. Together with [`Self::iter`] this
+    /// accounts for every non-error state-read the planner was shown — the
+    /// property the seed certificate asserts. (Known as `masked_reads` before
+    /// the #40 rename: the status now names the conclusion, not the mechanism.)
+    pub fn non_precondition_reads(
+        &self,
+    ) -> impl Iterator<Item = (&str, &str, NotPreconditionReason)> {
+        self.non_preconditions
+            .keys()
+            .map(|(b, k, r)| (b.as_str(), k.as_str(), *r))
+    }
+
+    /// The distinct DB tables whose rows this plan seeds as read-preconditions
+    /// (parsed from the `db` entries' state keys). These are the tables that
+    /// MUST exist in the correlation's isolation schema so the seeded rows land
+    /// and replay reads resolve to them. Tables the correlation only WRITES to
+    /// (creates) are NOT here — they carry no seeded rows — see
+    /// [`build_write_target_tables`] for the write-isolation set. Sorted for
+    /// deterministic DDL.
+    pub fn touched_db_tables(&self) -> Vec<String> {
+        let mut tables: Vec<String> = self
+            .entries
+            .values()
+            .filter(|e| e.boundary == "db")
+            .filter_map(|e| db_table_for_state_key(&e.key))
+            .collect();
+        tables.sort();
+        tables.dedup();
+        tables
+    }
+
+    /// Merge an [`AmbientTemplate`] into this plan (deliverable 4). Ambient
+    /// entries fill keys the recording never observed (e.g. a config rate a
+    /// re-keyed read reaches for); they never overwrite a recording-derived
+    /// precondition. Returns `self` for chaining.
+    pub fn with_ambient(mut self, template: &AmbientTemplate) -> Self {
+        for entry in template.entries() {
+            self.upsert(entry.clone());
+        }
+        self
+    }
+
+    /// Classify a candidate's observed read against this plan (deliverable 3).
+    /// See [`ReadClassification`]. NEVER returns `Reconstructable` for a key the
+    /// plan does not cover — a key the recording never observed and the template
+    /// does not define is a seed-gap, surfaced rather than served stale.
+    pub fn classify_read(&self, boundary: &str, key: &str) -> ReadClassification {
+        match self.resolve(boundary, key) {
+            Some(entry) => ReadClassification::Reconstructable {
+                value: entry.value.clone(),
+                origin: entry.origin,
+            },
+            None => ReadClassification::NotReconstructable {
+                boundary: boundary.to_owned(),
+                key: key.to_owned(),
+            },
+        }
+    }
+}
+
+/// Verdict for a candidate's diverged read of a State key (deliverable 3).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReadClassification {
+    /// The key is in the seed plan (recording-derived or ambient): the read can
+    /// be reconstructed from `value`. `origin` distinguishes a real recorded
+    /// precondition from an ambient/config default.
+    Reconstructable {
+        value: serde_json::Value,
+        origin: SeedOrigin,
+    },
+    /// The key is NOT in the plan AND NOT in the ambient template — a seed-gap.
+    /// The harness must surface this (it maps to
+    /// [`DivergenceKind::InconclusiveSeedGap`]) rather than silently serving a
+    /// stale value for a key the recording never observed.
+    NotReconstructable { boundary: String, key: String },
+}
+
+impl ReadClassification {
+    /// Whether the read can be reconstructed (plan or template covers the key).
+    pub fn is_reconstructable(&self) -> bool {
+        matches!(self, ReadClassification::Reconstructable { .. })
+    }
+}
+
+/// Build a [`SeedPlan`] from a recording's events for ONE correlation.
+///
+/// For each matching event, every explicit `write_set` key marks that
+/// `(boundary, key)` as mutated. A non-error, non-miss event then seeds every
+/// explicit `read_set` key that has not already been written in the correlation
+/// to that event's recorded `result`.
+///
+/// PURE: reads only `&[BoundaryEvent]`, allocates plain data, performs no I/O.
+/// The FIRST recorded read of a key within the correlation wins (its value is
+/// the precondition that existed before the correlation began mutating it); a
+/// later read of the same key after a write reflects the mutation, not the
+/// precondition, so it must not overwrite the seed.
+///
+/// `correlation_id == None` selects events with no correlation (mirrors
+/// [`correlation_matches`]), so a single-case tape still builds a plan.
+///
+/// Whether a recorded read `result` structurally represents a MISS (no value
+/// present), which must NOT be seeded. JSON `null` is always absence. Declared
+/// Redis READ events also use the current serde encoding of `DejaRedisValue::Null`
+/// (`"Null"`), which is a typed Redis nil, not the literal string to seed. For
+/// boundaries that explicitly declare [`ReturnSemantics::Optional`], a successful
+/// `{"Ok": null}` result is also absence.
+fn is_miss_result(event: &BoundaryEvent) -> bool {
+    // Through the redis typed-codec envelope when present (identity for
+    // everything else): an enveloped `"value": null` is as much a miss as a
+    // raw null result.
+    if redis_seedable_result(event).is_null() {
+        return true;
+    }
+
+    if is_declared_redis_null_read(event) {
+        return true;
+    }
+
+    let returns_optional = event
+        .declaration
+        .as_ref()
+        .and_then(|declaration| declaration.returns)
+        .is_some_and(|returns| returns == ReturnSemantics::Optional);
+    if !returns_optional {
+        return false;
+    }
+
+    event
+        .result
+        .to_value()
+        .as_object()
+        .is_some_and(|object| object.get("Ok").is_some_and(serde_json::Value::is_null))
+}
+
+fn is_declared_redis_null_read(event: &BoundaryEvent) -> bool {
+    let Some(declaration) = event.declaration.as_ref() else {
+        return false;
+    };
+    declaration.effect == Some(EffectKind::Redis)
+        && !event.read_set.is_empty()
+        && redis_seedable_result(event).as_str() == Some("Null")
+}
+
+/// The value seed planning materializes for a REDIS event: the `value` inside
+/// a typed `ResultCodec` envelope (`{"version": _, "result": "Ok", "value": …}`)
+/// when the boundary recorded one, otherwise the raw result. Redis boundaries
+/// migrated to the typed codec wrap their wire value in the envelope; the seed
+/// must be the VALUE, not the envelope. DB events are NOT routed through this —
+/// the DB seeder parses its (identically shaped) `DejaDatabaseResult` envelope
+/// itself.
+/// Returns an owned value rather than a borrow: a [`Payload`] holds text, so
+/// the `Value` this reads is produced by the parse here and cannot outlive the
+/// call.
+fn redis_seedable_result(event: &BoundaryEvent) -> serde_json::Value {
+    let result = event.result.to_value();
+    let is_redis = event
+        .declaration
+        .as_ref()
+        .is_some_and(|declaration| declaration.effect == Some(EffectKind::Redis));
+    if !is_redis {
+        return result;
+    }
+    let Some(object) = result.as_object() else {
+        return result;
+    };
+    let is_ok_envelope = object.contains_key("version")
+        && object.get("result").and_then(serde_json::Value::as_str) == Some("Ok");
+    match (is_ok_envelope, object.get("value")) {
+        (true, Some(value)) => value.clone(),
+        _ => result.clone(),
+    }
+}
+
+fn is_db_create_event(event: &BoundaryEvent) -> bool {
+    event
+        .declaration
+        .as_ref()
+        .and_then(|declaration| declaration.op)
+        .is_some_and(|op| op == OperationKind::Create)
+}
+
+/// Returns an owned table name rather than a borrow: a [`Payload`] holds text,
+/// so the `Value` a name would be sliced out of is created by the parse here
+/// and cannot outlive this call. Both callers already owned the result.
+fn db_event_table(event: &BoundaryEvent) -> Option<String> {
+    let args = event.args.to_value();
+    if let Some(table) = db_table_from_event_args(&args) {
+        return Some(table.to_owned());
+    }
+    let request = event.request.to_value();
+    db_table_from_event_args(&request).map(str::to_owned)
+}
+
+fn db_table_for_state_key(key: &str) -> Option<String> {
+    StateKey::parse(key)
+        .ok()
+        .and_then(|state_key| state_key.db_table().map(str::to_owned))
+}
+
+/// The row keys among `keys` that name a row of `table`, canonical.
+fn db_row_keys_of_table<'a>(
+    keys: &'a [String],
+    table: &'a str,
+) -> impl Iterator<Item = String> + 'a {
+    keys.iter()
+        .filter_map(move |key| match StateKey::parse(key) {
+            Ok(StateKey::DbRow {
+                table: row_table, ..
+            }) if row_table == table => Some(canonical_state_key_wire(key)),
+            _ => None,
+        })
+}
+
+fn db_read_table(event: &BoundaryEvent, key: &str) -> Option<String> {
+    db_table_for_state_key(key).or_else(|| db_event_table(event))
+}
+
+fn db_created_table(event: &BoundaryEvent) -> Option<String> {
+    db_event_table(event).or_else(|| {
+        event
+            .write_set
+            .iter()
+            .find_map(|key| db_table_for_state_key(key))
+    })
+}
+
+/// The row-state key a typed row-image payload denotes, for indexing images by
+/// the row they describe. Reads the schema's key columns out of the payload's
+/// own column list, so it works on the physical (wire) image shape as well as
+/// the semantic one — and on a composite key, which is what
+/// `payment_intent`/`payment_attempt` have and what makes this lookup reach
+/// them at all.
+fn image_row_state_key(payload: &serde_json::Value) -> Option<String> {
+    let object = payload.as_object()?;
+    if object.get("deja_image").and_then(serde_json::Value::as_str) != Some("db_row") {
+        return None;
+    }
+    let table = object.get("table")?.as_str()?;
+    let columns = object.get("columns")?.as_array()?;
+    let mut key = Vec::new();
+    for identity_column in table_identity_columns(table)? {
+        let value = columns
+            .iter()
+            .find(|column| {
+                column.get("name").and_then(serde_json::Value::as_str)
+                    == Some(identity_column.as_str())
+            })?
+            .get("value")
+            .filter(|value| !value.is_null())?;
+        key.push((identity_column, db_pk_wire_value(value)));
+    }
+    Some(
+        StateKey::DbRow {
+            table: table.to_owned(),
+            key,
+        }
+        .to_wire(),
+    )
+}
+
+/// Split a row-image payload into its per-row payloads (an image is a single
+/// row object or an array of them).
+fn image_rows(image: &serde_json::Value) -> Vec<&serde_json::Value> {
+    match image {
+        serde_json::Value::Array(rows) => rows.iter().collect(),
+        row => vec![row],
+    }
+}
+
+/// Reassemble per-row payloads into an image payload of the same shape.
+fn image_from_rows(rows: Vec<serde_json::Value>) -> Option<serde_json::Value> {
+    match rows.len() {
+        0 => None,
+        1 => rows.into_iter().next(),
+        _ => Some(serde_json::Value::Array(rows)),
+    }
+}
+
+/// The images observed for each row so far in a correlation, keyed by row-state
+/// key. Rebuilt per correlation by [`build_seed_plan`]; the value is always the
+/// LAST image seen strictly before the event currently being planned.
+type ObservedRowImages = std::collections::HashMap<String, serde_json::Value>;
+
+fn preferred_seed_image(
+    event: &BoundaryEvent,
+    canonical_key: &str,
+    observed_rows: &ObservedRowImages,
+) -> Option<serde_json::Value> {
+    let read_write_same_key = event.boundary == "db"
+        && event
+            .write_set
+            .iter()
+            .any(|key| canonical_state_key_wire(key) == canonical_key);
+    if !read_write_same_key {
+        return event.result_image.as_ref().map(Payload::to_value);
+    }
+    // A DB read+write on the same state key is an RMW precondition: the state
+    // to seed is the row as it was BEFORE this event, and this event's
+    // `result_image` is the row AFTER. An explicit `pre_image` wins whenever a
+    // producer captured one.
+    if let Some(pre_image) = event.pre_image.clone() {
+        return Some(pre_image.to_value());
+    }
+    // No producer captures one, and none can: the pre-state is not in an
+    // `UPDATE … RETURNING` response, and postgres before 18 has no
+    // `RETURNING OLD.*`. But it does not need capturing — a correlation that
+    // updates a row has almost always READ it first (216 of 217 RMW events on
+    // the sandbox tape), so the pre-state is already on the tape a few events
+    // earlier. Substitute each row of the post-image with the last image
+    // observed for that same row, per row, so a multi-row update mixes
+    // correctly.
+    //
+    // Seeding the post-image instead is what made an earlier read diverge:
+    // two entries denoting one row raced into the store, `ON CONFLICT DO
+    // NOTHING` kept whichever landed first, and reads of the pre-state
+    // returned post-state values (13 payment_methods timestamp divergences
+    // and their 13 readback misses on run-0811).
+    let post_image = event.result_image.as_ref()?.to_value();
+    let rows = image_rows(&post_image);
+    let mut substituted = 0usize;
+    let resolved: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|row| {
+            image_row_state_key(row)
+                .and_then(|key| observed_rows.get(&key))
+                .map(|prior| {
+                    substituted += 1;
+                    prior.clone()
+                })
+                .unwrap_or_else(|| (*row).clone())
+        })
+        .collect();
+    if substituted == 0 {
+        // Nothing earlier was observed for any of these rows. The post-image
+        // is the only evidence there is; seeding it keeps the replayed UPDATE
+        // from hitting an empty table, and is sound whenever the update's
+        // predicate does not test a column it also writes. Left as-is rather
+        // than skipped — an absent row makes the write vanish, which is
+        // strictly worse than a post-state stand-in.
+        return Some(post_image);
+    }
+    image_from_rows(resolved)
+}
+
+/// The prefix this recording's physical redis keys carry, derived from its own
+/// reads: a read names the physical key in its read set and the logical key in
+/// its args, so the difference between them is the prefix.
+///
+/// `None` when no read shows the mapping, or when reads disagree — a delete
+/// then seeds nothing rather than guessing where the key lives.
+fn derived_key_prefix<'a>(events: impl Iterator<Item = &'a BoundaryEvent>) -> Option<String> {
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for event in events {
+        if !is_redis_event(event) {
+            continue;
+        }
+        let [state_key] = event.read_set.as_slice() else {
+            continue;
+        };
+        let state_key = canonical_state_key_wire(state_key);
+        let Some(logical) = event
+            .args
+            .to_value()
+            .get("key")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+        else {
+            continue;
+        };
+        let Some(prefix) = state_key.strip_suffix(&logical) else {
+            continue;
+        };
+        seen.insert(prefix.to_owned());
+    }
+    match seen.len() {
+        1 => seen.into_iter().next(),
+        _ => None,
+    }
+}
+
+/// The physical key a redis event names in its args, spelled with `prefix`.
+fn redis_args_key(event: &BoundaryEvent, prefix: Option<&str>) -> Option<String> {
+    if !is_redis_event(event) {
+        return None;
+    }
+    let args = event.args.to_value();
+    let logical = args.get("key").and_then(serde_json::Value::as_str)?;
+    Some(canonical_state_key_wire(&format!("{}{logical}", prefix?)))
+}
+
+/// Whether the event declares the redis effect.
+fn is_redis_event(event: &BoundaryEvent) -> bool {
+    event
+        .declaration
+        .as_ref()
+        .is_some_and(|declaration| declaration.effect == Some(EffectKind::Redis))
+}
+
+/// Whether a redis delete's reply proves the key was present. `None` when the
+/// event is not a delete reply.
+fn delete_proved_presence(event: &BoundaryEvent) -> Option<bool> {
+    if !is_redis_event(event) {
+        return None;
+    }
+    let result = event.result.to_value();
+    let reply = match &result {
+        serde_json::Value::String(s) => Some(s.clone()),
+        serde_json::Value::Object(m) => m
+            .get("value")
+            .or_else(|| m.get("result"))
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned),
+        _ => None,
+    }?;
+    match reply.as_str() {
+        "KeyDeleted" => Some(true),
+        "KeyNotDeleted" => Some(false),
+        _ => None,
+    }
+}
+
+/// What to seed for a reply that proves the key EXISTED but not what it held —
+/// a redis delete.
+///
+/// Seeding the reply itself would write "KeyDeleted" as the key's value, which
+/// is what happened to the key, not what it held. So the seed is a placeholder:
+/// presence without value. It cannot displace a real one — a correlation that
+/// read the key first seeds the true value, and `SeedPlan::upsert` keeps the
+/// first entry per key.
+///
+/// `KeyNotDeleted` seeds nothing: a delete that found no key is evidence of
+/// ABSENCE, and seeding presence there would contradict the recording.
+fn presence_placeholder_for(event: &BoundaryEvent) -> Option<serde_json::Value> {
+    delete_proved_presence(event)
+        .filter(|proved| *proved)
+        .map(|_| serde_json::Value::String(PRESENCE_PLACEHOLDER.to_owned()))
+}
+
+/// What a presence-only seed writes. Self-describing so a reader can tell it
+/// apart from recorded data.
+pub const PRESENCE_PLACEHOLDER: &str = "deja:seeded-presence";
+
+pub fn build_seed_plan(events: &[BoundaryEvent], correlation_id: Option<&str>) -> SeedPlan {
+    let mut plan = SeedPlan::new();
+    // A key is "pristine" until the correlation first WRITES it; only reads
+    // before the first write to a key describe the precondition.
+    let mut written: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
+    // What this correlation has explicitly CREATED, so its later reads of those
+    // rows are not seeded: it reconstructs them via its own replayed writes, and
+    // a seeded copy would collide with the replayed INSERT. Typed DB keys carry
+    // table identity directly; CREATE events also carry a structured DB
+    // args/request envelope with `"table"`. We deliberately do NOT mine legacy
+    // opaque `"{table}:{sql}"` strings or method names for table identity.
+    //
+    // The precondition is per ROW: a read of a row an earlier correlation made
+    // is still a precondition even after this one inserted into the same table.
+    // So a create's declared row keys are recorded, and a read is declined when
+    // a row it returned is one of them. Where either side declares no row
+    // identity, a read-back cannot be told from a read of a pre-existing row,
+    // and the whole table is declined as before. UPDATE/DELETE mutate
+    // PRE-EXISTING rows, which remain genuine preconditions to seed. Built in
+    // event order, so a read BEFORE any create still seeds.
+    let mut created_rows: std::collections::HashSet<(String, String)> =
+        std::collections::HashSet::new();
+    let mut created_tables: std::collections::HashSet<(String, String)> =
+        std::collections::HashSet::new();
+    let mut unidentified_created_tables: std::collections::HashSet<(String, String)> =
+        std::collections::HashSet::new();
+    // The last image observed for each row so far, so an RMW event can seed the
+    // state its row was in BEFORE it (see `preferred_seed_image`). Updated
+    // AFTER each event is planned, so an event never sees its own image.
+    let mut observed_rows: ObservedRowImages = std::collections::HashMap::new();
+    // Every row image in the run, across its correlations, for a presence-only
+    // delete to borrow its row from. Built on the first such delete.
+    let mut run_rows: Option<RunRowImages> = None;
+    // How this recording spells a physical redis key, so a delete that declares
+    // no read set can still name the key it proves existed.
+    // A delete-only correlation shows no read, so the rest of the run's
+    // recording is asked how keys are spelled.
+    let key_prefix = derived_key_prefix(
+        events
+            .iter()
+            .filter(|event| correlation_matches(event, correlation_id)),
+    )
+    .or_else(|| derived_key_prefix(events.iter()));
+    // Keys any earlier op in this correlation touched. A delete proves the
+    // key existed before the correlation only when it is the first op on it:
+    // after a set it proves the set, after a read the read already decided.
+    let mut touched: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
+
+    for event in events {
+        if !correlation_matches(event, correlation_id) {
+            continue;
+        }
+
+        // Seed THIS event's reads FIRST — excluded only by writes from PRIOR events,
+        // not this event's own write. This matters for a mutating op whose read-set
+        // key equals its write-set key. Such an op reads a PRE-EXISTING row (the one
+        // it mutates) — a genuine precondition — even when the correlation never
+        // issued a separate SELECT. If we marked the write before seeding, that
+        // pre-image read would be declined as "already written", the pre-existing row
+        // would never materialize into the correlation's schema, and the replayed
+        // UPDATE would hit an empty table. A read of a row this correlation created
+        // is still declined (it reconstructs those via its own replayed create), so
+        // create-then-update of the same row is unaffected.
+        if event.is_error {
+            // A not-found and a real failure are indistinguishable here: the
+            // error carries the service's own error type, not a meaning deja
+            // can read. So the planner concludes nothing and records that.
+            for key in &event.read_set {
+                plan.note_non_precondition(
+                    &event.boundary,
+                    &canonical_state_key_wire(key),
+                    NotPreconditionReason::ReadErrored,
+                );
+            }
+        } else if is_miss_result(event) {
+            for key in &event.read_set {
+                plan.note_non_precondition(
+                    &event.boundary,
+                    &canonical_state_key_wire(key),
+                    NotPreconditionReason::ReadFoundNothing,
+                );
+            }
+        } else {
+            for key in &event.read_set {
+                let canonical_key = canonical_state_key_wire(key);
+                let written_key = (event.boundary.clone(), canonical_key.clone());
+                if written.contains(&written_key) {
+                    plan.note_non_precondition(
+                        &event.boundary,
+                        &canonical_key,
+                        NotPreconditionReason::ReadAfterWrite,
+                    );
+                    continue;
+                }
+                // Don't seed a read of rows this correlation already created (it
+                // would collide with the replayed INSERT).
+                if event.boundary == "db" {
+                    if let Some(table) = db_read_table(event, key) {
+                        let table_key = (event.boundary.clone(), table);
+                        let returned: Vec<(String, String)> =
+                            db_row_keys_of_table(&event.read_set, &table_key.1)
+                                .map(|row| (event.boundary.clone(), row))
+                                .collect();
+                        let declined = if !created_tables.contains(&table_key) {
+                            None
+                        } else if unidentified_created_tables.contains(&table_key)
+                            || returned.is_empty()
+                        {
+                            Some(NotPreconditionReason::SelfCreatedTable)
+                        } else if matches!(StateKey::parse(key), Ok(StateKey::DbRow { .. })) {
+                            // A row key seeds only its own row. A row this correlation
+                            // created never gets here: the create wrote that exact key,
+                            // so the read was declined above as a read after a write.
+                            None
+                        } else if returned.iter().any(|row| created_rows.contains(row)) {
+                            // A query fingerprint seeds every row the read returned.
+                            Some(NotPreconditionReason::SelfCreatedRow)
+                        } else {
+                            None
+                        };
+                        if let Some(reason) = declined {
+                            plan.note_non_precondition(&event.boundary, &canonical_key, reason);
+                            continue;
+                        }
+                    }
+                }
+
+                // A delete that found NO key proves absence. Seeding the reply
+                // as a value would create the key — the opposite of what the
+                // recording shows — so the read is skipped and accounted.
+                if delete_proved_presence(event) == Some(false) {
+                    plan.note_non_precondition(
+                        &event.boundary,
+                        &canonical_key,
+                        NotPreconditionReason::DeleteProvedAbsence,
+                    );
+                    continue;
+                }
+                if delete_proved_presence(event) == Some(true) && touched.contains(&written_key) {
+                    plan.note_non_precondition(
+                        &event.boundary,
+                        &canonical_key,
+                        NotPreconditionReason::EarlierOpDecided,
+                    );
+                    continue;
+                }
+
+                let (image, origin) =
+                    match preferred_seed_image(event, &canonical_key, &observed_rows) {
+                        Some(image) => (Some(image), SeedOrigin::Recording),
+                        None => match presence_row_key(event) {
+                            // The correlation's own earlier image of the row is
+                            // what its own read plants: use it, never a rival.
+                            Some(row_key) if observed_rows.contains_key(&row_key) => {
+                                (observed_rows.get(&row_key).cloned(), SeedOrigin::Recording)
+                            }
+                            Some(row_key) => {
+                                let rows = run_rows.get_or_insert_with(|| run_row_images(events));
+                                match latest_image_before(rows, &row_key, event.global_sequence) {
+                                    Some((global_sequence, row)) => {
+                                        (Some(row), SeedOrigin::Borrowed { global_sequence })
+                                    }
+                                    None => (None, SeedOrigin::Recording),
+                                }
+                            }
+                            None => (None, SeedOrigin::Recording),
+                        },
+                    };
+                plan.upsert(SeedEntry {
+                    boundary: event.boundary.clone(),
+                    key: canonical_key.clone(),
+                    // Redis typed-codec envelopes seed their inner value; every
+                    // other boundary seeds the raw recorded result unchanged.
+                    // A reply that proves only presence seeds a placeholder.
+                    value: presence_placeholder_for(event)
+                        .unwrap_or_else(|| redis_seedable_result(event)),
+                    image,
+                    method: Some(event.method_name.clone()),
+                    origin,
+                    source_sequence: event.global_sequence,
+                });
+            }
+        }
+        // A delete declares no read set, so its key comes from its args, spelled
+        // the way the store holds it. Skipped when an earlier op in the
+        // correlation touched the key (not a precondition) or when the
+        // recording never showed the prefix.
+        if event.read_set.is_empty() && !(event.is_error || is_miss_result(event)) {
+            if let (Some(proved), Some(canonical_key)) = (
+                delete_proved_presence(event),
+                redis_args_key(event, key_prefix.as_deref()),
+            ) {
+                if !proved {
+                    // Absence: nothing to seed, but the certificate says so
+                    // rather than staying silent about the key.
+                    plan.note_non_precondition(
+                        &event.boundary,
+                        &canonical_key,
+                        NotPreconditionReason::DeleteProvedAbsence,
+                    );
+                } else if written.contains(&(event.boundary.clone(), canonical_key.clone())) {
+                    // Same conclusion the declared branch reaches for this key,
+                    // so it is named the same way.
+                    plan.note_non_precondition(
+                        &event.boundary,
+                        &canonical_key,
+                        NotPreconditionReason::ReadAfterWrite,
+                    );
+                } else if touched.contains(&(event.boundary.clone(), canonical_key.clone())) {
+                    plan.note_non_precondition(
+                        &event.boundary,
+                        &canonical_key,
+                        NotPreconditionReason::EarlierOpDecided,
+                    );
+                } else {
+                    plan.upsert(SeedEntry {
+                        boundary: event.boundary.clone(),
+                        key: canonical_key,
+                        value: serde_json::Value::String(PRESENCE_PLACEHOLDER.to_owned()),
+                        image: None,
+                        method: Some(event.method_name.clone()),
+                        origin: SeedOrigin::Recording,
+                        source_sequence: event.global_sequence,
+                    });
+                }
+            }
+        }
+        // THEN mark this event's writes: subsequent reads of these keys observe the
+        // post-write value (no longer a precondition), and a create additionally
+        // declines later read-backs of the rows it created (they'd collide with the
+        // replayed create), or of the whole table when it names no rows.
+        // A write that FAILED wrote nothing, so it must not mark its keys: a
+        // later read of one is still a precondition. Marking costs a missing
+        // row and a divergence charged to an innocent candidate; not marking
+        // costs at worst a seeded row the replayed write re-applies.
+        if !event.is_error {
+            for key in &event.write_set {
+                written.insert((event.boundary.clone(), canonical_state_key_wire(key)));
+            }
+        }
+        for key in event.read_set.iter().chain(&event.write_set) {
+            touched.insert((event.boundary.clone(), canonical_state_key_wire(key)));
+        }
+        if let Some(key) = redis_args_key(event, key_prefix.as_deref()) {
+            touched.insert((event.boundary.clone(), key));
+        }
+        // A create that failed created nothing, like the write marking above.
+        if event.boundary == "db" && is_db_create_event(event) && !event.is_error {
+            if let Some(table) = db_created_table(event) {
+                let rows: Vec<String> = db_row_keys_of_table(&event.write_set, &table).collect();
+                let table_key = (event.boundary.clone(), table);
+                if rows.is_empty() {
+                    unidentified_created_tables.insert(table_key.clone());
+                }
+                created_rows.extend(rows.into_iter().map(|row| (event.boundary.clone(), row)));
+                created_tables.insert(table_key);
+            }
+        }
+        // This event's rows become the latest observed state for anything
+        // planned after it. Recorded for every DB event that carries a typed
+        // image, including creates and RMWs: a later RMW's pre-state is
+        // whatever the most recent observation says, whoever wrote it.
+        if event.boundary == "db" {
+            if let Some(image) = &event.result_image {
+                for row in image_rows(&image.to_value()) {
+                    if let Some(key) = image_row_state_key(row) {
+                        observed_rows.insert(key, row.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    plan
+}
+
+/// The distinct DB tables this correlation WRITES to — the write-isolation set.
+/// A table here must exist in the correlation's schema (cloned from `public`) so
+/// replayed writes resolve to the isolation schema, not to the shared `public`
+/// base. Derived from the same events [`build_seed_plan`] scans: any event whose
+/// `write_set` or create-envelope names a DB table counts. Sorted for
+/// deterministic DDL.
+///
+/// Together with [`SeedPlan::touched_db_tables`], this is the full set of tables
+/// the harness must clone per correlation — everything else resolves to the
+/// (empty, freshly-migrated) `public` via `search_path` fallback as a correct
+/// miss, so it need not be cloned.
+pub fn build_write_target_tables(
+    events: &[BoundaryEvent],
+    correlation_id: Option<&str>,
+) -> Vec<String> {
+    let mut tables: Vec<String> = Vec::new();
+    for event in events {
+        if !correlation_matches(event, correlation_id) {
+            continue;
+        }
+        if event.boundary != "db" {
+            continue;
+        }
+        // A create event names its table in the args/request envelope; other
+        // writes carry table identity in their write_set state keys.
+        if let Some(table) = db_created_table(event) {
+            tables.push(table);
+            continue;
+        }
+        for key in &event.write_set {
+            if let Some(table) = db_table_for_state_key(key) {
+                tables.push(table);
+            }
+        }
+    }
+    tables.sort();
+    tables.dedup();
+    tables
+}
+
+// ---------------------------------------------------------------------------
+// Ambient template (deliverable 4) — static config/ambient state
+// ---------------------------------------------------------------------------
+
+/// A static template of ambient/config State that is NOT part of any one
+/// recording's observed read-set but that a re-keyed / diverged read may reach
+/// for (e.g. `settlement_rate_premium`). Merged into a [`SeedPlan`] via
+/// [`SeedPlan::with_ambient`] so such reads resolve from the template rather
+/// than being flagged as seed-gaps.
+///
+/// The default ([`AmbientTemplate::demo_defaults`]) carries the EU-settlement
+/// demo's premium rate, replacing the hand-coded `redis-cli SET
+/// settlement_rate_premium 0.20` in the lifecycle driver.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AmbientTemplate {
+    /// Ambient entries, each an `Ambient`-origin precondition.
+    entries: Vec<SeedEntry>,
+}
+
+impl AmbientTemplate {
+    /// An empty template.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Register an ambient `(boundary, key, value)`. Stamped `SeedOrigin::Ambient`.
+    pub fn insert(
+        &mut self,
+        boundary: impl Into<String>,
+        key: impl Into<String>,
+        value: serde_json::Value,
+    ) {
+        self.entries.push(SeedEntry {
+            boundary: boundary.into(),
+            key: key.into(),
+            value,
+            image: None,
+            method: None,
+            origin: SeedOrigin::Ambient,
+            source_sequence: 0,
+        });
+    }
+
+    /// The ambient entries.
+    pub fn entries(&self) -> &[SeedEntry] {
+        &self.entries
+    }
+
+    /// Whether the template defines anything.
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
+    /// Parse a template from simple `boundary\tkey\tvalue` lines (one per line,
+    /// `#`-comments and blanks ignored). `value` is parsed as JSON if it is
+    /// valid JSON, else treated as a JSON string — so `0.20` becomes a number
+    /// and `usd` becomes `"usd"`. Lets the demo's ambient config live in a file
+    /// (deliverable 4) instead of being hard-coded.
+    pub fn from_tsv(text: &str) -> Self {
+        let mut template = Self::new();
+        for line in text.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let mut cols = line.splitn(3, '\t');
+            let (Some(boundary), Some(key), Some(raw)) = (cols.next(), cols.next(), cols.next())
+            else {
+                continue;
+            };
+            let value = serde_json::from_str::<serde_json::Value>(raw.trim())
+                .unwrap_or_else(|_| serde_json::Value::String(raw.trim().to_owned()));
+            template.insert(boundary.trim(), key.trim(), value);
+        }
+        template
+    }
+
+    /// The EU-settlement demo's ambient defaults. The premium rate is the value
+    /// a re-keyed settlement read reaches for during replay; sourcing it here
+    /// (instead of a hand-coded `redis-cli SET`) is deliverable 4. The
+    /// value is stored raw as it would sit in redis (a string `"0.20"`), so the
+    /// materializer writes byte-identical bytes to the old literal seed.
+    pub fn demo_defaults() -> Self {
+        let mut template = Self::new();
+        // The premium settlement rate the divergent (re-keyed) read observes.
+        // Was a hand-coded `redis-cli SET settlement_rate_premium 0.20`.
+        template.insert(
+            "redis",
+            "settlement_rate_premium",
+            serde_json::Value::String("0.20".to_owned()),
+        );
+        template
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)] // tests panic on failure by design
+mod body_identity_tests {
+    use super::*;
+
+    /// One captured form body, its fields in the given order.
+    fn form_body(fields: &[&str]) -> serde_json::Value {
+        let text = fields.join("&");
+        serde_json::json!({
+            "kind": "FormUrlEncodedRequestBody",
+            "captured": true,
+            "json": serde_json::Value::Null,
+            "bytes_len": text.len(),
+            "raw_bytes": text.as_bytes(),
+        })
+    }
+
+    fn args_with(body: serde_json::Value) -> serde_json::Value {
+        serde_json::json!({
+            "url": "https://api.stripe.com/v1/payment_intents",
+            "method": "Post",
+            "request_body": body,
+        })
+    }
+
+    #[test]
+    fn form_body_field_order_does_not_change_call_identity() {
+        // The real failure: a connector request whose `metadata` map serialized
+        // in a different order on replay than it did while recording. Same
+        // fields, same values, same length — and the call could not be matched
+        // to its own recording at any address rank, because the args hash is
+        // part of every rank's key.
+        let recorded = args_with(form_body(&[
+            "amount=66650",
+            "metadata%5Blogin_date%5D=2019-09-10T10%3A11%3A12Z",
+            "metadata%5Bnew_customer%5D=false",
+            "metadata%5Border_id%5D=pay_ENhoTvTSqEwEAQ7NWOpO_1",
+        ]));
+        let observed = args_with(form_body(&[
+            "amount=66650",
+            "metadata%5Border_id%5D=pay_ENhoTvTSqEwEAQ7NWOpO_1",
+            "metadata%5Bnew_customer%5D=false",
+            "metadata%5Blogin_date%5D=2019-09-10T10%3A11%3A12Z",
+        ]));
+        assert_eq!(
+            canonical_args_hash(&recorded),
+            canonical_args_hash(&observed)
+        );
+    }
+
+    #[test]
+    fn form_body_field_values_still_change_call_identity() {
+        // Order-independence must not become value-blindness.
+        let a = args_with(form_body(&["amount=66650", "currency=USD"]));
+        let b = args_with(form_body(&["amount=66651", "currency=USD"]));
+        assert_ne!(canonical_args_hash(&a), canonical_args_hash(&b));
+
+        // Nor may a field be dropped without notice.
+        let c = args_with(form_body(&["amount=66650"]));
+        assert_ne!(canonical_args_hash(&a), canonical_args_hash(&c));
+    }
+
+    #[test]
+    fn json_body_key_order_does_not_change_call_identity() {
+        // Same defect, other encoding: a JSON body carries `raw_bytes` and
+        // `text` renderings whose key order is not stable. The parsed document
+        // is what identifies the call.
+        let body = |text: &str| {
+            serde_json::json!({
+                "kind": "JsonRequestBody",
+                "captured": true,
+                "json": serde_json::from_str::<serde_json::Value>(text).unwrap(),
+                "text": text,
+                "utf8": true,
+                "bytes_len": text.len(),
+                "raw_bytes": text.as_bytes(),
+            })
+        };
+        let recorded = args_with(body(r#"{"card":"4242","name":"joseph"}"#));
+        let observed = args_with(body(r#"{"name":"joseph","card":"4242"}"#));
+        assert_eq!(
+            canonical_args_hash(&recorded),
+            canonical_args_hash(&observed)
+        );
+
+        let different = args_with(body(r#"{"name":"joseph","card":"4243"}"#));
+        assert_ne!(
+            canonical_args_hash(&recorded),
+            canonical_args_hash(&different)
+        );
+    }
+
+    #[test]
+    fn encoding_kind_distinguishes_otherwise_identical_bodies() {
+        let form = args_with(form_body(&["a=1"]));
+        let json = args_with(serde_json::json!({
+            "kind": "JsonRequestBody",
+            "captured": true,
+            "json": {"a": "1"},
+            "bytes_len": 3,
+            "raw_bytes": b"a=1",
+        }));
+        assert_ne!(canonical_args_hash(&form), canonical_args_hash(&json));
+    }
+
+    #[test]
+    fn an_uncaptured_body_falls_back_to_generic_hashing() {
+        // No document and no bytes to canonicalize: the object must still hash,
+        // and still distinguish itself from a captured one.
+        let uncaptured = args_with(serde_json::json!({
+            "kind": "JsonRequestBody",
+            "captured": false,
+            "json": serde_json::Value::Null,
+            "bytes_len": 0,
+        }));
+        let captured = args_with(serde_json::json!({
+            "kind": "JsonRequestBody",
+            "captured": true,
+            "json": {"a": 1},
+            "bytes_len": 7,
+        }));
+        assert_ne!(
+            canonical_args_hash(&uncaptured),
+            canonical_args_hash(&captured)
+        );
+    }
+
+    #[test]
+    fn an_unrecognised_body_kind_hashes_generically() {
+        // A kind this does not understand must not silently canonicalize to
+        // something order-insensitive — it keeps the conservative behaviour.
+        let a = args_with(serde_json::json!({
+            "kind": "XmlRequestBody", "captured": true, "raw_bytes": b"<a/><b/>",
+        }));
+        let b = args_with(serde_json::json!({
+            "kind": "XmlRequestBody", "captured": true, "raw_bytes": b"<b/><a/>",
+        }));
+        assert_ne!(canonical_args_hash(&a), canonical_args_hash(&b));
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)] // tests panic on failure by design
+mod tests {
+    use super::*;
+    use crate::{now_ns, BoundaryEvent};
+
+    /// Row identity comes from a real schema at run time; tests stand in for
+    /// that read with the same shape the statement returns. Registered once for
+    /// the whole test binary, and idempotently, so any test that needs row keys
+    /// can call it without ordering assumptions.
+    fn register_test_schema_identity() {
+        register_table_identity([
+            ("payment_attempt".to_owned(), vec!["attempt_id".to_owned()]),
+            ("payment_intent".to_owned(), vec!["payment_id".to_owned()]),
+            (
+                "payment_methods".to_owned(),
+                vec!["payment_method_id".to_owned()],
+            ),
+            (
+                "merchant_account".to_owned(),
+                vec!["merchant_id".to_owned()],
+            ),
+            (
+                "merchant_key_store".to_owned(),
+                vec!["merchant_id".to_owned()],
+            ),
+            ("business_profile".to_owned(), vec!["profile_id".to_owned()]),
+            (
+                "merchant_connector_account".to_owned(),
+                vec!["merchant_connector_id".to_owned()],
+            ),
+            ("customers".to_owned(), vec!["customer_id".to_owned()]),
+            ("users".to_owned(), vec!["user_id".to_owned()]),
+            ("api_keys".to_owned(), vec!["key_id".to_owned()]),
+            ("address".to_owned(), vec!["address_id".to_owned()]),
+            ("configs".to_owned(), vec!["key".to_owned()]),
+            // A composite key, to keep the "no single identifying column"
+            // branch honest: this table must take the query-fingerprint path.
+            (
+                "incremental_authorization".to_owned(),
+                vec!["authorization_id".to_owned(), "merchant_id".to_owned()],
+            ),
+        ]);
+    }
+
+    /// Identity is read from the schema, and the row-key grammar carries
+    /// whatever shape it arrives in: one column or several, in key order. An
+    /// unregistered table yields nothing rather than a guess.
+    #[test]
+    fn row_identity_comes_from_the_registered_schema() {
+        register_test_schema_identity();
+        assert_eq!(
+            table_identity_columns("users"),
+            Some(vec!["user_id".to_owned()]),
+            "a single-column key"
+        );
+        assert_eq!(
+            table_identity_columns("incremental_authorization"),
+            Some(vec![
+                "authorization_id".to_owned(),
+                "merchant_id".to_owned()
+            ]),
+            "a composite key, in the schema's key order"
+        );
+        assert_eq!(
+            table_identity_columns("a_table_nobody_registered"),
+            None,
+            "an unregistered table yields no key rather than a guess"
+        );
+        assert!(table_identity_is_registered());
+    }
+
+    fn make_event(
+        req_seq: u64,
+        correlation_id: Option<&str>,
+        method: &str,
+        args: serde_json::Value,
+        result: serde_json::Value,
+        is_error: bool,
+    ) -> BoundaryEvent {
+        let args = Payload::from(args);
+        let result = Payload::from(result);
+        BoundaryEvent {
+            global_sequence: req_seq,
+            request_sequence: req_seq,
+            correlation_id: correlation_id.map(String::from),
+            timestamp_ns: now_ns(),
+            recording_run_id: None,
+            graph_node_id: None,
+            tracing_span_id: None,
+            task_id: Some(crate::ROOT_TASK_ID.to_string()),
+            parent_task_id: None,
+            task_bucket: Some(crate::ROOT_TASK_ID.to_string()),
+            bucket_id: Some(crate::ROOT_TASK_ID.to_string()),
+            fork_seq: Some(0),
+            boundary: "storage".into(),
+            trait_name: "PaymentStore".into(),
+            method_name: method.into(),
+            call_file: "test.rs".into(),
+            call_line: 10,
+            call_column: 5,
+            receiver: None,
+            request: args.clone(),
+            args,
+            response: result.clone(),
+            result,
+            is_error,
+            duration_us: 100,
+            event_schema_version: crate::CURRENT_EVENT_SCHEMA_VERSION,
+            callsite_identity: None,
+            provenance: crate::Provenance::default(),
+            fidelity: crate::Fidelity::default(),
+            result_image: None,
+            pre_image: None,
+            read_set: Vec::new(),
+            write_set: Vec::new(),
+            value_digest: None,
+            entropy_source: None,
+            replay_strategy: crate::ReplayStrategy::default(),
+            kind: None,
+            role: None,
+            declaration: None,
+            raw_draw: None,
+            end_timestamp_ns: None,
+        }
+    }
+
+    #[test]
+    fn replay_exact_match() {
+        let events = vec![make_event(
+            0,
+            None,
+            "find_user",
+            serde_json::json!({"id": 42}),
+            serde_json::json!({"Ok": "Alice"}),
+            false,
+        )];
+
+        let hook = ReplayHook::new(events, ReplayConfig::default(), 100);
+
+        let result = hook.try_replay(
+            "storage",
+            "PaymentStore",
+            "find_user",
+            &serde_json::json!({"id": 42}),
+        );
+
+        assert_eq!(result, Some(serde_json::json!({"Ok": "Alice"})));
+        let report = hook.take_report();
+        assert_eq!(report.matched_calls, 1);
+        assert!(report.divergences.is_empty());
+    }
+
+    #[test]
+    fn replay_novel_call_logged_as_divergence() {
+        let events = vec![make_event(
+            0,
+            None,
+            "find_user",
+            serde_json::json!({"id": 42}),
+            serde_json::json!({"Ok": "Alice"}),
+            false,
+        )];
+
+        let hook = ReplayHook::new(events, ReplayConfig::default(), 100);
+
+        let result = hook.try_replay(
+            "storage",
+            "PaymentStore",
+            "delete_user",
+            &serde_json::json!({"id": 42}),
+        );
+
+        assert!(result.is_none());
+        let report = hook.take_report();
+        assert_eq!(report.divergences.len(), 1);
+        assert_eq!(report.divergences[0].kind, DivergenceKind::NovelCall);
+    }
+
+    #[test]
+    fn replay_sliding_window_recovery() {
+        let events = vec![
+            make_event(
+                0,
+                None,
+                "step_a",
+                serde_json::json!({}),
+                serde_json::json!({"Ok": true}),
+                false,
+            ),
+            make_event(
+                1,
+                None,
+                "step_b",
+                serde_json::json!({}),
+                serde_json::json!({"Ok": true}),
+                false,
+            ),
+            make_event(
+                2,
+                None,
+                "step_c",
+                serde_json::json!({"x": 1}),
+                serde_json::json!({"Ok": "found"}),
+                false,
+            ),
+        ];
+
+        let hook = ReplayHook::new(events, ReplayConfig::default(), 100);
+
+        // Simulate: V2 skips step_a and step_b, goes straight to step_c
+        let result = hook.try_replay(
+            "storage",
+            "PaymentStore",
+            "step_c",
+            &serde_json::json!({"x": 1}),
+        );
+
+        assert_eq!(result, Some(serde_json::json!({"Ok": "found"})));
+        let report = hook.take_report();
+        assert_eq!(report.divergences.len(), 1);
+        assert_eq!(report.divergences[0].kind, DivergenceKind::OmittedCall);
+        assert!(report.divergences[0].detail.contains("2"));
+    }
+
+    #[test]
+    fn replay_arg_mismatch_argful_default() {
+        let events = vec![make_event(
+            0,
+            None,
+            "find_user",
+            serde_json::json!({"id": 42}),
+            serde_json::json!({"Ok": "Alice"}),
+            false,
+        )];
+
+        // `OnlyForArgful` (default) lets argful calls fall back to a recorded
+        // result on arg mismatch.
+        let hook = ReplayHook::new(events, ReplayConfig::default(), 100);
+
+        let result = hook.try_replay(
+            "storage",
+            "PaymentStore",
+            "find_user",
+            &serde_json::json!({"id": 99}),
+        );
+
+        assert_eq!(result, Some(serde_json::json!({"Ok": "Alice"})));
+        let report = hook.take_report();
+        assert_eq!(report.divergences.len(), 1);
+        assert_eq!(report.divergences[0].kind, DivergenceKind::ArgsDiverged);
+    }
+
+    /// P2 correctness gate: a call whose recorded args are JSON-null (the
+    /// "argless boundary" shape used by time / id / random) MUST NOT silently
+    /// hand back the recorded result when V2 calls with EMPTY-OBJECT args
+    /// (the other "argless" shape) under the default `OnlyForArgful` policy.
+    /// A clock or id generator that lied about its arg signature is the
+    /// worst possible failure mode for replay.
+    #[test]
+    fn argless_call_fails_closed_under_default_policy() {
+        let events = vec![make_event(
+            0,
+            None,
+            "current_time",
+            serde_json::Value::Null,
+            serde_json::json!({"Ok": 1_700_000_000_u64}),
+            false,
+        )];
+
+        let hook = ReplayHook::new(events, ReplayConfig::default(), 100);
+
+        // V2 calls with an empty-object arg shape — DIFFERENT from the
+        // recorded `null` (so the first-pass exact match misses) but still
+        // "argless" by policy. `allow_arg_mismatch` MUST return false.
+        let result = hook.try_replay(
+            "storage",
+            "PaymentStore",
+            "current_time",
+            &serde_json::json!({}),
+        );
+
+        assert!(
+            result.is_none(),
+            "default policy must NOT return a recorded argless result on mismatch"
+        );
+
+        let report = hook.take_report();
+        assert!(
+            report.divergence_count > 0,
+            "argless mismatch must register at least one divergence"
+        );
+        assert!(
+            report
+                .divergences
+                .iter()
+                .any(|d| d.kind == DivergenceKind::ArgSkipBlocked),
+            "expected at least one ArgSkipBlocked divergence; got: {:?}",
+            report
+                .divergences
+                .iter()
+                .map(|d| d.kind.clone())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    // -----------------------------------------------------------------
+    // Lookup-table replay tests
+    // -----------------------------------------------------------------
+
+    fn entry_with(
+        correlation_id: Option<&str>,
+        locus: Locus,
+        args: &serde_json::Value,
+        occurrence: u32,
+        result: serde_json::Value,
+        source_event_global_sequence: u64,
+    ) -> LookupEntry {
+        LookupEntry {
+            key: LookupKey {
+                correlation_id: correlation_id.map(str::to_owned),
+                bucket_id: Some(crate::ROOT_TASK_ID.to_string()),
+                fork_seq: 0,
+                // Identity must equal what the querying test asks for or nothing
+                // resolves. These fixtures exercise locus/args resolution, so
+                // identity is held constant at the tuple most of them query.
+                boundary: "redis".to_owned(),
+                component: "RedisStore".to_owned(),
+                operation: "get_key".to_owned(),
+                locus,
+                args_hash: canonical_args_hash(args),
+                occurrence,
+            },
+            result: std::sync::Arc::new(result),
+            source_event_global_sequence,
+        }
+    }
+
+    #[test]
+    fn lookup_entry_without_bucket_fields_deserializes_with_defaults() {
+        let mut legacy = serde_json::to_value(LookupEntry {
+            key: LookupKey {
+                correlation_id: Some("corr-legacy".to_owned()),
+                bucket_id: Some("bucket-ignored-before-removal".to_owned()),
+                fork_seq: 42,
+                boundary: "test".to_owned(),
+                component: "tests".to_owned(),
+                operation: "op".to_owned(),
+                locus: explicit("legacy-site"),
+                args_hash: 7,
+                occurrence: 0,
+            },
+            result: std::sync::Arc::new(serde_json::json!("v")),
+            source_event_global_sequence: 11,
+        })
+        .unwrap();
+        let key = legacy
+            .get_mut("key")
+            .and_then(serde_json::Value::as_object_mut)
+            .unwrap();
+        key.remove("bucket_id");
+        key.remove("fork_seq");
+
+        let entry: LookupEntry =
+            serde_json::from_value(legacy).expect("legacy lookup entry must deserialize");
+        assert_eq!(entry.key.bucket_id, None);
+        assert_eq!(entry.key.fork_seq, 0);
+    }
+
+    fn explicit(tag: &str) -> Locus {
+        Locus::DeclaredSite(tag.to_owned())
+    }
+
+    fn lexical_identity(path: &str) -> CallsiteIdentity {
+        CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::LexicalPath,
+            id: None,
+            scope: None,
+            occurrence: 0,
+            caller_function: None,
+            lexical_path: Some(path.to_owned()),
+            syntax_hash: None,
+            span_path: None,
+        }
+    }
+
+    fn explicit_identity(tag: &str) -> CallsiteIdentity {
+        CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::Explicit,
+            id: Some(tag.to_owned()),
+            scope: None,
+            occurrence: 0,
+            caller_function: None,
+            lexical_path: None,
+            syntax_hash: None,
+            span_path: None,
+        }
+    }
+
+    struct VecSource(Option<LookupTable>);
+    impl LookupTableSource for VecSource {
+        fn load(&mut self) -> std::io::Result<LookupTable> {
+            self.0
+                .take()
+                .ok_or_else(|| std::io::Error::other("double-load not supported in test"))
+        }
+    }
+
+    #[test]
+    fn local_file_lookup_source_reads_jsonl() {
+        use std::io::Write;
+        let dir = tempfile::tempdir().expect("tmp");
+        let path = dir.path().join("table.jsonl");
+        let mut file = std::fs::File::create(&path).expect("create");
+        let entry = entry_with(
+            Some("c-1"),
+            Locus::Unlocated,
+            &serde_json::json!({}),
+            0,
+            serde_json::json!("hello"),
+            42,
+        );
+        writeln!(file, "{}", serde_json::to_string(&entry).unwrap()).unwrap();
+        drop(file);
+
+        let mut source = LocalFileLookupSource::new(&path);
+        let table = source.load().expect("load");
+        assert_eq!(table.entries.len(), 1);
+        assert_eq!(*table.entries[0].result, serde_json::json!("hello"));
+    }
+
+    #[test]
+    fn lookup_table_hook_resolves_by_args_hash_and_records_observation() {
+        // Two calls to the same explicit site, distinguished only by their
+        // args. Each has occurrence 0 because the (address, args_hash) buckets
+        // differ — so resolution is keyed by *what* was called, not *when*.
+        let table = LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![
+                entry_with(
+                    None,
+                    explicit("site"),
+                    &serde_json::json!({ "id": 1 }),
+                    0,
+                    serde_json::json!("alpha"),
+                    7,
+                ),
+                entry_with(
+                    None,
+                    explicit("site"),
+                    &serde_json::json!({ "id": 2 }),
+                    0,
+                    serde_json::json!("beta"),
+                    9,
+                ),
+            ],
+            identity_entries: Vec::new(),
+        };
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        let identity = explicit_identity("site");
+        let call = |args: serde_json::Value| {
+            hook.try_replay_with_context(ReplayLookup {
+                boundary: "redis",
+                trait_name: "RedisStore",
+                method_name: "get_key",
+                args: &args,
+                callsite_identity: Some(&identity),
+                caller_location: None,
+            })
+        };
+
+        // Drive args id:2 BEFORE id:1 — the opposite of recorded order — to
+        // prove order independence even within this small case.
+        assert_eq!(
+            call(serde_json::json!({ "id": 2 })),
+            Some(serde_json::json!("beta"))
+        );
+        assert_eq!(
+            call(serde_json::json!({ "id": 1 })),
+            Some(serde_json::json!("alpha"))
+        );
+        // A novel-arg call at this existing call-site now misses. The
+        // arg-tolerant fallback is removed; under the partial-function model a
+        // re-keyed call is an honest miss. At the dispatch seam this fail-stops;
+        // at the hook layer it is a plain None.
+        assert_eq!(
+            call(serde_json::json!({ "id": 3 })),
+            None,
+            "a re-keyed call now misses instead of serving a stale value"
+        );
+
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len(), 3);
+        assert_eq!(
+            calls[0].resolved_rank,
+            Some(1),
+            "explicit address is rank 1"
+        );
+        assert_eq!(calls[0].source_event_global_sequence, Some(9));
+        assert_eq!(calls[1].source_event_global_sequence, Some(7));
+        // call 3 (novel args) is now an unresolved miss.
+        assert!(!calls[2].resolved);
+        assert_eq!(calls[2].resolved_rank, None);
+        assert_eq!(
+            calls[0].boundary, "redis",
+            "boundary carried on the observation"
+        );
+    }
+
+    /// A clock call site: a span path, an operation-specific syntax hash, and
+    /// no arguments — the shape that made rank 2 ambiguous.
+    fn clock_identity(span: &str, syntax_hash: u64) -> crate::CallsiteIdentity {
+        let mut id = lexical_identity("router::core");
+        id.syntax_hash = Some(syntax_hash);
+        id.span_path = Some(span.to_owned());
+        id
+    }
+
+    fn at_rank(addresses: &[Locus], rank: u8) -> Locus {
+        addresses
+            .iter()
+            .find(|a| a.rank() == rank)
+            .unwrap_or_else(|| panic!("no rank-{rank} address in {addresses:?}"))
+            .clone()
+    }
+
+    #[test]
+    fn two_operations_in_one_span_share_a_locus_and_still_address_differently() {
+        // THE INVARIANT, stated where it now lives.
+        //
+        // These two clock reads are made from the SAME span, so their loci are
+        // byte-identical — and that is correct, because a locus answers WHERE
+        // and they are in the same place. What separates them is identity,
+        // which is a sibling of the locus on the key rather than a field inside
+        // it.
+        //
+        // Before this split the separation lived in the locus, added to rank 2
+        // and rank 4 by #145 after a FIFO over one shared bucket served
+        // `now_unix_timestamp_millis`'s recorded integer to `date_time::now`
+        // and returned HTTP 500 on every correlation. Ranks 1, 5 and 6 were not
+        // given the field. The scheme therefore still depended on every locus
+        // variant remembering to carry a fact that was never a location.
+        let here = loci_for(Some(&clock_identity("http>pay", 111)), None);
+        let there = loci_for(Some(&clock_identity("http>pay", 111)), None);
+        assert_eq!(
+            at_rank(&here, 2),
+            at_rank(&there, 2),
+            "same span, same locus — a locus must not be able to express identity"
+        );
+
+        let mut stamper = KeyStamper::new();
+        let args = serde_json::json!({});
+        let key_of = |stamper: &mut KeyStamper, operation: &str, loci: &[Locus]| {
+            stamper
+                .stamp(
+                    Some("corr-1"),
+                    Some(crate::ROOT_TASK_ID),
+                    0,
+                    CallIdentity {
+                        boundary: "time",
+                        component: "common_utils",
+                        operation,
+                    },
+                    loci,
+                    canonical_args_hash(&args),
+                )
+                .into_iter()
+                .find(|k| k.locus.rank() == 2)
+                .expect("rank-2 key")
+        };
+        let now = key_of(&mut stamper, "date_time::now", &here);
+        let millis = key_of(&mut stamper, "date_time::now_unix_timestamp_millis", &there);
+
+        assert_ne!(
+            now, millis,
+            "two operations sharing a locus must not share a key"
+        );
+        assert_eq!(
+            now.locus, millis.locus,
+            "and they must differ ONLY in identity, not in locus — otherwise \
+             this is passing for the wrong reason"
+        );
+        assert_eq!(
+            (now.occurrence, millis.occurrence),
+            (0, 0),
+            "each operation gets its own occurrence counter; sharing one is \
+             what made the FIFO serve the wrong row"
+        );
+    }
+
+    #[test]
+    fn a_declared_site_resolves_at_rank_one_and_still_has_its_fallbacks() {
+        // The macro test proves the identity is EMITTED. This proves the
+        // runtime does something with it — emission without resolution is the
+        // state rank 1 was already in.
+        let declared = CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::Explicit,
+            id: Some("routing::eligible_connectors".to_owned()),
+            scope: Some("router::routing::pick".to_owned()),
+            occurrence: 0,
+            caller_function: Some("router::routing".to_owned()),
+            lexical_path: Some("router::routing".to_owned()),
+            syntax_hash: Some(99),
+            span_path: Some("http>pay".to_owned()),
+        };
+        let loci = loci_for(Some(&declared), Some(("routing.rs", 10, 3)));
+
+        assert_eq!(
+            loci.first().map(Locus::rank),
+            Some(1),
+            "a declared site must be tried FIRST — when the author has said \
+             which site this is, no derived guess should outrank the answer"
+        );
+        assert_eq!(
+            loci.first(),
+            Some(&Locus::DeclaredSite(
+                "routing::eligible_connectors".to_owned()
+            ))
+        );
+
+        // And it is ADDITIVE. Every derived locus is still there, so a tag
+        // present on only one side (someone added or renamed it) misses at rank
+        // 1 and falls through rather than invalidating the tape.
+        let ranks: Vec<u8> = loci.iter().map(Locus::rank).collect();
+        assert!(
+            ranks.contains(&2) && ranks.contains(&3) && ranks.contains(&5),
+            "declaring a site must not cost the derived loci: {ranks:?}"
+        );
+
+        // The same call WITHOUT the declaration keeps everything but rank 1 —
+        // otherwise the assertion above would pass for an unrelated reason.
+        let derived = CallsiteIdentity {
+            source: CallsiteSource::SyntacticHash,
+            id: None,
+            ..declared.clone()
+        };
+        let derived_ranks: Vec<u8> = loci_for(Some(&derived), Some(("routing.rs", 10, 3)))
+            .iter()
+            .map(Locus::rank)
+            .collect();
+        assert!(!derived_ranks.contains(&1), "{derived_ranks:?}");
+        assert_eq!(
+            derived_ranks,
+            ranks[1..].to_vec(),
+            "declaring a site adds rank 1 and changes nothing else"
+        );
+    }
+
+    #[test]
+    fn two_boundaries_sharing_an_operation_name_resolve_separately() {
+        // Salvaged from #146 (deja-normalize-b9), retargeted at this shape.
+        //
+        // The mirror of `two_operations_in_one_span_…`: there, one boundary and
+        // two operations. Here, one operation NAME and two boundaries, in the
+        // same span, with the same (empty) args. Everything a locus can see is
+        // identical; only `boundary` separates them.
+        //
+        // Under the pre-split scheme this was reachable by the same mechanism as
+        // the outage: rank 3 hashed `boundary::operation` and rank 6 carried
+        // boundary + method, but rank 2 carried neither, so two boundaries
+        // sharing a span path and an operation name shared a FIFO bucket. #146
+        // fixed it by adding the fields to the rank-2 address; here it is
+        // correct BY CONSTRUCTION, because identity is a sibling of the locus
+        // and no locus can omit it. That makes this a regression test rather
+        // than a fix's proof, which is the reason to keep it.
+        let mut stamper = KeyStamper::new();
+        let args = serde_json::json!({});
+        let loci = loci_for(Some(&clock_identity("http>pay", 1)), None);
+
+        let key_for = |stamper: &mut KeyStamper, boundary: &str| {
+            stamper
+                .stamp(
+                    Some("corr-1"),
+                    Some(crate::ROOT_TASK_ID),
+                    0,
+                    CallIdentity {
+                        boundary,
+                        component: "shared::component",
+                        operation: "flush",
+                    },
+                    &loci,
+                    canonical_args_hash(&args),
+                )
+                .into_iter()
+                .find(|k| k.locus.rank() == 2)
+                .expect("rank-2 key")
+        };
+        let redis = key_for(&mut stamper, "redis");
+        let imc = key_for(&mut stamper, "imc");
+
+        assert_eq!(
+            redis.locus, imc.locus,
+            "precondition: the loci must be IDENTICAL, or this passes because \
+             the calls were distinguishable some other way"
+        );
+        assert_ne!(redis, imc, "two boundaries must not share a key");
+        assert_eq!(
+            (redis.occurrence, imc.occurrence),
+            (0, 0),
+            "and each boundary gets its own occurrence counter — sharing one is \
+             what served a clock read another operation's row"
+        );
+
+        // The same holds one level down: same boundary and operation, different
+        // COMPONENT. Rank 3 and rank 6 both dropped the component, so this pair
+        // collided by the identical mechanism and nobody had noticed.
+        let a = key_for(&mut stamper, "redis");
+        let b = stamper
+            .stamp(
+                Some("corr-1"),
+                Some(crate::ROOT_TASK_ID),
+                0,
+                CallIdentity {
+                    boundary: "redis",
+                    component: "other::component",
+                    operation: "flush",
+                },
+                &loci,
+                canonical_args_hash(&args),
+            )
+            .into_iter()
+            .find(|k| k.locus.rank() == 2)
+            .expect("rank-2 key");
+        assert_ne!(a, b, "two components must not share a key either");
+    }
+
+    #[test]
+    fn no_call_is_left_without_an_address() {
+        // The guarantee `Locus::Sequence` used to provide by being pushed
+        // unconditionally. Six `loci_for` callers pass `identity: None`, so an
+        // empty locus list is reachable input, not a hypothetical — and it would
+        // fail SILENTLY: no keys means the call never resolves, forever, with
+        // nothing to observe but a permanent miss at a boundary that looks fine.
+        //
+        // Every combination of "deja knows nothing" must still yield an address.
+        let nothing = loci_for(None, None);
+        assert!(
+            !nothing.is_empty(),
+            "no identity and no location must still address"
+        );
+        assert_eq!(nothing, vec![Locus::Unlocated]);
+
+        let only_location = loci_for(None, Some(("f.rs", 1, 2)));
+        assert!(!only_location.is_empty());
+
+        let bare_identity = CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::SyntacticHash,
+            id: None,
+            scope: None,
+            occurrence: 0,
+            caller_function: None,
+            lexical_path: None,
+            syntax_hash: None,
+            span_path: None,
+        };
+        assert!(
+            !loci_for(Some(&bare_identity), None).is_empty(),
+            "an identity carrying nothing usable must still address — note \
+             `syntax_hash: None`, which used to gate the unlocated locus"
+        );
+    }
+
+    #[test]
+    fn the_deleted_ranks_are_gone_and_the_kept_ones_keep_their_numbers() {
+        // Rank numbers are load-bearing beyond this crate: `resolved_by_rank`
+        // is reported per rank in every scorecard, and the TUI builds its
+        // histogram from those keys. Surviving ranks keep the numbers they had
+        // so already-written reports keep their meaning; 4 and 6 simply never
+        // occur again.
+        let full = CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::Explicit,
+            id: Some("site".to_owned()),
+            scope: None,
+            occurrence: 3,
+            caller_function: None,
+            lexical_path: Some("router::core".to_owned()),
+            syntax_hash: Some(7),
+            span_path: Some("http>pay".to_owned()),
+        };
+        let ranks: Vec<u8> = loci_for(Some(&full), Some(("f.rs", 1, 2)))
+            .iter()
+            .map(Locus::rank)
+            .collect();
+        assert_eq!(
+            ranks,
+            vec![1, 2, 5, 3],
+            "declared site, span path, source location, then the floor"
+        );
+        assert!(
+            !ranks.contains(&4) && !ranks.contains(&6),
+            "a lexical_path is present on this identity and must no longer \
+             produce a rank — otherwise the deletion did not happen: {ranks:?}"
+        );
+    }
+
+    #[test]
+    fn a_locus_is_invariant_under_the_identity_fields_it_must_not_read() {
+        // The signature enforcement is strong but NOT total, and this closes
+        // the gap more cheaply than a refactor would.
+        //
+        // `loci_for` cannot reach identity through its PARAMETERS — it takes no
+        // boundary and no method — which is the good part and is why a locus
+        // cannot carry identity by construction. But `CallsiteIdentity` still
+        // travels in whole, and it carries two fields that ARE identity in
+        // disguise: `scope` is `format!("{component}::{operation}")` and
+        // `syntax_hash` is a hash of `boundary::operation`. A future edit could
+        // read either inside `loci_for` without touching the signature, and
+        // nothing would fail.
+        //
+        // So pin the invariance as BEHAVIOUR rather than as a signature someone
+        // has to keep re-reading. Two identities differing ONLY in those two
+        // fields must produce byte-identical loci. Raised by deja-mainchk-b5's
+        // review of #147.
+        let base = CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::SyntacticHash,
+            id: None,
+            scope: Some("redis::RedisStore::get_key".to_owned()),
+            occurrence: 2,
+            caller_function: Some("caller".to_owned()),
+            lexical_path: Some("router::core".to_owned()),
+            syntax_hash: Some(0xAAAA),
+            span_path: Some("http>pay".to_owned()),
+        };
+        let disguised_identity = CallsiteIdentity {
+            scope: Some("time::common_utils::date_time::now".to_owned()),
+            syntax_hash: Some(0xBBBB),
+            ..base.clone()
+        };
+
+        let location = Some(("f.rs", 10, 3));
+        assert_eq!(
+            loci_for(Some(&base), location),
+            loci_for(Some(&disguised_identity), location),
+            "`scope` and `syntax_hash` are identity wearing a locus's clothes — \
+             a locus must not vary with either, or the separation this whole \
+             design rests on is only a convention"
+        );
+
+        // And the guard is not vacuous: a field a locus IS allowed to read must
+        // still change the answer, or this would pass on an empty comparison.
+        let moved = CallsiteIdentity {
+            span_path: Some("http>refund".to_owned()),
+            ..base.clone()
+        };
+        assert_ne!(
+            loci_for(Some(&base), location),
+            loci_for(Some(&moved), location),
+            "the span path is a location and MUST still move the locus"
+        );
+    }
+
+    #[test]
+    fn no_locus_can_carry_identity() {
+        // The by-construction claim, asserted rather than asserted-about.
+        //
+        // `loci_for` cannot see the boundary, component or operation — they are
+        // not parameters — so no variant it produces can embed them, today or
+        // when someone adds a seventh. Two calls that differ ONLY in operation
+        // must therefore produce identical loci at every rank.
+        let a = loci_for(
+            Some(&clock_identity("http>pay", 111)),
+            Some(("f.rs", 10, 3)),
+        );
+        let b = loci_for(
+            Some(&clock_identity("http>pay", 111)),
+            Some(("f.rs", 10, 3)),
+        );
+        assert_eq!(a, b);
+        assert!(
+            !a.is_empty(),
+            "precondition: an empty locus list would pass this vacuously"
+        );
+        for locus in &a {
+            let rendered = serde_json::to_string(locus).expect("serialize");
+            assert!(
+                !rendered.contains("date_time")
+                    && !rendered.contains("\"time\"")
+                    && !rendered.contains("common_utils"),
+                "a locus leaked identity into its serialized form: {rendered}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_table_from_an_older_matching_policy_is_refused_at_load() {
+        // Replaces three serde back-compat tests that kept a v1 `Address`
+        // loadable. Old tapes are no longer matched at all, so the property
+        // worth pinning is the REFUSAL — and that it happens at load.
+        //
+        // A v1 table read by this build does not fail on its own: every key
+        // fails to compare, every call misses, every Substitute miss
+        // fail-stops, and the run presents as a total candidate regression.
+        // That is indistinguishable from a real one by inspection, which is the
+        // shape of the outage this whole change exists to prevent.
+        use std::io::Write;
+        let dir = tempfile::tempdir().expect("tmp");
+        let path = dir.path().join("table.json");
+        let mut file = std::fs::File::create(&path).expect("create");
+        write!(
+            file,
+            r#"{{"recording_id":"rec-1","policy_version":1,"entries":[]}}"#
+        )
+        .expect("write");
+
+        let err = LocalFileLookupSource::new(&path)
+            .load()
+            .expect_err("a v1 table must be refused, not loaded");
+        let message = err.to_string();
+        assert!(
+            message.contains("policy version 1") && message.contains(&POLICY_VERSION.to_string()),
+            "the refusal must name BOTH versions so the fix is obvious: {message}"
+        );
+
+        // And the current version still loads, or the guard is just a wall.
+        let ok_path = dir.path().join("ok.json");
+        let mut ok = std::fs::File::create(&ok_path).expect("create");
+        write!(
+            ok,
+            r#"{{"recording_id":"rec-1","policy_version":{POLICY_VERSION},"event_schema_version":{},"entries":[]}}"#,
+            crate::CURRENT_EVENT_SCHEMA_VERSION
+        )
+        .expect("write");
+        LocalFileLookupSource::new(&ok_path)
+            .load()
+            .expect("a current-version table must still load");
+    }
+
+    /// A recording captured by a build with a different event schema is
+    /// refused when a candidate installs its table, naming both versions. Its argument images were
+    /// encoded under another schema, so wherever the two encodings differ
+    /// every key fails to compare, and the run presents as a regression in a
+    /// candidate that changed nothing. A table that declares no version is
+    /// treated as older than this build.
+    #[test]
+    fn a_recording_from_another_event_schema_is_refused_at_install() {
+        use std::io::Write;
+        let dir = tempfile::tempdir().expect("tmp");
+        let load = |name: &str, body: String| {
+            let path = dir.path().join(name);
+            let mut file = std::fs::File::create(&path).expect("create");
+            write!(file, "{body}").expect("write");
+            LookupTableHook::from_source(
+                LocalFileLookupSource::new(&path),
+                InMemoryObservedSink::new(),
+            )
+            .map(|_| ())
+        };
+        let current = crate::CURRENT_EVENT_SCHEMA_VERSION;
+        let older = current - 1;
+        let newer = current + 1;
+
+        let message = load(
+            "older.json",
+            format!(
+                r#"{{"recording_id":"rec-1","policy_version":{POLICY_VERSION},"event_schema_version":{older},"entries":[]}}"#
+            ),
+        )
+        .expect_err("a recording from an older schema must be refused")
+        .to_string();
+        assert!(
+            message.contains(&format!("event schema v{older}"))
+                && message.contains(&format!("v{current}"))
+                && message.contains("re-record"),
+            "the refusal names both versions and the remedy: {message}"
+        );
+
+        let message = load(
+            "unversioned.json",
+            format!(r#"{{"recording_id":"rec-1","policy_version":{POLICY_VERSION},"entries":[]}}"#),
+        )
+        .expect_err("a table that declares no schema version must be refused")
+        .to_string();
+        assert!(
+            message.contains("no event schema version") && message.contains(&format!("v{current}")),
+            "the refusal says what is missing: {message}"
+        );
+
+        let message = load(
+            "newer.json",
+            format!(
+                r#"{{"recording_id":"rec-1","policy_version":{POLICY_VERSION},"event_schema_version":{newer},"entries":[]}}"#
+            ),
+        )
+        .expect_err("a recording from a newer schema must be refused too")
+        .to_string();
+        assert!(
+            message.contains(&format!("event schema v{newer}")),
+            "the refusal names the newer version: {message}"
+        );
+
+        let entry = serde_json::to_string(&LookupEntry {
+            key: LookupKey {
+                correlation_id: None,
+                bucket_id: None,
+                boundary: "db".to_owned(),
+                component: "T".to_owned(),
+                operation: "m".to_owned(),
+                fork_seq: 0,
+                locus: Locus::Unlocated,
+                args_hash: 0,
+                occurrence: 0,
+            },
+            result: std::sync::Arc::new(serde_json::json!("v")),
+            source_event_global_sequence: 1,
+        })
+        .expect("entry");
+        let message = load("unenveloped.jsonl", entry)
+            .expect_err("a JSONL table declares no schema, so it must be refused")
+            .to_string();
+        assert!(
+            message.contains("no event schema version"),
+            "unknown is not current: {message}"
+        );
+
+        load(
+            "current.json",
+            format!(
+                r#"{{"recording_id":"rec-1","policy_version":{POLICY_VERSION},"event_schema_version":{current},"entries":[]}}"#
+            ),
+        )
+        .expect("a recording from this build's schema must still load");
+    }
+
+    /// One recorded call: the operation, the span it fired in, its
+    /// operation-specific syntax hash, its arguments, and what it returned.
+    type ClockRow<'a> = (&'a str, &'a str, u64, serde_json::Value, serde_json::Value);
+
+    /// Render a table the way the ORCHESTRATOR does — same `loci_for`,
+    /// same `KeyStamper` — so that a divergence between renderer and hook shows
+    /// up here. `render_table` below does the same from full `BoundaryEvent`s;
+    /// this takes the minimum a rank-2 question needs, so a case reads as the
+    /// call it describes rather than as event construction. A unit test on `loci_for` alone cannot catch that: both
+    /// sides have to agree, and only building one and querying the other proves
+    /// they do.
+    fn rendered_table(boundary: &str, rows: &[ClockRow<'_>]) -> LookupTable {
+        let mut stamper = KeyStamper::new();
+        let mut entries = Vec::new();
+        for (i, (method, span, hash, args, value)) in rows.iter().enumerate() {
+            let identity = clock_identity(span, *hash);
+            let loci = loci_for(Some(&identity), None);
+            // The per-row `method` is the whole point of these fixtures — it is
+            // what separates `date_time::now` from
+            // `now_unix_timestamp_millis`. Stamping a constant here would make
+            // every row share identity, which is precisely the collision these
+            // tests exist to detect, and they would pass by agreeing with the
+            // bug.
+            for key in stamper.stamp(
+                None,
+                Some(crate::ROOT_TASK_ID),
+                0,
+                CallIdentity {
+                    boundary,
+                    component: "common_utils",
+                    operation: method,
+                },
+                &loci,
+                canonical_args_hash(args),
+            ) {
+                entries.push(LookupEntry {
+                    key,
+                    result: std::sync::Arc::new(value.clone()),
+                    source_event_global_sequence: i as u64,
+                });
+            }
+        }
+        LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries,
+            identity_entries: Vec::new(),
+        }
+    }
+
+    type ObservedHandle = std::sync::Arc<Mutex<Vec<ObservedCall>>>;
+
+    fn hook_over(table: LookupTable) -> (LookupTableHook, ObservedHandle) {
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        (
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source"),
+            handle,
+        )
+    }
+
+    /// Ask the hook for one call, the way a candidate does.
+    fn ask(
+        hook: &LookupTableHook,
+        boundary: &str,
+        method: &str,
+        identity: &crate::CallsiteIdentity,
+        args: &serde_json::Value,
+    ) -> Option<serde_json::Value> {
+        hook.try_replay_with_context(ReplayLookup {
+            boundary,
+            // Must equal what `rendered_table` stamps, or nothing resolves and
+            // every clock test passes/fails for a reason unrelated to what it
+            // is about.
+            trait_name: "common_utils",
+            method_name: method,
+            args,
+            callsite_identity: Some(identity),
+            caller_location: None,
+        })
+    }
+
+    fn ranks(handle: &ObservedHandle) -> Vec<Option<u8>> {
+        handle
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|c| c.resolved_rank)
+            .collect()
+    }
+
+    #[test]
+    fn each_clock_operation_in_one_span_resolves_to_its_own_value() {
+        // THE BUG, end to end and in its production shape. `date_time::now` and
+        // `now_unix_timestamp_millis` fire in one span and take no arguments,
+        // so before the fix their rank-2 keys were identical and the occurrence
+        // tiebreak gave `now` the millisecond integer — which will not build a
+        // `PrimitiveDateTime`, so every request fail-stopped.
+        //
+        // NOTE THE QUERY ORDER, which is what makes this test able to fail.
+        // Under one shared key the FIFO tiebreak happens to hand out the right
+        // rows when the replay's calls line up one-for-one with the recording's
+        // — so a test that asks in recorded order passes even with the bug
+        // present, which mine did until the mutation said so. Production does
+        // not line up: a substituted parent's body never runs, so the clock
+        // reads inside a span drift in count and order, and every occurrence
+        // after the drift is mis-assigned. Asking in the opposite order is the
+        // smallest faithful version of that drift.
+        let none = serde_json::json!({});
+        let table = rendered_table(
+            "time",
+            &[
+                (
+                    "date_time::now",
+                    "http>pay",
+                    111,
+                    none.clone(),
+                    serde_json::json!("2026-09-11T10:36:00Z"),
+                ),
+                (
+                    "date_time::now_unix_timestamp_millis",
+                    "http>pay",
+                    222,
+                    none.clone(),
+                    serde_json::json!(1789123423342u64),
+                ),
+            ],
+        );
+        let (hook, handle) = hook_over(table);
+
+        assert_eq!(
+            ask(
+                &hook,
+                "time",
+                "date_time::now_unix_timestamp_millis",
+                &clock_identity("http>pay", 222),
+                &none
+            ),
+            Some(serde_json::json!(1789123423342u64)),
+            "asked second, recorded second — but asked FIRST here"
+        );
+        assert_eq!(
+            ask(
+                &hook,
+                "time",
+                "date_time::now",
+                &clock_identity("http>pay", 111),
+                &none
+            ),
+            Some(serde_json::json!("2026-09-11T10:36:00Z")),
+            "`now` must get the timestamp it recorded, not the millis row that a \
+             shared key would have handed it"
+        );
+        assert_eq!(
+            ranks(&handle),
+            vec![Some(2), Some(2)],
+            "both at rank 2, not demoted"
+        );
+    }
+
+    #[test]
+    fn the_id_family_is_fixed_too() {
+        // `id` is the other zero-argument family, and its collision is WORSE
+        // than the clock's — which is the strongest thing this change has to
+        // say. The clock bug was caught by the TYPE SYSTEM and not by the
+        // addressing scheme: `PrimitiveDateTime` happened to refuse an integer.
+        // The id family has no such accident available. `common_utils` carries
+        // eleven `deja::id` operations under one `module_path!()`, FOUR of them
+        // returning `String` — these two among them — so the recorded values
+        // deserialize into each other perfectly. The candidate gets a nanoid
+        // where it asked for a generated id, with no panic, no divergence and
+        // nothing in the report. The loud bug we found was the lucky instance;
+        // the quiet one has been reachable the whole time.
+        let none = serde_json::json!({});
+        let table = rendered_table(
+            "id",
+            &[
+                (
+                    "generate_nanoid_with_default_alphabet",
+                    "http>pay",
+                    333,
+                    none.clone(),
+                    serde_json::json!("V1StGXR8Z5jdHi6B"),
+                ),
+                (
+                    "generate_id",
+                    "http>pay",
+                    444,
+                    none.clone(),
+                    serde_json::json!("pay_9KqR2mVt"),
+                ),
+            ],
+        );
+        let (hook, _h) = hook_over(table);
+        // Asked in the OPPOSITE order to the recording, for the same reason as
+        // the clock test: in recorded order the FIFO tiebreak hands out the
+        // right rows by accident even with one shared key, so the test cannot
+        // fail. Both values are strings, so nothing but the assertion itself
+        // would notice them swapping.
+        assert_eq!(
+            ask(
+                &hook,
+                "id",
+                "generate_id",
+                &clock_identity("http>pay", 444),
+                &none
+            ),
+            Some(serde_json::json!("pay_9KqR2mVt"))
+        );
+        assert_eq!(
+            ask(
+                &hook,
+                "id",
+                "generate_nanoid_with_default_alphabet",
+                &clock_identity("http>pay", 333),
+                &none
+            ),
+            Some(serde_json::json!("V1StGXR8Z5jdHi6B"))
+        );
+    }
+
+    #[test]
+    fn repeats_of_one_operation_in_a_span_still_resolve_in_order() {
+        // The regression rank 2 exists to prevent. If putting the operation in
+        // the address broke occurrence scoping, this trades one bug for a worse
+        // one — every repeated seam call resolving to the first row.
+        let none = serde_json::json!({});
+        let table = rendered_table(
+            "time",
+            &[
+                (
+                    "date_time::now",
+                    "http>pay",
+                    111,
+                    none.clone(),
+                    serde_json::json!("first"),
+                ),
+                (
+                    "date_time::now",
+                    "http>pay",
+                    111,
+                    none.clone(),
+                    serde_json::json!("second"),
+                ),
+            ],
+        );
+        let (hook, handle) = hook_over(table);
+        let id = clock_identity("http>pay", 111);
+        assert_eq!(
+            ask(&hook, "time", "date_time::now", &id, &none),
+            Some(serde_json::json!("first"))
+        );
+        assert_eq!(
+            ask(&hook, "time", "date_time::now", &id, &none),
+            Some(serde_json::json!("second"))
+        );
+        assert_eq!(ranks(&handle), vec![Some(2), Some(2)]);
+    }
+
+    #[test]
+    fn one_operation_in_two_spans_stays_distinct() {
+        // The async-interleaving case rank 2 was built for: the same call site
+        // in two concurrent spans must not share an occurrence counter.
+        let none = serde_json::json!({});
+        let table = rendered_table(
+            "time",
+            &[
+                (
+                    "date_time::now",
+                    "http>pay",
+                    111,
+                    none.clone(),
+                    serde_json::json!("pay"),
+                ),
+                (
+                    "date_time::now",
+                    "http>refund",
+                    111,
+                    none.clone(),
+                    serde_json::json!("refund"),
+                ),
+            ],
+        );
+        let (hook, _h) = hook_over(table);
+        // Queried in the OPPOSITE order to the recording, which is the point.
+        assert_eq!(
+            ask(
+                &hook,
+                "time",
+                "date_time::now",
+                &clock_identity("http>refund", 111),
+                &none
+            ),
+            Some(serde_json::json!("refund"))
+        );
+        assert_eq!(
+            ask(
+                &hook,
+                "time",
+                "date_time::now",
+                &clock_identity("http>pay", 111),
+                &none
+            ),
+            Some(serde_json::json!("pay"))
+        );
+    }
+
+    // REMOVED: `a_new_candidate_against_an_old_table_demotes_to_rank_3_and_resolves`.
+    //
+    // It pinned split-deploy tolerance — an old table whose rank-2 entries
+    // carried no operation would DEMOTE to rank 3 and still resolve. Both of its
+    // premises are gone on purpose: rank 3 was pure identity and is now the key's
+    // identity fields, and a table from an older matching policy is refused at
+    // load rather than partially matched. Tolerating it would mean answering
+    // some calls from a table whose keys this build cannot construct, which is
+    // how a stale tape gets mistaken for a candidate regression.
+    // `a_table_from_an_older_matching_policy_is_refused_at_load` is the property
+    // that replaces it.
+
+    #[test]
+    fn a_call_with_no_span_still_resolves_at_a_weaker_rank() {
+        // Degradation, so an absent rank never means a WRONG value. No span
+        // entered at all: rank 2 is not constructed, and the call still lands.
+        let none = serde_json::json!({});
+        let mut identity = clock_identity("unused", 111);
+        identity.span_path = None;
+        let mut stamper = KeyStamper::new();
+        let addresses = loci_for(Some(&identity), None);
+        assert!(
+            !addresses.iter().any(|a| a.rank() == 2),
+            "no span means no rank-2 address"
+        );
+        let entries: Vec<LookupEntry> = stamper
+            .stamp(
+                None,
+                Some(crate::ROOT_TASK_ID),
+                0,
+                CallIdentity {
+                    boundary: "time",
+                    component: "common_utils",
+                    operation: "date_time::now",
+                },
+                &addresses,
+                canonical_args_hash(&none),
+            )
+            .into_iter()
+            .map(|key| LookupEntry {
+                key,
+                result: std::sync::Arc::new(serde_json::json!("spanless")),
+                source_event_global_sequence: 0,
+            })
+            .collect();
+        let (hook, handle) = hook_over(LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries,
+            identity_entries: Vec::new(),
+        });
+        assert_eq!(
+            ask(&hook, "time", "date_time::now", &identity, &none),
+            Some(serde_json::json!("spanless"))
+        );
+        assert_eq!(ranks(&handle), vec![Some(3)]);
+    }
+
+    #[test]
+    fn occurrence_stays_aligned_when_a_stronger_rank_is_absent_from_some_events() {
+        // `KeyStamper`'s stated contract: advance for EVERY rank on every event
+        // "even when a stronger rank is absent from some events". Here the
+        // middle call has no span, so rank 2 skips it — and the two that do
+        // have spans must still number 0 and 1 between themselves, or renderer
+        // and hook disagree and every lookup silently misses.
+        //
+        // The args-free counter is held to the SAME contract in the same place,
+        // rather than beside it: it is a second sequence over one population, so
+        // the way it fails is the way this one would, and a separate test would
+        // let the two drift apart without saying so.
+        let none = serde_json::json!({});
+        let argful = |n: u64| serde_json::json!({ "key": format!("k{n}") });
+        let mut spanless = clock_identity("http>pay", 111);
+        spanless.span_path = None;
+        let mut stampers = Stampers::default();
+        let mut entries = Vec::new();
+        let mut arg_free = Vec::new();
+        for (i, (id, value)) in [
+            (clock_identity("http>pay", 111), "first"),
+            (spanless.clone(), "middle"),
+            (clock_identity("http>pay", 111), "third"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let addresses = loci_for(Some(&id), None);
+            // Each call carries DIFFERENT arguments, which is what separates the
+            // two sequences: the exact counter restarts at 0 per arguments hash,
+            // the args-free counter does not.
+            let args = argful(i as u64);
+            let (keys, arg_free_keys) = stampers.stamp_call(
+                None,
+                Some(crate::ROOT_TASK_ID),
+                0,
+                CallIdentity {
+                    boundary: "redis",
+                    component: "RedisStore",
+                    operation: "get_key",
+                },
+                &addresses,
+                canonical_args_hash(&args),
+                None,
+            );
+            for key in keys {
+                entries.push(LookupEntry {
+                    key,
+                    result: std::sync::Arc::new(serde_json::json!(value)),
+                    source_event_global_sequence: i as u64,
+                });
+            }
+            arg_free.extend(arg_free_keys);
+        }
+        let spanned: Vec<u32> = entries
+            .iter()
+            .filter(|e| matches!(e.key.locus, Locus::SpanPath { .. }))
+            .map(|e| e.key.occurrence)
+            .collect();
+        assert_eq!(
+            spanned,
+            vec![0, 0],
+            "three different arguments means three exact sequences; each spanned call is the first in its own"
+        );
+        let spanned_arg_free: Vec<u32> = arg_free
+            .iter()
+            .filter(|k| matches!(k.locus, Locus::SpanPath { .. }))
+            .map(|k| k.occurrence)
+            .collect();
+        assert_eq!(
+            spanned_arg_free,
+            vec![0, 1],
+            "the args-free sequence spans the arguments and skips the rank the spanless call lacks"
+        );
+        // The same run with argLESS calls: the exact counter now numbers them
+        // between themselves, so both sequences say 0 and 1 and the original
+        // property is still pinned here rather than replaced by the one above.
+        let mut stampers = Stampers::default();
+        let mut spanned = Vec::new();
+        let mut spanned_arg_free = Vec::new();
+        for id in [
+            clock_identity("http>pay", 111),
+            spanless,
+            clock_identity("http>pay", 111),
+        ] {
+            let addresses = loci_for(Some(&id), None);
+            let (keys, arg_free_keys) = stampers.stamp_call(
+                None,
+                Some(crate::ROOT_TASK_ID),
+                0,
+                CallIdentity {
+                    boundary: "redis",
+                    component: "RedisStore",
+                    operation: "get_key",
+                },
+                &addresses,
+                canonical_args_hash(&none),
+                None,
+            );
+            spanned.extend(
+                keys.iter()
+                    .filter(|k| matches!(k.locus, Locus::SpanPath { .. }))
+                    .map(|k| k.occurrence),
+            );
+            spanned_arg_free.extend(
+                arg_free_keys
+                    .iter()
+                    .filter(|k| matches!(k.locus, Locus::SpanPath { .. }))
+                    .map(|k| k.occurrence),
+            );
+        }
+        assert_eq!(
+            (spanned, spanned_arg_free),
+            (vec![0, 1], vec![0, 1]),
+            "the spanned calls number between themselves; the spanless one does not shift them"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Rule 1: the address matched and only the arguments did not.
+    // -----------------------------------------------------------------------
+
+    /// One recorded call at a declared site, with the arguments the fixture gives
+    /// it.
+    fn storage_event(seq: u64, tag: &str, args: serde_json::Value, value: &str) -> BoundaryEvent {
+        let mut event = make_event(
+            seq,
+            None,
+            "find_payment",
+            args,
+            serde_json::json!({ "Ok": value }),
+            false,
+        );
+        event.callsite_identity = Some(explicit_identity(tag));
+        event
+    }
+
+    /// Ask the hook for one storage call, the way a candidate does.
+    fn ask_storage(
+        hook: &LookupTableHook,
+        tag: &str,
+        method: &str,
+        args: &serde_json::Value,
+    ) -> Option<serde_json::Value> {
+        hook.try_replay_with_context(ReplayLookup {
+            boundary: "storage",
+            trait_name: "PaymentStore",
+            method_name: method,
+            args,
+            callsite_identity: Some(&explicit_identity(tag)),
+            caller_location: None,
+        })
+    }
+
+    fn last_call(handle: &ObservedHandle) -> ObservedCall {
+        handle
+            .lock()
+            .unwrap()
+            .last()
+            .expect("an observation")
+            .clone()
+    }
+
+    #[test]
+    fn arguments_that_differ_at_one_address_are_served_and_marked() {
+        // Rule 1. The recording made this call; the candidate makes it with a
+        // different amount. The exact address misses, the value is served from
+        // the same address anyway so the request survives, and the observation
+        // says it did not resolve — which is what keeps the divergence reported.
+        let table = render_table(&[storage_event(
+            0,
+            "find-payment",
+            serde_json::json!({ "amount": 100 }),
+            "recorded",
+        )]);
+        let (hook, handle) = hook_over(table);
+
+        let served = ask_storage(
+            &hook,
+            "find-payment",
+            "find_payment",
+            &serde_json::json!({ "amount": 200 }),
+        );
+        assert_eq!(
+            served,
+            Some(serde_json::json!({ "Ok": "recorded" })),
+            "the request must survive on the recording's value for this address"
+        );
+        let call = last_call(&handle);
+        assert!(
+            call.arg_divergent,
+            "an unmarked args-free serve turns a divergence into a pass; that is the whole risk"
+        );
+        assert!(
+            !call.resolved,
+            "this call's own address and arguments found no row, and every scorer reads that"
+        );
+        assert_eq!(
+            call.resolved_rank,
+            Some(1),
+            "the locus that matched is still named"
+        );
+        assert_eq!(
+            call.source_event_global_sequence, None,
+            "an args-free serve does not claim to BE the recorded event"
+        );
+        assert_eq!(
+            call.served_event_global_sequence,
+            Some(0),
+            "but it names the event it was answered from, which is what the \
+             orchestrator pairs it with"
+        );
+        assert_eq!(
+            call.recorded_result,
+            Some(serde_json::json!({ "Ok": "recorded" }))
+        );
+        assert_eq!(
+            hook.lookup_tally(),
+            LookupTally {
+                total: 1,
+                exact: 0,
+                arg_free: 1,
+                missed: 0
+            }
+        );
+    }
+
+    #[test]
+    fn the_same_arguments_at_that_address_still_resolve_exactly() {
+        // The vacuity guard for the test above: the two outcomes are told apart
+        // by the assertions, not by the fixture. Same table, the recording's own
+        // arguments, and the row that comes back is the unmarked exact hit —
+        // which is what makes `arg_divergent && !resolved` above a finding rather
+        // than the only shape this fixture can produce.
+        let args = serde_json::json!({ "amount": 100 });
+        let table = render_table(&[storage_event(0, "find-payment", args.clone(), "recorded")]);
+        let (hook, handle) = hook_over(table);
+
+        assert_eq!(
+            ask_storage(&hook, "find-payment", "find_payment", &args),
+            Some(serde_json::json!({ "Ok": "recorded" }))
+        );
+        let call = last_call(&handle);
+        assert!(call.resolved, "the arguments are the recording's");
+        assert!(!call.arg_divergent);
+        assert_eq!(call.source_event_global_sequence, Some(0));
+        assert_eq!(
+            call.served_event_global_sequence, None,
+            "an exact hit names its event as its own"
+        );
+        assert_eq!(
+            hook.lookup_tally(),
+            LookupTally {
+                total: 1,
+                exact: 1,
+                arg_free: 0,
+                missed: 0
+            }
+        );
+    }
+
+    #[test]
+    fn an_argless_call_is_never_served_another_arguments_value() {
+        // `ArgMismatchPolicy::Never`, honoured by the predicate that variant is
+        // defined by. An argless boundary is a clock, an identifier or a source
+        // of randomness: there is no "same address, different arguments" case for
+        // one, only a different call at the same site, and serving it the
+        // recording's value is a silent lie about a timestamp. Both argless
+        // forms, in both directions, because `args_are_empty` accepts two and a
+        // gate that only knew one would pass this test on the other.
+        for (recorded, observed) in [
+            (serde_json::Value::Null, serde_json::json!({})),
+            (serde_json::json!({}), serde_json::Value::Null),
+        ] {
+            let table = render_table(&[storage_event(0, "clock", recorded.clone(), "recorded")]);
+            let (hook, handle) = hook_over(table);
+            assert_eq!(
+                ask_storage(&hook, "clock", "find_payment", &observed),
+                None,
+                "recorded {recorded} / observed {observed}: the miss must be preserved"
+            );
+            let call = last_call(&handle);
+            assert!(!call.resolved);
+            assert!(
+                !call.arg_divergent,
+                "recorded {recorded} / observed {observed}: no argless call is served args-free"
+            );
+            assert_eq!(
+                hook.lookup_tally(),
+                LookupTally {
+                    total: 1,
+                    exact: 0,
+                    arg_free: 0,
+                    missed: 1
+                },
+                "recorded {recorded} / observed {observed}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_call_the_recording_never_made_is_not_papered_over() {
+        // The fallback answers "the same address with other arguments", not
+        // "some address". A method the recording never called shares no
+        // args-free scope with anything in the table — not even at the
+        // `Unlocated` floor, which carries the operation as a sibling field —
+        // so it stays the honest miss it is.
+        let table = render_table(&[storage_event(
+            0,
+            "find-payment",
+            serde_json::json!({ "amount": 100 }),
+            "recorded",
+        )]);
+        let (hook, handle) = hook_over(table);
+
+        assert_eq!(
+            ask_storage(
+                &hook,
+                "insert-payment",
+                "insert_payment",
+                &serde_json::json!({ "amount": 100 })
+            ),
+            None,
+            "a novel call site must not be served another operation's value"
+        );
+        let call = last_call(&handle);
+        assert!(!call.resolved);
+        assert!(!call.arg_divergent);
+        assert_eq!(
+            hook.lookup_tally(),
+            LookupTally {
+                total: 1,
+                exact: 0,
+                arg_free: 0,
+                missed: 1
+            }
+        );
+    }
+
+    #[test]
+    fn an_argful_pure_boundary_is_never_served_another_arguments_value() {
+        // A clock, an identifier or a source of randomness can take arguments
+        // (a prefix, a namespace, a key) and is still an entropy seam: a call
+        // with other arguments is a different value, not the same address with
+        // its arguments moved. Serving it the recording's value would hand a
+        // generated identifier to a call that asked for a different one, and
+        // the scorer excuses a pure-tier miss the request survived.
+        for boundary in ["time", "id", "id_generation", "uuid", "rng"] {
+            let mut event = storage_event(
+                0,
+                "generate",
+                serde_json::json!({ "prefix": "pay" }),
+                "recorded",
+            );
+            event.boundary = boundary.to_owned();
+            let (hook, handle) = hook_over(render_table(&[event]));
+            let served = hook.try_replay_with_context(ReplayLookup {
+                boundary,
+                trait_name: "PaymentStore",
+                method_name: "find_payment",
+                args: &serde_json::json!({ "prefix": "ref" }),
+                callsite_identity: Some(&explicit_identity("generate")),
+                caller_location: None,
+            });
+            assert_eq!(served, None, "{boundary}");
+            assert!(!last_call(&handle).arg_divergent, "{boundary}");
+            assert_eq!(hook.lookup_tally().arg_free, 0, "{boundary}");
+        }
+    }
+
+    #[test]
+    fn an_args_free_serve_names_the_recording_it_served() {
+        // The row claims no twin, because which recorded call a re-keyed call
+        // belongs to is the scorer's to decide. But the candidate did pick one,
+        // and the value it ran on came from there, so the row says which: the
+        // scorer's pairing can then be checked against it.
+        let table = render_table(&[
+            storage_event(0, "loop", serde_json::json!({ "amount": 1 }), "first"),
+            storage_event(1, "loop", serde_json::json!({ "amount": 2 }), "second"),
+        ]);
+        let (hook, handle) = hook_over(table);
+        for amount in [10, 20] {
+            ask_storage(
+                &hook,
+                "loop",
+                "find_payment",
+                &serde_json::json!({ "amount": amount }),
+            );
+        }
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len(), 2);
+        assert!(calls
+            .iter()
+            .all(|c| c.arg_divergent && c.source_event_global_sequence.is_none()));
+        assert_eq!(
+            calls
+                .iter()
+                .map(|c| c.served_event_global_sequence)
+                .collect::<Vec<_>>(),
+            vec![Some(0), Some(1)]
+        );
+        // An exact serve names its event as its source, and claims no other.
+        let (hook, handle) = hook_over(render_table(&[storage_event(
+            0,
+            "loop",
+            serde_json::json!({ "amount": 1 }),
+            "first",
+        )]));
+        ask_storage(
+            &hook,
+            "loop",
+            "find_payment",
+            &serde_json::json!({ "amount": 1 }),
+        );
+        let call = last_call(&handle);
+        assert_eq!(call.source_event_global_sequence, Some(0));
+        assert_eq!(call.served_event_global_sequence, None);
+    }
+
+    #[test]
+    fn every_lookup_carries_its_ordinal_whatever_its_arm() {
+        // One ordinal per lookup, taken as it arrives, on the observation each
+        // lookup writes: the scorer counts the lookups a run made from these,
+        // with no flush to wait for, and a lookup that wrote no observation is
+        // the gap between two of them.
+        let (hook, handle) = hook_over(render_table(&[storage_event(
+            0,
+            "find-payment",
+            serde_json::json!({ "amount": 100 }),
+            "recorded",
+        )]));
+        for (method, amount) in [("find_payment", 200), ("find_payment", 100), ("other", 100)] {
+            ask_storage(
+                &hook,
+                "find-payment",
+                method,
+                &serde_json::json!({ "amount": amount }),
+            );
+        }
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(
+            calls.iter().map(|c| c.lookup_ordinal).collect::<Vec<_>>(),
+            vec![Some(1), Some(2), Some(3)]
+        );
+        assert_eq!(
+            calls
+                .iter()
+                .map(|c| (c.arg_divergent, c.resolved))
+                .collect::<Vec<_>>(),
+            vec![(true, false), (false, true), (false, false)],
+            "precondition: one call in each arm"
+        );
+    }
+
+    #[test]
+    fn a_lookup_dropped_before_it_finishes_writes_a_cancelled_observation() {
+        // A lookup takes its number as it arrives and writes its observation when
+        // the seam finishes. A future dropped between the two (a sibling's error
+        // in a join, a client that went away, a panic) used to take a number and
+        // write nothing; now the token it leaves behind writes the observation,
+        // marked cancelled, so every numbered lookup writes exactly one.
+        use crate::DejaHook;
+        let (hook, handle) = hook_over(render_table(&[storage_event(
+            0,
+            "find-payment",
+            serde_json::json!({ "amount": 100 }),
+            "recorded",
+        )]));
+        let identity = explicit_identity("find-payment");
+        let args = serde_json::json!({ "amount": 100 });
+        let query = || ReplayLookup {
+            boundary: "storage",
+            trait_name: "PaymentStore",
+            method_name: "find_payment",
+            args: &args,
+            callsite_identity: Some(&identity),
+            caller_location: None,
+        };
+        drop(hook.substitute_peek(query()));
+        drop(hook.execute_shadow_peek(query()));
+        let finished = hook.substitute_peek(query());
+        hook.substitute_observe(
+            finished.token.expect("a token"),
+            crate::SubstituteOutcome::Substituted,
+        );
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(
+            calls
+                .iter()
+                .map(|c| (c.lookup_ordinal, c.cancelled))
+                .collect::<Vec<_>>(),
+            vec![(Some(1), true), (Some(2), true), (Some(3), false)]
+        );
+    }
+
+    #[test]
+    fn a_call_dropped_while_its_boundary_runs_is_written_as_cancelled() {
+        // The shape a join produces when a sibling fails: an execute-mode call
+        // polled once, its real boundary still running, and then dropped.
+        let (hook, handle) = hook_over(render_table(&[storage_event(
+            0,
+            "find-payment",
+            serde_json::json!({ "amount": 100 }),
+            "recorded",
+        )]));
+        let mut spec = crate::BoundarySpec::new("storage", "PaymentStore", "find_payment");
+        spec.replay_strategy = crate::ReplayStrategy::Execute;
+        let mut call = Box::pin(crate::dispatch_async_with_hook(
+            crate::DelegateObservation {
+                hook: &hook,
+                spec,
+                caller: std::panic::Location::caller(),
+                identity: explicit_identity("find-payment"),
+                receiver: None,
+            },
+            serde_json::json!({ "amount": 100 }),
+            std::future::pending::<Result<u64, String>>,
+            |_| crate::Reconstructed::NoValue,
+            |r: &Result<u64, String>| (serde_json::json!(format!("{r:?}")), r.is_err()),
+            crate::round_trip::RoundTrip::<
+                fn(&Result<u64, String>, &Result<u64, String>) -> crate::round_trip::Comparison,
+            >::Unverifiable,
+        ));
+        let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(
+            std::future::Future::poll(call.as_mut(), &mut cx).is_pending(),
+            "precondition: the boundary is running"
+        );
+        assert!(
+            handle.lock().unwrap().is_empty(),
+            "precondition: nothing written yet"
+        );
+        drop(call);
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len(), 1, "{calls:?}");
+        assert!(calls[0].cancelled);
+        assert_eq!(calls[0].lookup_ordinal, Some(1));
+    }
+
+    #[test]
+    fn a_deployment_can_restore_the_fail_stop() {
+        // `Never` is the fail-stop the fallback replaced: a call whose arguments
+        // moved misses, and the request stops there.
+        let table = render_table(&[storage_event(
+            0,
+            "find-payment",
+            serde_json::json!({ "amount": 100 }),
+            "recorded",
+        )]);
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook = LookupTableHook::from_source_with_policy(
+            VecSource(Some(table)),
+            observed,
+            ArgMismatchPolicy::Never,
+        )
+        .expect("from_source_with_policy");
+        assert_eq!(
+            ask_storage(
+                &hook,
+                "find-payment",
+                "find_payment",
+                &serde_json::json!({ "amount": 200 })
+            ),
+            None
+        );
+        assert!(!last_call(&handle).arg_divergent);
+        assert_eq!(hook.lookup_tally().arg_free, 0);
+        assert_eq!(hook.lookup_tally().missed, 1);
+    }
+
+    #[test]
+    fn a_second_declared_site_for_one_operation_is_served_at_the_floor() {
+        // Stated because it is a widening, not because it is desirable. The
+        // args-free probe walks the same rank ladder the exact lookup does, and
+        // rank 3 (`Unlocated`) is the floor every call reaches: an argful call to
+        // an operation the recording DID make, from a different declared site, is
+        // served the recording's value there. The row says rank 3, which is how a
+        // scorecard already reports how much of a run leans on its weakest
+        // match — and it says `arg_divergent`, so it is never a pass.
+        let table = render_table(&[storage_event(
+            0,
+            "find-payment",
+            serde_json::json!({ "amount": 100 }),
+            "recorded",
+        )]);
+        let (hook, handle) = hook_over(table);
+
+        assert_eq!(
+            ask_storage(
+                &hook,
+                "find-payment-retry",
+                "find_payment",
+                &serde_json::json!({ "amount": 200 })
+            ),
+            Some(serde_json::json!({ "Ok": "recorded" }))
+        );
+        let call = last_call(&handle);
+        assert!(call.arg_divergent);
+        assert!(!call.resolved);
+        assert_eq!(
+            call.resolved_rank,
+            Some(3),
+            "the floor is where it matched, and the row must say so"
+        );
+    }
+
+    #[test]
+    fn several_arguments_at_one_address_pair_positionally_and_serve_each_row_once() {
+        // The fragile case, pinned rather than hidden. Three recorded calls at one
+        // address, three candidate calls there with three DIFFERENT arguments: no
+        // exact key can match, so pairing is by position in the args-free
+        // sequence — the k-th call gets the k-th recording. It is fragile because
+        // reordering the candidate's calls reorders the answers, and it is still
+        // strictly better than three dead requests, because every row says
+        // `arg_divergent` and the orchestrator pairs and judges them itself.
+        //
+        // What it must NOT do is serve one recording twice: that is the failure
+        // a counter advancing on some paths and not others produces.
+        let table = render_table(&[
+            storage_event(0, "loop", serde_json::json!({ "amount": 1 }), "first"),
+            storage_event(1, "loop", serde_json::json!({ "amount": 2 }), "second"),
+            storage_event(2, "loop", serde_json::json!({ "amount": 3 }), "third"),
+        ]);
+        let (hook, handle) = hook_over(table);
+
+        let served: Vec<Option<serde_json::Value>> = [11, 12, 13]
+            .into_iter()
+            .map(|amount| {
+                ask_storage(
+                    &hook,
+                    "loop",
+                    "find_payment",
+                    &serde_json::json!({ "amount": amount }),
+                )
+            })
+            .collect();
+        assert_eq!(
+            served,
+            vec![
+                Some(serde_json::json!({ "Ok": "first" })),
+                Some(serde_json::json!({ "Ok": "second" })),
+                Some(serde_json::json!({ "Ok": "third" })),
+            ],
+            "positional: the k-th call is served the k-th recording, each exactly once"
+        );
+        let calls = handle.lock().unwrap().clone();
+        assert!(
+            calls.iter().all(|c| c.arg_divergent && !c.resolved),
+            "every positional serve is marked and none of them resolved"
+        );
+        assert_eq!(
+            calls
+                .iter()
+                .map(|c| c.served_event_global_sequence)
+                .collect::<Vec<_>>(),
+            vec![Some(0), Some(1), Some(2)],
+            "each serve names the recording it was answered from, each exactly once"
+        );
+        assert_eq!(
+            hook.lookup_tally(),
+            LookupTally {
+                total: 3,
+                exact: 0,
+                arg_free: 3,
+                missed: 0
+            }
+        );
+    }
+
+    #[test]
+    fn the_args_free_counter_stays_in_step_with_the_exact_one_under_threads() {
+        // The two sequences advance under one lock, once per call. Eight threads
+        // call one address concurrently, each with arguments the recording never
+        // saw, so every call takes the args-free path; the eight recorded values
+        // must come back as a SET, each exactly once. A counter that could be
+        // read and written non-atomically hands two threads the same occurrence,
+        // which shows up here as one value twice and another never — the silent
+        // mis-pairing, made loud.
+        const CALLS: u64 = 8;
+        let events: Vec<BoundaryEvent> = (0..CALLS)
+            .map(|n| {
+                storage_event(
+                    n,
+                    "concurrent",
+                    serde_json::json!({ "amount": n }),
+                    &format!("recorded-{n}"),
+                )
+            })
+            .collect();
+        let (hook, handle) = hook_over(render_table(&events));
+        let hook = std::sync::Arc::new(hook);
+
+        let mut threads = Vec::new();
+        for n in 0..CALLS {
+            let hook = std::sync::Arc::clone(&hook);
+            threads.push(std::thread::spawn(move || {
+                ask_storage(
+                    &hook,
+                    "concurrent",
+                    "find_payment",
+                    &serde_json::json!({ "amount": 1_000 + n }),
+                )
+            }));
+        }
+        let mut served: Vec<serde_json::Value> = threads
+            .into_iter()
+            .map(|thread| thread.join().expect("thread panicked").expect("served"))
+            .collect();
+        served.sort_by_key(serde_json::Value::to_string);
+        let mut expected: Vec<serde_json::Value> = (0..CALLS)
+            .map(|n| serde_json::json!({ "Ok": format!("recorded-{n}") }))
+            .collect();
+        expected.sort_by_key(serde_json::Value::to_string);
+        assert_eq!(
+            served, expected,
+            "each recorded row is served exactly once: no occurrence handed out twice"
+        );
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len() as u64, CALLS);
+        assert!(calls.iter().all(|c| c.arg_divergent && !c.resolved));
+        assert_eq!(
+            hook.lookup_tally(),
+            LookupTally {
+                total: CALLS,
+                exact: 0,
+                arg_free: CALLS,
+                missed: 0
+            }
+        );
+    }
+
+    // The other half of "unconditionally" — that a call addressed BY IDENTITY
+    // advances the args-free sequence too — needs a table with identity entries
+    // in it, which this module's `render_table` does not build: it mirrors the
+    // exact half of the renderer only. That case is
+    // `a_call_addressed_by_identity_advances_the_args_free_sequence_too` in
+    // `deja-orchestrator`'s lookup tests, over the real renderer, rather than a
+    // second copy of the renderer here that could agree with a bug.
+
+    #[test]
+    fn every_lookup_lands_in_exactly_one_arm_of_the_tally() {
+        // Accounting that balances: the total is counted as each lookup arrives,
+        // independently of the arms, so `total == exact + arg_free + missed` is a
+        // claim that can fail. Derived as a sum it would restate itself.
+        let table = render_table(&[
+            storage_event(0, "find", serde_json::json!({ "amount": 100 }), "found"),
+            storage_event(1, "clock", serde_json::Value::Null, "timed"),
+        ]);
+        let (hook, _handle) = hook_over(table);
+
+        // Exact.
+        ask_storage(
+            &hook,
+            "find",
+            "find_payment",
+            &serde_json::json!({ "amount": 100 }),
+        );
+        // Args-free: same address, other arguments.
+        ask_storage(
+            &hook,
+            "find",
+            "find_payment",
+            &serde_json::json!({ "amount": 200 }),
+        );
+        // Missed: argless, so no fallback.
+        ask_storage(&hook, "clock", "find_payment", &serde_json::json!({}));
+        // Missed: an operation the recording never made.
+        ask_storage(
+            &hook,
+            "insert",
+            "insert_payment",
+            &serde_json::json!({ "amount": 100 }),
+        );
+
+        let tally = hook.lookup_tally();
+        assert!(
+            tally.balances(),
+            "{tally:?} does not account for every lookup"
+        );
+        assert_eq!(
+            tally,
+            LookupTally {
+                total: 4,
+                exact: 1,
+                arg_free: 1,
+                missed: 2
+            }
+        );
+    }
+
+    #[test]
+    fn the_execute_path_advances_the_counter_without_serving_args_free() {
+        // An execute site has the real boundary under it, so a miss there is
+        // already survivable — and the one thing its token's `recorded_result`
+        // decides is whether this call's OWN recorded error is served instead of
+        // running. Handing that a value recorded under different arguments is a
+        // second substitution nobody asked for, so the execute path skips the
+        // serve. It must still advance the counter, or a run mixing lookup and
+        // execute boundaries numbers the two sides differently.
+        let table = render_table(&[
+            storage_event(0, "shadow", serde_json::json!({ "amount": 1 }), "first"),
+            storage_event(1, "shadow", serde_json::json!({ "amount": 2 }), "second"),
+        ]);
+        let (hook, _handle) = hook_over(table);
+        let identity = explicit_identity("shadow");
+        let query = |args| ReplayLookup {
+            boundary: "storage",
+            trait_name: "PaymentStore",
+            method_name: "find_payment",
+            args,
+            callsite_identity: Some(&identity),
+            caller_location: None,
+        };
+
+        let shadow_args = serde_json::json!({ "amount": 11 });
+        let token = hook
+            .execute_shadow_peek(query(&shadow_args))
+            .expect("a shadow token");
+        assert_eq!(
+            token.recorded_result(),
+            None,
+            "the execute path is not served an args-free value"
+        );
+
+        // The counter advanced anyway: this second call is the args-free
+        // occurrence 1, so it is served the SECOND recording, not the first.
+        let lookup_args = serde_json::json!({ "amount": 12 });
+        assert_eq!(
+            ask_storage(&hook, "shadow", "find_payment", &lookup_args),
+            Some(serde_json::json!({ "Ok": "second" })),
+            "the execute call consumed args-free occurrence 0"
+        );
+        assert_eq!(
+            hook.lookup_tally(),
+            LookupTally {
+                total: 2,
+                exact: 0,
+                arg_free: 1,
+                missed: 1
+            },
+            "the skipped serve is a miss, not a hidden third state"
+        );
+    }
+
+    #[test]
+    fn lookup_resolves_iteration_order_independent() {
+        // Simulate the renderer: walk a connector loop in order [1, 2, 3],
+        // building the table via the SHARED key-construction path.
+        let identity = lexical_identity("crate::pay::confirm::loop");
+        let mut stamper = KeyStamper::new();
+        let mut entries = Vec::new();
+        for (i, connector) in [1u64, 2, 3].into_iter().enumerate() {
+            let args = serde_json::json!({ "connector": connector });
+            let addresses = loci_for(Some(&identity), None);
+            for key in stamper.stamp(
+                None,
+                Some(crate::ROOT_TASK_ID),
+                0,
+                CallIdentity {
+                    boundary: "redis",
+                    component: "RedisStore",
+                    operation: "get_key",
+                },
+                &addresses,
+                canonical_args_hash(&args),
+            ) {
+                entries.push(LookupEntry {
+                    key,
+                    result: std::sync::Arc::new(serde_json::json!(format!("v{connector}"))),
+                    source_event_global_sequence: i as u64,
+                });
+            }
+        }
+        let table = LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries,
+            identity_entries: Vec::new(),
+        };
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        // Replay in a DIFFERENT iteration order: [3, 1, 2]. All must resolve
+        // (rank-4 lexical path + args_hash), proving order independence.
+        let call = |connector: u64| {
+            hook.try_replay_with_context(ReplayLookup {
+                boundary: "redis",
+                trait_name: "RedisStore",
+                method_name: "get_key",
+                args: &serde_json::json!({ "connector": connector }),
+                callsite_identity: Some(&identity),
+                caller_location: None,
+            })
+        };
+        assert_eq!(call(3), Some(serde_json::json!("v3")));
+        assert_eq!(call(1), Some(serde_json::json!("v1")));
+        assert_eq!(call(2), Some(serde_json::json!("v2")));
+
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len(), 3);
+        assert!(
+            calls
+                .iter()
+                .all(|c| c.resolved && c.resolved_rank == Some(3)),
+            "every call resolves regardless of iteration order — at rank 3 since \
+             rank 4 was deleted; resolution is the property, not the rank"
+        );
+    }
+
+    // -----------------------------------------------------------------
+    // Boundary-path identity tests: a BOUNDARY-path identity
+    // (CallsiteSource::SyntacticHash + syntax_hash + lexical_path) is
+    // emitted by the macro/DB codegen and must resolve at ranks 3/4
+    // (SpanPath occupies rank 2).
+    // -----------------------------------------------------------------
+
+    /// An identity shaped exactly like the boundary macro / DB codegen emits:
+    /// `SyntacticHash` source carrying BOTH a `syntax_hash` (rank 3) and a
+    /// `lexical_path` (rank 4), with a per-callsite `occurrence`.
+    fn boundary_identity(scope: &str, occurrence: u32) -> CallsiteIdentity {
+        CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::SyntacticHash,
+            id: None,
+            scope: Some(scope.to_owned()),
+            occurrence,
+            caller_function: Some("crate::module".to_owned()),
+            lexical_path: Some("crate::module".to_owned()),
+            syntax_hash: Some(crate::stable_callsite_hash(scope)),
+            span_path: None,
+        }
+    }
+
+    /// Mirror the renderer (`deja-orchestrator`): walk recorded events and
+    /// build a lookup table via the SHARED `loci_for` + `KeyStamper`.
+    fn render_table(events: &[BoundaryEvent]) -> LookupTable {
+        let mut stamper = KeyStamper::new();
+        let mut entries = Vec::new();
+        for event in events {
+            let location = Some((event.call_file.as_str(), event.call_line, event.call_column));
+            let addresses = loci_for(event.callsite_identity.as_ref(), location);
+            let args_hash = canonical_args_hash(&event.args.to_value());
+            let bucket_id = event
+                .bucket_id
+                .as_deref()
+                .or(event.task_bucket.as_deref())
+                .unwrap_or(crate::ROOT_TASK_ID);
+            let fork_seq = event.fork_seq.unwrap_or(0);
+            // Mirrors the production renderer: identity comes off the EVENT.
+            // A constant here would give every fixture row the same identity,
+            // which is the collision these tests exist to detect — they would
+            // pass by agreeing with the bug.
+            for key in stamper.stamp(
+                event.correlation_id.as_deref(),
+                Some(bucket_id),
+                fork_seq,
+                CallIdentity {
+                    boundary: &event.boundary,
+                    component: &event.trait_name,
+                    operation: &event.method_name,
+                },
+                &addresses,
+                args_hash,
+            ) {
+                entries.push(LookupEntry {
+                    key,
+                    result: std::sync::Arc::new(event.result.to_value()),
+                    source_event_global_sequence: event.global_sequence,
+                });
+            }
+        }
+        LookupTable {
+            recording_id: "rec-boundary".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries,
+            identity_entries: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn lookup_table_replay_is_correlation_isolated_across_parallel_requests() {
+        let identity = explicit_identity("redis-get-key-parallel");
+        let args = serde_json::json!({ "key": "shared" });
+        let event = |global_sequence: u64, correlation_id: &str, value: &str| {
+            let mut event = make_event(
+                global_sequence,
+                Some(correlation_id),
+                "get_key",
+                args.clone(),
+                serde_json::json!({ "Ok": value }),
+                false,
+            );
+            event.boundary = "redis".to_owned();
+            event.trait_name = "RedisStore".to_owned();
+            event.callsite_identity = Some(identity.clone());
+            event
+        };
+        let table = render_table(&[event(0, "corr-a", "value-a"), event(1, "corr-b", "value-b")]);
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook = std::sync::Arc::new(
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source"),
+        );
+
+        let mut threads = Vec::new();
+        for (correlation_id, expected_value) in [
+            ("corr-a", serde_json::json!({ "Ok": "value-a" })),
+            ("corr-b", serde_json::json!({ "Ok": "value-b" })),
+        ] {
+            let hook = std::sync::Arc::clone(&hook);
+            let identity = identity.clone();
+            let args = args.clone();
+            threads.push(std::thread::spawn(move || {
+                let _guard = deja_context::enter_correlation_id(correlation_id);
+                let result = hook.try_replay_with_context(ReplayLookup {
+                    boundary: "redis",
+                    trait_name: "RedisStore",
+                    method_name: "get_key",
+                    args: &args,
+                    callsite_identity: Some(&identity),
+                    caller_location: None,
+                });
+                (correlation_id.to_owned(), expected_value, result)
+            }));
+        }
+
+        let mut returned = threads
+            .into_iter()
+            .map(|thread| thread.join().expect("parallel replay thread panicked"))
+            .collect::<Vec<_>>();
+        returned.sort_by(|left, right| left.0.cmp(&right.0));
+        for (correlation_id, expected_value, result) in &returned {
+            assert_eq!(
+                result.as_ref(),
+                Some(expected_value),
+                "{correlation_id} must replay its own recorded result"
+            );
+        }
+        assert_ne!(
+            returned[0].2, returned[1].2,
+            "different correlations intentionally recorded different values"
+        );
+
+        let mut calls = match handle.lock() {
+            Ok(calls) => calls.clone(),
+            Err(poisoned) => poisoned.into_inner().clone(),
+        };
+        calls.sort_by(|left, right| left.correlation_id.cmp(&right.correlation_id));
+        assert_eq!(calls.len(), 2);
+        for (call, (correlation_id, expected_value)) in calls.iter().zip([
+            ("corr-a", serde_json::json!({ "Ok": "value-a" })),
+            ("corr-b", serde_json::json!({ "Ok": "value-b" })),
+        ]) {
+            assert_eq!(call.correlation_id.as_deref(), Some(correlation_id));
+            assert_eq!(call.boundary, "redis");
+            assert_eq!(call.trait_name, "RedisStore");
+            assert_eq!(call.method_name, "get_key");
+            assert_eq!(call.args, args);
+            assert!(call.resolved, "{correlation_id} should resolve");
+            assert_eq!(call.resolved_rank, Some(1));
+            assert_eq!(call.recorded_result.as_ref(), Some(&expected_value));
+            assert_eq!(call.observed_result.as_ref(), Some(&expected_value));
+        }
+    }
+
+    #[test]
+    fn stable_callsite_hash_is_deterministic_and_line_shift_independent() {
+        // (1) Determinism: same input → same hash, every time.
+        let a = crate::stable_callsite_hash("redis::RedisStore::get_key");
+        let b = crate::stable_callsite_hash("redis::RedisStore::get_key");
+        assert_eq!(a, b, "syntax hash must be deterministic");
+
+        // (2) Line-shift independence: the hash is a pure function of the
+        // boundary/component/operation string, NOT of any file:line. Two
+        // "recordings" taken with the call site at different source lines hash
+        // identically because the input string is unchanged.
+        let record_time = crate::stable_callsite_hash("redis::RedisStore::get_key");
+        let replay_time_after_edits_shifted_lines =
+            crate::stable_callsite_hash("redis::RedisStore::get_key");
+        assert_eq!(
+            record_time, replay_time_after_edits_shifted_lines,
+            "syntax hash must survive source line shifts"
+        );
+
+        // (3) Distinctness: different operation → different hash.
+        assert_ne!(
+            crate::stable_callsite_hash("redis::RedisStore::get_key"),
+            crate::stable_callsite_hash("redis::RedisStore::set_key"),
+            "distinct operations must hash differently"
+        );
+    }
+
+    #[test]
+    fn boundary_path_event_resolves_at_rank_three() {
+        // A recorded BOUNDARY event now carries callsite_identity: Some(_) with
+        // syntax_hash: Some(_). Prove it both (a) carries the identity and (b)
+        // resolves at rank 3 (SyntacticHash) through the renderer→hook pipeline.
+        // (Rank 3, not 2: P3 inserted SpanPath at rank 2, and this identity
+        // carries no span_path.)
+        let identity = boundary_identity("redis::RedisStore::get_key", 0);
+        assert!(
+            identity.syntax_hash.is_some(),
+            "boundary identity must carry a syntax_hash"
+        );
+
+        let mut event = make_event(
+            0,
+            Some("corr-1"),
+            "get_key",
+            serde_json::json!({ "key": "k1" }),
+            serde_json::json!({ "Ok": "v1" }),
+            false,
+        );
+        event.boundary = "redis".into();
+        event.trait_name = "RedisStore".into();
+        event.callsite_identity = Some(identity.clone());
+        assert!(
+            event.callsite_identity.is_some(),
+            "on-disk boundary event must carry Some(callsite_identity), not None"
+        );
+
+        let table = render_table(&[event]);
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        let _guard = deja_context::enter_correlation_id("corr-1");
+        let result = hook.try_replay_with_context(ReplayLookup {
+            boundary: "redis",
+            trait_name: "RedisStore",
+            method_name: "get_key",
+            args: &serde_json::json!({ "key": "k1" }),
+            callsite_identity: Some(&identity),
+            caller_location: None,
+        });
+        assert_eq!(result, Some(serde_json::json!({ "Ok": "v1" })));
+
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].resolved_rank,
+            Some(3),
+            "boundary syntax-hash identity must resolve at rank 3"
+        );
+    }
+
+    #[test]
+    fn a_boundary_with_only_a_lexical_path_falls_to_the_unlocated_floor() {
+        // This used to force `syntax_hash = None` to make rank 3 absent, then
+        // assert rank 4 caught the call — proving the lexical path was an
+        // additive fallback.
+        //
+        // Neither half survives, and both changes are the point. Rank 4 is
+        // deleted (zero resolutions in 155,419). And rank 3 can no longer BE
+        // forced absent: `Unlocated` is the unconditional floor precisely so
+        // that no identity, however impoverished, leaves a call unaddressable.
+        //
+        // So the property is now stronger than the one this test was written
+        // for: the call resolves not because a weaker locus happened to be
+        // emitted, but because one always is.
+        let mut identity = boundary_identity("redis::RedisStore::get_key", 0);
+        identity.syntax_hash = None; // no longer suppresses anything — see above
+        identity.source = CallsiteSource::LexicalPath;
+
+        let mut event = make_event(
+            0,
+            Some("corr-1"),
+            "get_key",
+            serde_json::json!({ "key": "k1" }),
+            serde_json::json!({ "Ok": "v1" }),
+            false,
+        );
+        event.boundary = "redis".into();
+        event.trait_name = "RedisStore".into();
+        event.callsite_identity = Some(identity.clone());
+
+        let table = render_table(&[event]);
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        let _guard = deja_context::enter_correlation_id("corr-1");
+        let result = hook.try_replay_with_context(ReplayLookup {
+            boundary: "redis",
+            trait_name: "RedisStore",
+            method_name: "get_key",
+            args: &serde_json::json!({ "key": "k1" }),
+            callsite_identity: Some(&identity),
+            caller_location: None,
+        });
+        assert_eq!(result, Some(serde_json::json!({ "Ok": "v1" })));
+        assert_eq!(
+            handle.lock().unwrap()[0].resolved_rank,
+            Some(3),
+            "an identity with nothing but a lexical path must resolve at the \
+             unlocated floor — the lexical path itself no longer earns a rank"
+        );
+    }
+
+    #[test]
+    fn span_path_disambiguates_concurrent_same_callsite_calls() {
+        // The concurrent-occurrence-swap fix in miniature. Two calls to the SAME boundary/op (so an
+        // IDENTICAL syntax_hash) with IDENTICAL args, distinguished ONLY by the
+        // span they fired in (their `span_path`). Recorded in the order
+        // [attempt, intent]; replayed in the SWAPPED order [intent, attempt], as
+        // async task interleaving would. Each must resolve to ITS OWN recorded
+        // result at rank 2 (SpanPath) — NOT swapped.
+        //
+        // Without SpanPath both calls would share the
+        // (correlation, SyntacticHash, args_hash) bucket and be tiebroken by a
+        // positional `occurrence` (0,1) that swaps on reorder → attempt would get
+        // intent's recorded row. The span-scoped SpanPath address puts them
+        // in DISTINCT buckets (occ 0 each), so the match is order-independent.
+        let scope = "db::Store::update";
+        let make = |logical: &str| CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::SyntacticHash,
+            id: None,
+            scope: Some(scope.to_owned()),
+            occurrence: 0,
+            caller_function: Some("crate::module".to_owned()),
+            lexical_path: Some("crate::module".to_owned()),
+            syntax_hash: Some(crate::stable_callsite_hash(scope)),
+            span_path: Some(logical.to_owned()),
+        };
+        let id_attempt = make("payments_core>update_payment_attempt");
+        let id_intent = make("payments_core>update_payment_intent");
+        // IDENTICAL args for both calls — so args_hash can't distinguish them.
+        let args = serde_json::json!({ "id": 1 });
+
+        let event = |gseq: u64, id: &CallsiteIdentity, result: &str| {
+            let mut e = make_event(
+                gseq,
+                Some("c1"),
+                "update",
+                args.clone(),
+                serde_json::json!({ "Ok": result }),
+                false,
+            );
+            e.boundary = "db".into();
+            e.trait_name = "Store".into();
+            e.callsite_identity = Some(id.clone());
+            e
+        };
+        // Record order: attempt → intent.
+        let table = render_table(&[
+            event(0, &id_attempt, "attempt-row"),
+            event(1, &id_intent, "intent-row"),
+        ]);
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        let _guard = deja_context::enter_correlation_id("c1");
+        let replay = |id: &CallsiteIdentity| {
+            hook.try_replay_with_context(ReplayLookup {
+                boundary: "db",
+                trait_name: "Store",
+                method_name: "update",
+                args: &args,
+                callsite_identity: Some(id),
+                caller_location: None,
+            })
+        };
+        // Replay in the SWAPPED order: intent first, then attempt.
+        assert_eq!(
+            replay(&id_intent),
+            Some(serde_json::json!({ "Ok": "intent-row" })),
+            "the intent call must get the INTENT row even though it replays first"
+        );
+        assert_eq!(
+            replay(&id_attempt),
+            Some(serde_json::json!({ "Ok": "attempt-row" })),
+            "the attempt call must get the ATTEMPT row — NOT swapped by a shared \
+             positional occurrence"
+        );
+
+        let calls = handle.lock().unwrap().clone();
+        assert!(
+            calls
+                .iter()
+                .all(|c| c.resolved && c.resolved_rank == Some(2)),
+            "both resolve at rank 2 (SpanPath), not a weaker positional fallback; \
+             got resolved/rank = {:?}",
+            calls
+                .iter()
+                .map(|c| (c.resolved, c.resolved_rank))
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn callsite_occurrence_is_single_bump_sequence() {
+        // Repeated calls at the SAME logical callsite (same correlation, source,
+        // scope) within one correlation must yield occurrence 0, 1, 2 — i.e. a
+        // single increment per call. This is what keeps record and replay keys
+        // aligned for repeated same-callsite invocations. `ReplayHook` shares
+        // the same per-(correlation, source, scope) counter logic the recorder
+        // and runtime hook use.
+        let hook = ReplayHook::new(Vec::new(), ReplayConfig::default(), 100);
+        let occ = || {
+            DejaHook::next_callsite_occurrence(
+                &hook,
+                Some("corr-1"),
+                CallsiteSource::SyntacticHash,
+                Some("redis::RedisStore::get_key"),
+            )
+        };
+        assert_eq!(occ(), 0);
+        assert_eq!(occ(), 1);
+        assert_eq!(occ(), 2);
+
+        // A DIFFERENT scope is a different bucket, restarting at 0.
+        assert_eq!(
+            DejaHook::next_callsite_occurrence(
+                &hook,
+                Some("corr-1"),
+                CallsiteSource::SyntacticHash,
+                Some("redis::RedisStore::set_key"),
+            ),
+            0,
+            "distinct scope must have an independent occurrence counter"
+        );
+    }
+
+    /// Regression guard for the Phase-1 occurrence DOUBLE-BUMP.
+    ///
+    /// The same logical callsite is hit 3 times within one correlation with
+    /// the SAME args. On RECORD the occurrence counter advances per call, so
+    /// the three events carry occurrence 0, 1, 2 and the renderer stamps three
+    /// distinct rank-4 (`LexicalPath { scope_occurrence }`) addresses. On
+    /// REPLAY the boundary macro RE-DERIVES the occurrence for each call by
+    /// calling `DejaHook::next_callsite_occurrence` on the SAME hook that does
+    /// the lookup (here `LookupTableHook`) — exactly as the generated code in
+    /// `recordable.rs` / `instrument.rs` does.
+    ///
+    /// Before the fix, `LookupTableHook` did not implement
+    /// `next_callsite_occurrence`, so the default `0` was returned for EVERY
+    /// call: the replay identities all carried occurrence 0 while the record
+    /// identities carried 0, 1, 2. Only the first (occurrence-0) call resolved;
+    /// calls 2 and 3 missed at every rank. This asymmetry once collapsed a
+    /// nearly-fully-resolved replay to a handful of matches. The fix makes the
+    /// hook advance the occurrence in
+    /// lock-step with the recorder, so record sequence == replay sequence and
+    /// all three calls resolve.
+    #[test]
+    fn repeated_callsite_resolves_when_occurrence_is_rederived_on_replay() {
+        let scope = "redis::RedisStore::get_key";
+        let correlation = Some("corr-1");
+        let args = serde_json::json!({ "key": "k" });
+
+        // --- RECORD pass: a per-(correlation, source, scope) counter advances
+        // once per call, exactly like `RecordingHook::next_callsite_occurrence`.
+        let recorder = ReplayHook::new(Vec::new(), ReplayConfig::default(), 0);
+        let mut events = Vec::new();
+        for i in 0..3u64 {
+            let occurrence = DejaHook::next_callsite_occurrence(
+                &recorder,
+                correlation,
+                CallsiteSource::SyntacticHash,
+                Some(scope),
+            );
+            // Record-side occurrence sequence MUST be 0, 1, 2.
+            assert_eq!(occurrence, i as u32);
+            let mut event = make_event(
+                i,
+                correlation,
+                "get_key",
+                args.clone(),
+                serde_json::json!({ "Ok": format!("v{i}") }),
+                false,
+            );
+            event.boundary = "redis".into();
+            event.trait_name = "RedisStore".into();
+            event.callsite_identity = Some(boundary_identity(scope, occurrence));
+            events.push(event);
+        }
+
+        // --- RENDER: build the lookup table from the recorded events.
+        let table = render_table(&events);
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        // --- REPLAY pass: the macro re-derives the occurrence per call through
+        // the SAME hook that performs the lookup, then looks up with that
+        // identity. Drive the three calls and assert all resolve.
+        let _guard = deja_context::enter_correlation_id("corr-1");
+        for i in 0..3u64 {
+            let occurrence = DejaHook::next_callsite_occurrence(
+                &hook,
+                correlation,
+                CallsiteSource::SyntacticHash,
+                Some(scope),
+            );
+            // The whole point: replay occurrence sequence MUST equal the record
+            // sequence (0, 1, 2), not 0, 0, 0.
+            assert_eq!(
+                occurrence, i as u32,
+                "replay-side occurrence must advance in lock-step with record"
+            );
+            let identity = boundary_identity(scope, occurrence);
+            let result = hook.try_replay_with_context(ReplayLookup {
+                boundary: "redis",
+                trait_name: "RedisStore",
+                method_name: "get_key",
+                args: &args,
+                callsite_identity: Some(&identity),
+                caller_location: None,
+            });
+            assert_eq!(
+                result,
+                Some(serde_json::json!({ "Ok": format!("v{i}") })),
+                "call #{i} (occurrence {occurrence}) must resolve to its recorded result"
+            );
+        }
+
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len(), 3);
+        assert!(
+            calls.iter().all(|c| c.resolved),
+            "all three repeated-callsite calls must resolve (no double-bump miss): {:?}",
+            calls
+                .iter()
+                .map(|c| (c.resolved, c.resolved_rank))
+                .collect::<Vec<_>>()
+        );
+    }
+
+    /// An identity shaped EXACTLY like `instrument.rs` emits at expansion time:
+    /// `source: SyntacticHash`, `id: None`, `syntax_hash: Some`,
+    /// `lexical_path: Some(module_path)`, and the per-callsite `occurrence`
+    /// allocated ONCE via `next_boundary_occurrence`. This is the boundary-macro
+    /// identity, distinct from the hand-built `boundary_identity` helper which
+    /// the prior fix attempts leaned on.
+    ///
+    /// `lexical_path` is the runtime `module_path!()` (e.g.
+    /// `common_utils::date_time`) — which is NOT the same string as `scope`
+    /// (`common_utils::date_time::now`). The occurrence is bucketed on `scope`
+    /// at record/replay, but the rank-4 `LexicalPath` address is keyed on
+    /// `lexical_path`.
+    fn macro_emitted_identity(
+        scope: &str,
+        lexical_path: &str,
+        occurrence: u32,
+    ) -> CallsiteIdentity {
+        CallsiteIdentity {
+            version: 1,
+            source: CallsiteSource::SyntacticHash,
+            id: None, // <-- macro ALWAYS sets id: None (see instrument.rs)
+            scope: Some(scope.to_owned()),
+            occurrence,
+            caller_function: Some(lexical_path.to_owned()),
+            lexical_path: Some(lexical_path.to_owned()),
+            syntax_hash: Some(crate::stable_callsite_hash(scope)),
+            span_path: None,
+        }
+    }
+
+    /// PIPELINE-FIDELITY REPRODUCTION of the 197 -> 11 regression, modelled on
+    /// the real `time::date_time::now` recording (10 argless calls within one
+    /// correlation, SAME boundary/method/scope, all funnelling through the
+    /// single `#[track_caller]` boundary fn).
+    ///
+    /// This drives the EXACT dockerized-replay path:
+    ///   recorded events (macro-style identity)
+    ///     -> `render_table` (the real `loci_for` + `KeyStamper` renderer)
+    ///     -> `LookupTableHook::try_replay_with_context`
+    /// where the boundary macro RE-DERIVES the per-callsite `occurrence` at
+    /// replay through the SAME hook that performs the lookup (exactly as
+    /// `instrument.rs` / `recordable.rs` generate).
+    ///
+    /// KEY FIDELITY POINT — why the prior reproductions stayed green while the
+    /// pipeline was red: the `SyntacticHash` address (rank 3) is
+    /// occurrence-INDEPENDENT (the hash is in the address, the KeyStamper
+    /// occurrence aligns on its own), so as long as syntax-hash entries exist a
+    /// test resolves even with a broken occurrence counter. The BROKEN pipeline
+    /// artifact had NO syntax-hash entries for these repeated argless callsites,
+    /// so resolution fell to `LexicalPath { scope_occurrence }` (rank 4) — which
+    /// embeds the re-derived `occurrence` directly into the address. If the
+    /// hook does not advance `next_callsite_occurrence` in lock-step with the
+    /// recorder, EVERY replay query carries occurrence 0, so only the recorded
+    /// occurrence-0 event matches and calls #2..N miss at every rank — the
+    /// 197 -> 11 collapse.
+    ///
+    /// This test therefore models the lexical path explicitly: the identity
+    /// carries a `lexical_path` (rank 4) but NO `syntax_hash` (no rank 3), so
+    /// resolution DEPENDS on the re-derived occurrence being correct.
+    #[test]
+    fn repro_date_time_now_repeated_argless_calls_all_resolve() {
+        let scope = "common_utils::date_time::now";
+        let lexical = "common_utils::date_time";
+        let correlation = Some("corr-1");
+        let args = serde_json::json!({}); // argless boundary
+
+        // Macro-style identity WITHOUT a syntax_hash, forcing lexical-path (rank 4)
+        // resolution — the path the broken pipeline artifact actually exercised.
+        // (When the syntax_hash is present, the rank-3 SyntacticHash masks the
+        // occurrence bug; see the doc comment above.)
+        let identity_for = |occurrence: u32| {
+            let mut id = macro_emitted_identity(scope, lexical, occurrence);
+            id.syntax_hash = None; // no rank-3 — resolution must use rank-4 lexical
+            id.source = CallsiteSource::LexicalPath;
+            id
+        };
+
+        // --- RECORD pass: occurrence advances once per call, bucketed on
+        // (correlation, source, scope) — exactly like
+        // `RecordingHook::next_callsite_occurrence`.
+        let recorder = ReplayHook::new(Vec::new(), ReplayConfig::default(), 0);
+        let mut events = Vec::new();
+        for i in 0..10u64 {
+            let occurrence = DejaHook::next_callsite_occurrence(
+                &recorder,
+                correlation,
+                CallsiteSource::LexicalPath,
+                Some(scope),
+            );
+            assert_eq!(occurrence, i as u32, "record occurrence must be 0..N");
+            let mut event = make_event(
+                i,
+                correlation,
+                "date_time::now",
+                args.clone(),
+                serde_json::json!({ "Ok": format!("t{i}") }),
+                false,
+            );
+            event.boundary = "time".into();
+            event.trait_name = "Time".into();
+            event.callsite_identity = Some(identity_for(occurrence));
+            events.push(event);
+        }
+
+        // --- RENDER: the real renderer (one entry per rank per event).
+        let table = render_table(&events);
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        // --- REPLAY pass: the macro re-derives the per-callsite occurrence via
+        // the SAME hook that performs the lookup, then queries with that
+        // identity. The candidate visits the callsite the SAME number of times
+        // but in a DIFFERENT order than the recording (the lexical-path rank is
+        // supposed to be iteration-order independent — each occurrence
+        // self-addresses). This removes the rank-6 positional safety net, so a
+        // desynced occurrence produces a genuine MISS (the "responses broke"
+        // symptom) rather than a lucky rank-6 rescue.
+        //
+        // With the occurrence fix in place every repeated argless call resolves
+        // at rank 3; without it, only the occurrence-0 lookup matches and the
+        // other nine calls miss entirely.
+        // The candidate visits the 10 occurrences in a shuffled order; the
+        // concrete permutation does not matter (rank-4 is order-independent),
+        // only that each occurrence 0..9 is visited exactly once.
+        let _guard = deja_context::enter_correlation_id("corr-1");
+        for _ in 0..10u64 {
+            let occurrence = DejaHook::next_callsite_occurrence(
+                &hook,
+                correlation,
+                CallsiteSource::LexicalPath,
+                Some(scope),
+            );
+            let identity = identity_for(occurrence);
+            let result = hook.try_replay_with_context(ReplayLookup {
+                boundary: "time",
+                trait_name: "Time",
+                method_name: "date_time::now",
+                args: &args,
+                callsite_identity: Some(&identity),
+                caller_location: None,
+            });
+            // NOTE: results are recorded per-occurrence, and the candidate hits
+            // occurrences 0..9 (just in a shuffled visitation order), so the
+            // recorded result for occurrence `occurrence` is `t{occurrence}`.
+            assert_eq!(
+                result,
+                Some(serde_json::json!({ "Ok": format!("t{occurrence}") })),
+                "repeated argless call (occurrence {occurrence}) must still resolve — \
+                 at rank 3 now that rank 4 is deleted; the PROPERTY (all repeats \
+                 resolve, order-independently) is what this test guards, not the \
+                 rank that happens to serve it"
+            );
+        }
+
+        let calls = handle.lock().unwrap().clone();
+        assert_eq!(calls.len(), 10);
+        assert!(
+            calls
+                .iter()
+                .all(|c| c.resolved && c.resolved_rank == Some(3)),
+            "all repeated argless calls must resolve at rank 4 (order-independent); \
+             got resolved/rank = {:?}",
+            calls
+                .iter()
+                .map(|c| (c.resolved, c.resolved_rank))
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn lookup_table_hook_prefers_stronger_rank_over_sequence() {
+        // The same call can match both an explicit (rank 1) entry and a
+        // sequence (rank 5) entry. Strongest-first querying must pick rank 1.
+        let args = serde_json::json!({});
+        let table = LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![
+                entry_with(
+                    None,
+                    Locus::Unlocated,
+                    &args,
+                    0,
+                    serde_json::json!("by_sequence"),
+                    1,
+                ),
+                entry_with(
+                    None,
+                    explicit("stable-X"),
+                    &args,
+                    0,
+                    serde_json::json!("by_explicit"),
+                    2,
+                ),
+            ],
+            identity_entries: Vec::new(),
+        };
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook = LookupTableHook::from_source(VecSource(Some(table)), observed).expect("hook");
+
+        let identity = explicit_identity("stable-X");
+        let value = hook.try_replay_with_context(ReplayLookup {
+            boundary: "redis",
+            // See above: identity is incidental here (this test is about rank
+            // preference) and must match `entry_with`.
+            trait_name: "RedisStore",
+            method_name: "get_key",
+            args: &args,
+            callsite_identity: Some(&identity),
+            caller_location: None,
+        });
+        assert_eq!(value, Some(serde_json::json!("by_explicit")));
+        assert_eq!(handle.lock().unwrap()[0].resolved_rank, Some(1));
+    }
+
+    // -----------------------------------------------------------------------
+    // Arg mismatch lookup (partial-function replay)
+    // -----------------------------------------------------------------------
+
+    /// A re-keyed call (its args changed since recording) now MISSES. The
+    /// arg-tolerant fallback that used to serve the stale recorded value is
+    /// REMOVED (it was the serve-stale lie that masked transitive effects). Under
+    /// the partial-function model a re-keyed call is an honest miss: the dispatch
+    /// seam fail-stops on it; at the hook layer it is a plain `None` with an
+    /// unresolved observation.
+    #[test]
+    fn rekeyed_call_now_misses() {
+        let recorded_args = serde_json::json!({ "id": "pi_recorded" });
+        let table = LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![entry_with(
+                None,
+                explicit("find_pi"),
+                &recorded_args,
+                0,
+                serde_json::json!({ "Ok": "row_recorded" }),
+                1,
+            )],
+            identity_entries: Vec::new(),
+        };
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook = LookupTableHook::from_source(VecSource(Some(table)), observed).expect("hook");
+
+        // Candidate calls the SAME call-site with DIFFERENT (re-keyed) args.
+        let rekeyed_args = serde_json::json!({ "id": "pi_doubled" });
+        let identity = explicit_identity("find_pi");
+        let value = hook.try_replay_with_context(ReplayLookup {
+            boundary: "storage",
+            trait_name: "PaymentIntentInterface",
+            method_name: "find_payment_intent_by_id",
+            args: &rekeyed_args,
+            callsite_identity: Some(&identity),
+            caller_location: None,
+        });
+        assert_eq!(
+            value, None,
+            "a re-keyed call now misses instead of serving a stale value"
+        );
+        assert!(
+            !handle.lock().unwrap()[0].resolved,
+            "the miss is observed as unresolved (→ NovelCall + fail-stop at the seam)"
+        );
+    }
+
+    #[test]
+    fn lookup_table_hook_record_emits_observed_http_finalizer_only() {
+        let empty = LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![],
+            identity_entries: Vec::new(),
+        };
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook = LookupTableHook::from_source(VecSource(Some(empty)), observed).expect("hook");
+
+        let mut non_finalizer = make_event(
+            6,
+            Some("corr-1"),
+            "set_key",
+            serde_json::json!({"k": "v"}),
+            serde_json::json!({"ok": true}),
+            false,
+        );
+        non_finalizer.boundary = "redis".to_owned();
+        hook.record(non_finalizer);
+
+        let mut finalizer = make_event(
+            7,
+            Some("corr-1"),
+            "finalize",
+            serde_json::json!({"path": "/payments/confirm"}),
+            serde_json::json!({"status": 200}),
+            false,
+        );
+        finalizer.boundary = "http_incoming".to_owned();
+        finalizer.trait_name = "router_env::request".to_owned();
+        finalizer.timestamp_ns = 1_000;
+        finalizer.end_timestamp_ns = Some(12_345);
+        finalizer.graph_node_id = Some(42);
+        hook.record(finalizer);
+
+        let calls = handle
+            .lock()
+            .map(|guard| guard.clone())
+            .unwrap_or_else(|poisoned| poisoned.into_inner().clone());
+        assert_eq!(calls.len(), 1, "non-finalizer records stay ignored");
+        let call = &calls[0];
+        assert_eq!(call.correlation_id.as_deref(), Some("corr-1"));
+        assert_eq!(call.boundary, "http_incoming");
+        assert_eq!(call.method_name, "finalize");
+        assert!(!call.resolved);
+        assert_eq!(call.timestamp_ns, 1_000);
+        assert_eq!(call.end_timestamp_ns, Some(12_345));
+        assert_eq!(call.graph_node_id, Some(42));
+        assert_eq!(
+            call.observed_result,
+            Some(serde_json::json!({"status": 200}))
+        );
+        assert_eq!(call.recorded_result, None);
+    }
+
+    #[test]
+    fn observed_call_lineage_and_wire_names_are_additive() {
+        let legacy = serde_json::json!({
+            "correlation_id": "corr-1",
+            "boundary": "redis",
+            "trait_name": "RedisStore",
+            "method_name": "get_key",
+            "args": {"key": "k"},
+            "resolved": true,
+            "recorded_result": "v",
+            "observed_result": "v"
+        });
+
+        let call: ObservedCall =
+            serde_json::from_value(legacy).expect("legacy observed call must deserialize");
+        assert_eq!(call.task_id, None);
+        assert_eq!(call.parent_task_id, None);
+        assert_eq!(call.task_bucket, None);
+        assert_eq!(call.span_path, None);
+        assert_eq!(call.provenance, crate::Provenance::Recorded);
+
+        let current = serde_json::json!({
+            "correlation_id": "corr-2",
+            "boundary": "db",
+            "trait_name": "Store",
+            "method_name": "find",
+            "args": {"id": 1},
+            "resolved": false,
+            "task_id": "detached-7",
+            "parent_task_id": "root",
+            "task_bucket": "corr-2",
+            "logical_context": "router>worker",
+            "provenance": "execute_shadow"
+        });
+        let call: ObservedCall =
+            serde_json::from_value(current).expect("current observed call must deserialize");
+        assert_eq!(call.task_id.as_deref(), Some("detached-7"));
+        assert_eq!(call.parent_task_id.as_deref(), Some("root"));
+        assert_eq!(call.task_bucket.as_deref(), Some("corr-2"));
+        assert_eq!(call.span_path.as_deref(), Some("router>worker"));
+        assert_eq!(call.provenance, crate::Provenance::Shadow);
+
+        let wire = serde_json::to_value(&call).unwrap();
+        assert_eq!(
+            wire.get("logical_context"),
+            Some(&serde_json::json!("router>worker")),
+            "span_path wire name stays pinned to logical_context"
+        );
+        assert!(wire.get("span_path").is_none());
+        assert!(wire.get("logical_span_path").is_none());
+        assert_eq!(
+            wire.get("provenance"),
+            Some(&serde_json::json!("execute_shadow")),
+            "Shadow provenance wire name stays pinned to execute_shadow"
+        );
+    }
+
+    #[test]
+    fn observed_call_v7_lineage_deserializes_and_v8_serializes_bucket_alias() {
+        let legacy_v7 = serde_json::json!({
+            "correlation_id": "corr-legacy",
+            "boundary": "redis",
+            "trait_name": "RedisStore",
+            "method_name": "get_key",
+            "args": {"key": "k"},
+            "resolved": true,
+            "task_id": "detached-legacy",
+            "parent_task_id": "root",
+            "task_bucket": "legacy-bucket",
+            "recorded_result": "v",
+            "observed_result": "v"
+        });
+        let legacy_call: ObservedCall =
+            serde_json::from_value(legacy_v7).expect("v7 observed call must deserialize");
+        let legacy_wire = serde_json::to_value(&legacy_call).unwrap();
+        assert_eq!(
+            legacy_wire.get("bucket_id"),
+            Some(&serde_json::json!("legacy-bucket")),
+            "v7 task_bucket must be upgraded to the reader bucket_id"
+        );
+        assert_eq!(
+            legacy_wire.get("task_bucket"),
+            legacy_wire.get("bucket_id"),
+            "legacy task_bucket must stay coherent after v7 fallback"
+        );
+
+        let current_v8 = serde_json::json!({
+            "correlation_id": "corr-current",
+            "boundary": "db",
+            "trait_name": "Store",
+            "method_name": "find",
+            "args": {"id": 1},
+            "resolved": false,
+            "task_id": "detached-7",
+            "parent_task_id": "root",
+            "task_bucket": "detached-bucket-7",
+            "bucket_id": "detached-bucket-7",
+            "fork_seq": 7,
+            "provenance": "execute_shadow"
+        });
+        let call: ObservedCall =
+            serde_json::from_value(current_v8).expect("v8 observed call must deserialize");
+        let wire = serde_json::to_value(&call).unwrap();
+
+        assert_eq!(
+            wire.get("bucket_id"),
+            Some(&serde_json::json!("detached-bucket-7")),
+            "v8 observed calls must serialize the new bucket_id"
+        );
+        assert_eq!(
+            wire.get("task_bucket"),
+            wire.get("bucket_id"),
+            "legacy task_bucket must remain a coherent alias for bucket_id"
+        );
+        assert_eq!(
+            wire.get("fork_seq"),
+            Some(&serde_json::json!(7)),
+            "v8 observed calls must serialize the fork sequence"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Declarative boundary model (#28) — the per-site `replay_strategy` knob.
+    // -----------------------------------------------------------------------
+
+    /// `replay_strategy_to_execute_mode`: `Execute`→Execute,
+    /// `Substitute`→Lookup.
+    #[test]
+    fn replay_strategy_maps_to_execute_mode() {
+        use crate::{ExecuteMode, ReplayStrategy};
+
+        assert_eq!(
+            replay_strategy_to_execute_mode(ReplayStrategy::Execute),
+            ExecuteMode::Execute
+        );
+        assert_eq!(
+            replay_strategy_to_execute_mode(ReplayStrategy::Substitute),
+            ExecuteMode::Lookup
+        );
+    }
+
+    /// Under the partial-function model, a DECLARED `Execute` site on any replay
+    /// hook resolves to `Execute` directly. In record / no-op mode it is `Lookup`
+    /// (Execute is a replay-only concept), gated by `hook.process_mode().is_replay()`.
+    #[test]
+    fn declared_execute_is_honored_on_any_replay_hook() {
+        let empty = LookupTable {
+            recording_id: "r".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![],
+            identity_entries: Vec::new(),
+        };
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(empty)), InMemoryObservedSink::new())
+                .expect("hook");
+        let spec = BoundarySpec::with_semantics(
+            "redis",
+            "Cache",
+            "get",
+            crate::BoundarySemantics {
+                replay_strategy: crate::ReplayStrategy::Execute,
+                kind: Some("redis".to_string()),
+                declaration: Some(
+                    crate::BoundaryDeclaration::default().effect(crate::EffectKind::Redis),
+                ),
+            },
+        );
+        // LookupTableHook is a replay hook (`mode().is_replay() == true`), so the
+        // declared knob is honored directly.
+        assert_eq!(
+            boundary_execute_mode_for(&hook, &spec),
+            crate::ExecuteMode::Execute,
+            "a declared Execute site is honored on a replay hook"
+        );
+    }
+
+    /// A DECLARED `Execute` site routes to Execute via the knob, and a DECLARED
+    /// `Substitute` site stays Lookup.
+    #[test]
+    fn declared_knob_drives_routing() {
+        let empty = LookupTable {
+            recording_id: "r".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![],
+            identity_entries: Vec::new(),
+        };
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(empty)), InMemoryObservedSink::new())
+                .expect("hook");
+
+        let execute = BoundarySpec::with_semantics(
+            "redis",
+            "Cache",
+            "get_key",
+            crate::BoundarySemantics {
+                replay_strategy: crate::ReplayStrategy::Execute,
+                kind: Some("redis".to_string()),
+                declaration: Some(
+                    crate::BoundaryDeclaration::default().effect(crate::EffectKind::Redis),
+                ),
+            },
+        );
+        assert_eq!(
+            boundary_execute_mode_for(&hook, &execute),
+            crate::ExecuteMode::Execute,
+            "declared Execute → Execute"
+        );
+
+        // A declared Substitute site stays Lookup.
+        let substitute = BoundarySpec::with_semantics(
+            "redis",
+            "Cache",
+            "get_ttl",
+            crate::BoundarySemantics {
+                replay_strategy: crate::ReplayStrategy::Substitute,
+                kind: Some("redis".to_string()),
+                declaration: Some(
+                    crate::BoundaryDeclaration::default().effect(crate::EffectKind::Redis),
+                ),
+            },
+        );
+        assert_eq!(
+            boundary_execute_mode_for(&hook, &substitute),
+            crate::ExecuteMode::Lookup,
+            "declared Substitute → Lookup"
+        );
+    }
+
+    /// REGRESSION (#28 eu-overcharge): the GLOBAL replay path wraps the
+    /// `LookupTableHook` in a `RuntimeHook::LookupReplay`, and `dispatch`'s
+    /// execute-mode gate is `boundary_execute_mode(spec)` ==
+    /// `boundary_execute_mode_for(&*global_hook, spec)` where `global_hook` is that
+    /// `RuntimeHook`. A declared `replay_strategy = Execute` boundary must resolve
+    /// to `Execute` THROUGH the `RuntimeHook` wrapper.
+    #[test]
+    fn declared_execute_routes_through_runtime_hook_wrapper() {
+        let empty = LookupTable {
+            recording_id: "r".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![],
+            identity_entries: Vec::new(),
+        };
+        let inner =
+            LookupTableHook::from_source(VecSource(Some(empty)), InMemoryObservedSink::new())
+                .expect("hook");
+        // The SAME wrapper the global replay path installs.
+        let runtime = crate::RuntimeHook::LookupReplay(inner);
+
+        // The eu_settlement_read site: declared Execute, no kind label (the explicit
+        // `replay_strategy = Execute` without a preset → kind None).
+        let spec = BoundarySpec::with_semantics(
+            "redis",
+            "router::eu_settlement",
+            "eu_settlement_read",
+            crate::BoundarySemantics {
+                replay_strategy: crate::ReplayStrategy::Execute,
+                kind: None,
+                declaration: None,
+            },
+        );
+        assert_eq!(
+            boundary_execute_mode_for(&runtime, &spec),
+            crate::ExecuteMode::Execute,
+            "a declared Execute boundary must EXECUTE through the RuntimeHook wrapper"
+        );
+
+        // A second inner hook through the SAME wrapper also honors the declared
+        // Execute. The wrapper is a replay hook, so `mode().is_replay()` is true
+        // and the knob wins.
+        let inner_default = LookupTableHook::from_source(
+            VecSource(Some(LookupTable {
+                recording_id: "r".to_owned(),
+                policy_version: POLICY_VERSION,
+                event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+                entries: vec![],
+                identity_entries: Vec::new(),
+            })),
+            InMemoryObservedSink::new(),
+        )
+        .expect("hook");
+        let runtime_default = crate::RuntimeHook::LookupReplay(inner_default);
+        assert_eq!(
+            boundary_execute_mode_for(&runtime_default, &spec),
+            crate::ExecuteMode::Execute,
+            "declared Execute is honored through the wrapper"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Seed-plan pipeline tests (deliverables 1-4, 6) — all PURE, no docker.
+    // -----------------------------------------------------------------------
+
+    /// Build a State event with explicit read/write sets, boundary, and seq.
+    #[allow(clippy::too_many_arguments)]
+    fn state_event(
+        global_seq: u64,
+        correlation_id: Option<&str>,
+        boundary: &str,
+        method: &str,
+        args: serde_json::Value,
+        result: serde_json::Value,
+        read_set: &[&str],
+        write_set: &[&str],
+        is_error: bool,
+    ) -> BoundaryEvent {
+        let mut ev = make_event(global_seq, correlation_id, method, args, result, is_error);
+        ev.global_sequence = global_seq;
+        ev.boundary = boundary.into();
+        ev.read_set = read_set.iter().map(|s| (*s).to_owned()).collect();
+        ev.write_set = write_set.iter().map(|s| (*s).to_owned()).collect();
+        ev
+    }
+
+    /// A write that failed wrote nothing, so a later read of its key is still
+    /// a precondition. The old rule declined that read AND told the certificate
+    /// it observed a prior write — a reason that was not true.
+    #[test]
+    fn a_write_that_failed_does_not_decline_a_later_read() {
+        let failed_write = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "insert",
+            serde_json::json!({"id": "x"}),
+            serde_json::json!({"version": 1, "result": "Err", "kind": "UniqueViolation"}),
+            &[],
+            &["k1"],
+            true,
+        );
+        let later_read = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "find_by_id",
+            serde_json::json!({"id": "x"}),
+            serde_json::json!({"version": 1, "result": "Ok", "value": {"id": "x"}}),
+            &["k1"],
+            &[],
+            false,
+        );
+
+        let plan = build_seed_plan(&[failed_write, later_read], Some("c1"));
+        assert!(
+            plan.resolve("db", "k1").is_some(),
+            "the row was there before the read: {plan:?}"
+        );
+        assert!(
+            !plan
+                .non_precondition_reads()
+                .any(|(_, key, reason)| key == "k1"
+                    && reason == NotPreconditionReason::ReadAfterWrite),
+            "and nothing claims it observed a write that never happened: {:?}",
+            plan.non_precondition_reads().collect::<Vec<_>>()
+        );
+    }
+
+    /// A write that SUCCEEDED still marks its key, so the guard above did not
+    /// simply disable read-after-write.
+    #[test]
+    fn a_write_that_succeeded_still_declines_a_later_read() {
+        let ok_write = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "insert",
+            serde_json::json!({"id": "x"}),
+            serde_json::json!({"version": 1, "result": "Ok", "value": null}),
+            &[],
+            &["k1"],
+            false,
+        );
+        let later_read = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "find_by_id",
+            serde_json::json!({"id": "x"}),
+            serde_json::json!({"version": 1, "result": "Ok", "value": {"id": "x"}}),
+            &["k1"],
+            &[],
+            false,
+        );
+
+        let plan = build_seed_plan(&[ok_write, later_read], Some("c1"));
+        assert!(
+            plan.resolve("db", "k1").is_none(),
+            "the correlation wrote it, so it is not a precondition: {plan:?}"
+        );
+        assert!(
+            plan.non_precondition_reads()
+                .any(|(_, key, reason)| key == "k1"
+                    && reason == NotPreconditionReason::ReadAfterWrite),
+            "and that is still the named reason: {:?}",
+            plan.non_precondition_reads().collect::<Vec<_>>()
+        );
+    }
+
+    /// An errored read and a declared miss were both dropped in silence. They
+    /// mean different things, so they are named differently.
+    #[test]
+    fn an_errored_read_and_a_miss_are_named_apart() {
+        let errored = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "find_by_id",
+            serde_json::json!({"id": "x"}),
+            serde_json::json!({"version": 1, "result": "Err", "kind": "Timeout"}),
+            &["k1"],
+            &[],
+            true,
+        );
+        let mut missed = state_event(
+            1,
+            Some("c1"),
+            "redis",
+            "get_key",
+            serde_json::json!({"key": "k2"}),
+            serde_json::Value::Null,
+            &["k2"],
+            &[],
+            false,
+        );
+        missed.declaration =
+            Some(crate::BoundaryDeclaration::default().effect(crate::EffectKind::Redis));
+
+        let plan = build_seed_plan(&[errored, missed], Some("c1"));
+        let named: Vec<_> = plan
+            .non_precondition_reads()
+            .map(|(_, key, reason)| (key.to_owned(), reason))
+            .collect();
+        assert!(
+            named.contains(&("k1".to_owned(), NotPreconditionReason::ReadErrored)),
+            "the error concluded nothing, and says so: {named:?}"
+        );
+        assert!(
+            named.contains(&("k2".to_owned(), NotPreconditionReason::ReadFoundNothing)),
+            "the miss found nothing, which is a different fact: {named:?}"
+        );
+    }
+
+    fn test_db_query_key(operation: &str, table: &str, sql: &str) -> String {
+        db_query_state_key(operation, table, sql, &serde_json::Value::Null).to_wire()
+    }
+
+    #[test]
+    fn state_key_v1_roundtrips_and_legacy_is_opaque() {
+        let key = StateKey::DbRow {
+            table: "payment_intent".to_owned(),
+            key: vec![("payment_id".to_owned(), "pay_123".to_owned())],
+        };
+        let wire = key.to_wire();
+        assert_eq!(StateKey::parse(&wire).unwrap(), key);
+        let old_three_field = format!(
+            "{STATE_KEY_V1_PREFIX}:db_row:{}:{}",
+            encode_hex_component("payment_attempt"),
+            encode_hex_component("pay_123")
+        );
+        assert_eq!(
+            StateKey::parse(&old_three_field).unwrap(),
+            StateKey::Opaque(old_three_field),
+            "old typed-v1 row keys without pk_column are advisory-only opaque keys"
+        );
+        assert_eq!(
+            StateKey::parse("payment_intent:SELECT * FROM payment_intent")
+                .unwrap()
+                .db_table(),
+            None,
+            "legacy table:sql strings stay opaque"
+        );
+    }
+
+    #[test]
+    fn db_row_state_keys_use_only_known_unique_pk_columns() {
+        register_test_schema_identity();
+        let keys = db_row_state_keys(
+            "payment_attempt",
+            &serde_json::json!([
+                {"attempt_id": "att_1"},
+                {"payment_id": "pay_1"},
+                {"merchant_id": "merch_1"},
+                {"id": 42}
+            ]),
+        );
+        assert_eq!(
+            keys,
+            vec![StateKey::DbRow {
+                table: "payment_attempt".to_owned(),
+                key: vec![("attempt_id".to_owned(), "att_1".to_owned())],
+            }],
+            "payment_attempt must group only by its real PK, not any *_id column"
+        );
+        assert!(
+            db_row_state_key("unknown_table", &serde_json::json!({"id": 42})).is_none(),
+            "unknown tables fall back to DbQuery instead of assuming `id` is unique"
+        );
+    }
+
+    #[test]
+    fn db_result_envelopes_emit_non_id_row_keys_and_keep_query_fallback() {
+        register_test_schema_identity();
+        let users_query = db_query_state_key(
+            "find_user_by_id",
+            "users",
+            "SELECT * FROM \"users\" WHERE \"user_id\" = $1",
+            &serde_json::json!(["user_123"]),
+        )
+        .to_wire();
+        let users_rows = serde_json::json!({
+            "version": 1,
+            "result": "Ok",
+            "value": {
+                "id": "not-the-user-pk",
+                "user_id": "user_123",
+                "merchant_id": "merch_ignored"
+            },
+            "type_name": "User"
+        });
+        let user_row_keys = db_row_state_keys("users", &users_rows);
+
+        assert_eq!(
+            user_row_keys,
+            vec![StateKey::DbRow {
+                table: "users".to_owned(),
+                key: vec![("user_id".to_owned(), "user_123".to_owned())],
+            }],
+            "users must key by user_id, never by the generic id field or merchant_id"
+        );
+
+        let merchant_rows = serde_json::json!({
+            "version": 1,
+            "result": "Ok",
+            "value": [
+                {
+                    "merchant_id": "merch_123",
+                    "key": {"inner": [1, 2, 3]}
+                }
+            ],
+            "type_name": "Vec<MerchantKeyStore>"
+        });
+        assert_eq!(
+            db_row_state_keys("merchant_key_store", &merchant_rows),
+            vec![StateKey::DbRow {
+                table: "merchant_key_store".to_owned(),
+                key: vec![("merchant_id".to_owned(), "merch_123".to_owned())],
+            }],
+            "merchant_key_store must key by merchant_id even though the table has no id column"
+        );
+
+        let mut read_set = vec![users_query.clone()];
+        read_set.extend(user_row_keys.into_iter().map(|key| key.to_wire()));
+        assert!(
+            read_set.contains(&users_query),
+            "row-exact keys augment the query fallback instead of replacing it"
+        );
+        assert!(
+            read_set.iter().any(|key| matches!(
+                StateKey::parse(key).unwrap(),
+                StateKey::DbRow {
+                    ref table,
+                    ref key
+                } if table == "users"
+                    && key.as_slice()
+                        == [("user_id".to_owned(), "user_123".to_owned())].as_slice()
+            )),
+            "augmented read_set must carry the exact users row key"
+        );
+    }
+
+    /// Explicit read-set captures seed their recorded result on any boundary
+    /// name. Events with no read capture seed nothing.
+    #[test]
+    fn seed_plan_built_from_explicit_read_set_and_result() {
+        let events = vec![
+            state_event(
+                0,
+                Some("c1"),
+                "custom_store",
+                "arbitrary_fetch",
+                serde_json::json!(["k"]),
+                serde_json::json!("v"),
+                &["k"],
+                &[],
+                false,
+            ),
+            state_event(
+                1,
+                Some("c1"),
+                "http_client",
+                "request",
+                serde_json::json!(["url"]),
+                serde_json::json!({"status": 200}),
+                &[],
+                &[],
+                false,
+            ),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(plan.len(), 1);
+        assert_eq!(
+            plan.resolve("custom_store", "k").unwrap().value,
+            serde_json::json!("v")
+        );
+
+        assert!(
+            !plan.contains("http_client", "url"),
+            "an event without an explicit read_set seeds nothing"
+        );
+        assert_eq!(
+            plan.resolve("custom_store", "k").unwrap().origin,
+            SeedOrigin::Recording
+        );
+    }
+
+    /// A redis event carrying its declaration, so the planner reads the
+    /// boundary's family from the event rather than its name.
+    fn redis_event(
+        global_seq: u64,
+        correlation_id: Option<&str>,
+        method: &str,
+        args: serde_json::Value,
+        result: serde_json::Value,
+        read_set: &[&str],
+    ) -> BoundaryEvent {
+        let mut ev = state_event(
+            global_seq,
+            correlation_id,
+            "redis",
+            method,
+            args,
+            result,
+            read_set,
+            &[],
+            false,
+        );
+        ev.declaration =
+            Some(crate::BoundaryDeclaration::default().effect(crate::EffectKind::Redis));
+        ev
+    }
+
+    /// A delete declares no read set, so its key comes from its args — spelled
+    /// the way the store holds it, which the recording's own reads show.
+    #[test]
+    fn a_delete_without_a_read_set_seeds_the_key_the_store_holds() {
+        let events = vec![
+            redis_event(
+                0,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "k"}),
+                serde_json::json!("v"),
+                &["public:k"],
+            ),
+            redis_event(
+                1,
+                Some("c1"),
+                "delete_key",
+                serde_json::json!({"key": "other", "command": "DEL"}),
+                serde_json::json!("KeyDeleted"),
+                &[],
+            ),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(
+            plan.resolve("redis", "public:other").is_some(),
+            "the delete seeds the prefixed key the reads show: {plan:?}"
+        );
+        assert!(
+            plan.resolve("redis", "other").is_none(),
+            "the raw args key is not what the store holds"
+        );
+    }
+
+    /// Nothing in the recording shows how a physical key is spelled, so the
+    /// delete declines rather than seeding a key the store will not look at.
+    #[test]
+    fn a_delete_seeds_nothing_when_the_recording_never_shows_the_prefix() {
+        let events = vec![redis_event(
+            0,
+            Some("c1"),
+            "delete_key",
+            serde_json::json!({"key": "k", "command": "DEL"}),
+            serde_json::json!("KeyDeleted"),
+            &[],
+        )];
+
+        assert!(build_seed_plan(&events, Some("c1")).is_empty());
+    }
+
+    /// Reads that disagree about the prefix are not evidence, so the delete
+    /// declines rather than picking one.
+    #[test]
+    fn a_delete_seeds_nothing_when_reads_disagree_about_the_prefix() {
+        let events = vec![
+            redis_event(
+                0,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "a"}),
+                serde_json::json!("v"),
+                &["public:a"],
+            ),
+            redis_event(
+                1,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "b"}),
+                serde_json::json!("v"),
+                &["tenant2:b"],
+            ),
+            redis_event(
+                2,
+                Some("c1"),
+                "delete_key",
+                serde_json::json!({"key": "c", "command": "DEL"}),
+                serde_json::json!("KeyDeleted"),
+                &[],
+            ),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(plan.resolve("redis", "public:c").is_none(), "{plan:?}");
+        assert!(plan.resolve("redis", "tenant2:c").is_none(), "{plan:?}");
+    }
+
+    /// A recorded DELETE proves the key existed, so it seeds — but as presence,
+    /// not as its reply (#162).
+    #[test]
+    fn a_recorded_delete_seeds_presence_not_its_reply() {
+        let events = vec![redis_event(
+            0,
+            Some("c1"),
+            "delete_key",
+            serde_json::json!({"key": "k", "command": "DEL"}),
+            serde_json::json!("KeyDeleted"),
+            &["k"],
+        )];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        let entry = plan
+            .resolve("redis", "k")
+            .expect("the delete seeds its key");
+        assert_eq!(entry.value, serde_json::json!(PRESENCE_PLACEHOLDER));
+        assert_ne!(
+            entry.value,
+            serde_json::json!("KeyDeleted"),
+            "seeding the reply would write what happened to the key as its value"
+        );
+    }
+
+    /// A delete that found nothing proves the key was ABSENT, so it seeds
+    /// NOTHING — not the placeholder, and not its reply either: seeding
+    /// "KeyNotDeleted" as a value would create the key the recording shows was
+    /// missing. Asserted as absence plus an accounted skip, because "the value
+    /// is not the placeholder" passes while the key exists.
+    #[test]
+    fn a_delete_that_found_nothing_seeds_nothing_at_all() {
+        let events = vec![redis_event(
+            0,
+            Some("c1"),
+            "delete_key",
+            serde_json::json!({"key": "k", "command": "DEL"}),
+            serde_json::json!("KeyNotDeleted"),
+            &["k"],
+        )];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(
+            plan.resolve("redis", "k").is_none(),
+            "the key must not be in the plan at all: {plan:?}"
+        );
+        assert!(
+            plan.non_precondition_reads()
+                .any(|(boundary, key, reason)| (boundary, key, reason)
+                    == ("redis", "k", NotPreconditionReason::DeleteProvedAbsence)),
+            "and the skip is accounted, not silent"
+        );
+    }
+
+    /// A delete that found nothing, in the shape production records: the
+    /// certificate names the decline instead of staying silent about the key.
+    #[test]
+    fn a_derived_delete_that_found_nothing_is_accounted() {
+        let events = vec![
+            redis_event(
+                0,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "other"}),
+                serde_json::json!("v"),
+                &["public:other"],
+            ),
+            redis_event(
+                1,
+                Some("c1"),
+                "delete_key",
+                serde_json::json!({"key": "k", "command": "DEL"}),
+                serde_json::json!("KeyNotDeleted"),
+                &[],
+            ),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(
+            plan.resolve("redis", "public:k").is_none(),
+            "absence seeds nothing: {plan:?}"
+        );
+        assert!(
+            plan.non_precondition_reads()
+                .any(|(boundary, key, reason)| {
+                    (boundary, key, reason)
+                        == (
+                            "redis",
+                            "public:k",
+                            NotPreconditionReason::DeleteProvedAbsence,
+                        )
+                }),
+            "and the decline is named: {:?}",
+            plan.non_precondition_reads().collect::<Vec<_>>()
+        );
+    }
+
+    /// The derived branch reaches the same conclusion as the declared one when
+    /// the correlation already wrote the key, and names it the same way. Once
+    /// deletes start declaring read sets, the two must not disagree.
+    #[test]
+    fn a_derived_delete_of_a_key_this_correlation_wrote_is_accounted() {
+        let mut write = redis_event(
+            1,
+            Some("c1"),
+            "set_key",
+            serde_json::json!({"key": "k"}),
+            serde_json::json!("Ok"),
+            &[],
+        );
+        write.write_set = vec!["public:k".to_owned()];
+
+        let events = vec![
+            redis_event(
+                0,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "other"}),
+                serde_json::json!("v"),
+                &["public:other"],
+            ),
+            write,
+            redis_event(
+                2,
+                Some("c1"),
+                "delete_key",
+                serde_json::json!({"key": "k", "command": "DEL"}),
+                serde_json::json!("KeyDeleted"),
+                &[],
+            ),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(
+            plan.resolve("redis", "public:k").is_none(),
+            "a key this correlation wrote is not a precondition: {plan:?}"
+        );
+        assert!(
+            plan.non_precondition_reads()
+                .any(|(boundary, key, reason)| {
+                    (boundary, key, reason)
+                        == ("redis", "public:k", NotPreconditionReason::ReadAfterWrite)
+                }),
+            "and it is named the way the declared branch names it: {:?}",
+            plan.non_precondition_reads().collect::<Vec<_>>()
+        );
+    }
+
+    /// The same first-wins rule on the path production actually takes: the
+    /// delete declares no read set, so its key is derived rather than declared.
+    ///
+    /// The assertion that matters is the COUNT. If the two paths ever disagreed
+    /// about how a key is spelled, the symptom is not a clobbered value — it is
+    /// a second key seeded under a name nothing reads, sitting quietly beside
+    /// the right one.
+    #[test]
+    fn a_derived_delete_key_lands_on_the_key_the_read_already_seeded() {
+        let events = vec![
+            redis_event(
+                0,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "k"}),
+                serde_json::json!("the-recorded-value"),
+                &["public:k"],
+            ),
+            redis_event(
+                1,
+                Some("c1"),
+                "delete_key",
+                serde_json::json!({"key": "k", "command": "DEL"}),
+                serde_json::json!("KeyDeleted"),
+                &[],
+            ),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(
+            plan.resolve("redis", "public:k").map(|e| &e.value),
+            Some(&serde_json::json!("the-recorded-value")),
+            "the read's value wins: {plan:?}"
+        );
+        assert_eq!(
+            plan.iter().filter(|e| e.boundary == "redis").count(),
+            1,
+            "and the delete adds no second key beside it: {plan:?}"
+        );
+    }
+
+    /// A placeholder must never displace a value the recording observed.
+    #[test]
+    fn a_real_value_read_before_a_delete_outranks_the_placeholder() {
+        let events = vec![
+            redis_event(
+                0,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "k"}),
+                serde_json::json!("the-recorded-value"),
+                &["k"],
+            ),
+            redis_event(
+                1,
+                Some("c1"),
+                "delete_key",
+                serde_json::json!({"key": "k", "command": "DEL"}),
+                serde_json::json!("KeyDeleted"),
+                &["k"],
+            ),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(
+            plan.resolve("redis", "k").unwrap().value,
+            serde_json::json!("the-recorded-value"),
+            "the first recording entry wins, so presence cannot clobber a value"
+        );
+    }
+
+    /// A redis reply in the typed envelope production records.
+    fn redis_reply(type_name: &str, value: serde_json::Value) -> serde_json::Value {
+        serde_json::json!({"version": 1, "result": "Ok", "type_name": type_name, "value": value})
+    }
+
+    fn recorded_get(seq: u64, corr: &str, key: &str, value: serde_json::Value) -> BoundaryEvent {
+        redis_event(
+            seq,
+            Some(corr),
+            "get_key",
+            serde_json::json!({"command": "GET", "key": key}),
+            redis_reply("deja::value::RedisWireValue", value),
+            &[&format!("public:{key}")],
+        )
+    }
+
+    /// A set as production records it: no declared write set.
+    fn recorded_set(seq: u64, corr: &str, key: &str) -> BoundaryEvent {
+        redis_event(
+            seq,
+            Some(corr),
+            "set_key",
+            serde_json::json!({"command": "SET", "has_ttl": true, "key": key}),
+            redis_reply("()", serde_json::Value::Null),
+            &[],
+        )
+    }
+
+    /// A delete as production records it: no declared read set.
+    fn recorded_delete(seq: u64, corr: &str, key: &str) -> BoundaryEvent {
+        redis_event(
+            seq,
+            Some(corr),
+            "delete_key",
+            serde_json::json!({"command": "DEL", "key": key}),
+            redis_reply(
+                "redis_interface::types::DelReply",
+                serde_json::json!("KeyDeleted"),
+            ),
+            &[],
+        )
+    }
+
+    fn earlier_op_decided(plan: &SeedPlan, key: &str) -> bool {
+        plan.non_precondition_reads().any(|(boundary, k, reason)| {
+            (boundary, k, reason) == ("redis", key, NotPreconditionReason::EarlierOpDecided)
+        })
+    }
+
+    /// First op a delete: the delete is the only evidence the key existed
+    /// before the correlation ran, so it seeds presence — even when this
+    /// correlation made no read that shows how the store spells its keys.
+    #[test]
+    fn a_delete_that_is_the_first_op_on_its_key_seeds_presence() {
+        let events = vec![
+            recorded_get(
+                0,
+                "other",
+                "unrelated",
+                serde_json::json!({"BulkString": [118]}),
+            ),
+            recorded_delete(1, "c1", "k"),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(
+            plan.resolve("redis", "public:k").map(|e| &e.value),
+            Some(&serde_json::json!(PRESENCE_PLACEHOLDER)),
+            "{plan:?}"
+        );
+    }
+
+    /// First op a read that found nothing: absence is the precondition. A later
+    /// set and delete are the correlation's own doing, so seeding presence
+    /// would make the first read see a key the recording saw absent.
+    #[test]
+    fn a_delete_after_a_read_that_found_nothing_seeds_nothing() {
+        let events = vec![
+            recorded_get(0, "c1", "k", serde_json::json!("Null")),
+            recorded_set(1, "c1", "k"),
+            recorded_delete(2, "c1", "k"),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(plan.resolve("redis", "public:k").is_none(), "{plan:?}");
+        assert!(earlier_op_decided(&plan, "public:k"), "{plan:?}");
+    }
+
+    /// The same order through the declared branch: a delete that names its
+    /// key in a read set is held to the same first-op rule.
+    #[test]
+    fn a_declared_delete_after_a_read_that_found_nothing_seeds_nothing() {
+        let mut delete = recorded_delete(3, "c1", "k");
+        delete.read_set = vec!["public:k".to_owned()];
+        let events = vec![
+            // Reads that disagree about the prefix, so only the read set can
+            // name the key.
+            recorded_get(0, "c1", "a", serde_json::json!("Null")),
+            redis_event(
+                1,
+                Some("c1"),
+                "get_key",
+                serde_json::json!({"key": "b"}),
+                serde_json::json!("v"),
+                &["tenant2:b"],
+            ),
+            recorded_get(2, "c1", "k", serde_json::json!("Null")),
+            delete,
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(plan.resolve("redis", "public:k").is_none(), "{plan:?}");
+        assert!(earlier_op_decided(&plan, "public:k"), "{plan:?}");
+    }
+
+    /// A delete-only correlation borrows the prefix from the rest of the
+    /// recording only when the recording agrees on one.
+    #[test]
+    fn a_delete_only_correlation_seeds_nothing_when_the_recording_disagrees_about_the_prefix() {
+        let events = vec![
+            recorded_get(0, "r1", "a", serde_json::json!({"BulkString": [118]})),
+            redis_event(
+                1,
+                Some("r2"),
+                "get_key",
+                serde_json::json!({"key": "b"}),
+                serde_json::json!("v"),
+                &["tenant2:b"],
+            ),
+            recorded_delete(2, "c1", "k"),
+        ];
+
+        assert!(build_seed_plan(&events, Some("c1")).is_empty());
+    }
+
+    /// First op a set: the set creates the key the delete later removes, so
+    /// the delete proves nothing about the key before the correlation ran.
+    #[test]
+    fn a_delete_after_an_undeclared_set_seeds_nothing() {
+        let events = vec![
+            recorded_get(
+                0,
+                "c1",
+                "unrelated",
+                serde_json::json!({"BulkString": [118]}),
+            ),
+            recorded_set(1, "c1", "k"),
+            recorded_delete(2, "c1", "k"),
+        ];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(plan.resolve("redis", "public:k").is_none(), "{plan:?}");
+        assert!(earlier_op_decided(&plan, "public:k"), "{plan:?}");
+    }
+
+    /// Each correlation's plan answers from its own ops. A key another
+    /// correlation read a value for is still seeded as presence where only a
+    /// delete touched it, and the reader keeps its recorded value.
+    #[test]
+    fn a_delete_does_not_see_another_correlations_seed() {
+        let value = serde_json::json!({"BulkString": [118]});
+        let events = vec![
+            recorded_get(0, "reader", "k", value.clone()),
+            recorded_delete(1, "deleter", "k"),
+        ];
+
+        let deleter = build_seed_plan(&events, Some("deleter"));
+        assert_eq!(
+            deleter.resolve("redis", "public:k").map(|e| &e.value),
+            Some(&serde_json::json!(PRESENCE_PLACEHOLDER)),
+            "{deleter:?}"
+        );
+        let reader = build_seed_plan(&events, Some("reader"));
+        assert_eq!(
+            reader.resolve("redis", "public:k").map(|e| &e.value),
+            Some(&value),
+            "{reader:?}"
+        );
+    }
+
+    /// Redis-only: another boundary returning the same string is not a delete
+    /// reply.
+    #[test]
+    fn presence_seeding_is_scoped_to_a_declared_redis_boundary() {
+        let events = vec![state_event(
+            0,
+            Some("c1"),
+            "custom_store",
+            "delete_key",
+            serde_json::json!({"key": "k"}),
+            serde_json::json!("KeyDeleted"),
+            &["k"],
+            &[],
+            false,
+        )];
+
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(
+            plan.resolve("custom_store", "k").unwrap().value,
+            serde_json::json!("KeyDeleted"),
+            "an undeclared boundary keeps the existing behaviour verbatim"
+        );
+    }
+
+    /// A DB read+write on the same key is an RMW precondition: seed planning must
+    /// use the explicit pre-image when present, never the post-write image. A
+    /// read-only DB row event uses the result image as its materialization image.
+    #[test]
+    fn seed_plan_prefers_pre_image_for_rmw_and_result_image_for_read_only_db_rows() {
+        let update_key = StateKey::DbRow {
+            table: "merchant_account".to_owned(),
+            key: vec![("merchant_id".to_owned(), "m1".to_owned())],
+        }
+        .to_wire();
+        let read_key = StateKey::DbRow {
+            table: "users".to_owned(),
+            key: vec![("user_id".to_owned(), "u1".to_owned())],
+        }
+        .to_wire();
+        let pre_image = serde_json::json!({"merchant_id": "m1", "status": "before"});
+        let post_image = serde_json::json!({"merchant_id": "m1", "status": "after"});
+        let read_image = serde_json::json!({"user_id": "u1", "email": "u1@example.test"});
+
+        let mut rmw = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "generic_update_with_results",
+            serde_json::json!({"table": "merchant_account"}),
+            serde_json::json!({"merchant_id": "m1", "status": "after"}),
+            &[update_key.as_str()],
+            &[update_key.as_str()],
+            false,
+        );
+        rmw.pre_image = Some(Payload::from(pre_image.clone()));
+        rmw.result_image = Some(Payload::from(post_image));
+
+        let mut read_only = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "generic_find_one_core",
+            serde_json::json!({"table": "users"}),
+            serde_json::json!({"user_id": "u1", "email": "legacy@example.test"}),
+            &[read_key.as_str()],
+            &[],
+            false,
+        );
+        read_only.result_image = Some(Payload::from(read_image.clone()));
+
+        let plan = build_seed_plan(&[rmw, read_only], Some("c1"));
+        let update_seed = plan
+            .resolve("db", update_key.as_str())
+            .expect("self-referential UPDATE must seed the row it mutates");
+        assert_eq!(
+            update_seed.image,
+            Some(pre_image),
+            "RMW seeds must materialize the pre-image, not the post-write result image"
+        );
+        let read_seed = plan
+            .resolve("db", read_key.as_str())
+            .expect("read-only DB row must seed");
+        assert_eq!(
+            read_seed.image,
+            Some(read_image),
+            "read-only DB row seeds should use the explicit result image"
+        );
+    }
+
+    /// An RMW event whose producer captured no pre-image falls back to the
+    /// post-write RESULT image — not to nothing.
+    ///
+    /// The state seeded is the same either way: with `image` absent,
+    /// materialization renders the post-write `value` instead. The two differ
+    /// only in representation, and only one of them is materializable — a
+    /// serde shape with no physical bytes behind it (`{"TxnId": …}` in a
+    /// varchar column) is refused by the fail-closed SQL renderer, which is
+    /// how 35 `payment_attempt` preconditions failed to materialize while the
+    /// wire-exact image of those very rows sat unused on the event.
+    #[test]
+    fn seed_plan_falls_back_to_the_result_image_for_rmw_without_pre_image() {
+        let update_key = StateKey::DbRow {
+            table: "merchant_account".to_owned(),
+            key: vec![("merchant_id".to_owned(), "m2".to_owned())],
+        }
+        .to_wire();
+        let post_image = serde_json::json!({"merchant_id": "m2", "status": "after"});
+        let mut rmw = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "generic_update_with_results",
+            serde_json::json!({"table": "merchant_account"}),
+            serde_json::json!({"merchant_id": "m2", "status": "after"}),
+            &[update_key.as_str()],
+            &[update_key.as_str()],
+            false,
+        );
+        rmw.result_image = Some(Payload::from(post_image.clone()));
+
+        let plan = build_seed_plan(&[rmw], Some("c1"));
+        let update_seed = plan
+            .resolve("db", update_key.as_str())
+            .expect("self-referential UPDATE must seed the row it mutates");
+        assert_eq!(
+            update_seed.image,
+            Some(post_image),
+            "RMW without a pre-image must seed the physical post-image, since the alternative fallback is the same state rendered from serde"
+        );
+        assert_eq!(
+            update_seed.value,
+            serde_json::json!({"merchant_id": "m2", "status": "after"}),
+            "legacy raw value remains available for old tapes"
+        );
+    }
+
+    /// The reason the row-key grammar carries several columns: a
+    /// read-modify-write precondition on a COMPOSITE-keyed table.
+    ///
+    /// `payment_intent` is keyed by `(payment_id, merchant_id)`. While the
+    /// grammar addressed one column, its rows had no row-state key at all, so
+    /// the pre-image lookup could not resolve them and the read-modify-write
+    /// fix was inert on the two busiest tables in the workload — 197 of 217
+    /// such rows on the sandbox tape. This asserts the lookup now reaches them:
+    /// the RMW key seeds the state observed BEFORE the update, not the update's
+    /// own post-image.
+    #[test]
+    fn seed_plan_resolves_a_composite_keyed_rmw_to_its_prior_state() {
+        register_test_schema_identity();
+        let table = "payment_intent";
+        let image = |status: &str| {
+            serde_json::json!({
+                "deja_image": "db_row",
+                "version": 1,
+                "table": table,
+                "columns": [
+                    {"name": "payment_id", "type_oid": 1043, "value": "pay_1"},
+                    {"name": "merchant_id", "type_oid": 1043, "value": "merch_1"},
+                    {"name": "status", "type_oid": 1043, "value": status},
+                ],
+            })
+        };
+        let before = image("requires_capture");
+        let after = image("succeeded");
+
+        // The row key the producer mints for this row — both key columns.
+        let row_key = StateKey::DbRow {
+            table: table.to_owned(),
+            key: vec![
+                ("payment_id".to_owned(), "pay_1".to_owned()),
+                ("merchant_id".to_owned(), "merch_1".to_owned()),
+            ],
+        }
+        .to_wire();
+
+        let mut read = state_event(
+            10,
+            Some("c1"),
+            "db",
+            "generic_find_one_core",
+            serde_json::json!({"table": table}),
+            serde_json::json!({"payment_id": "pay_1", "merchant_id": "merch_1"}),
+            &[row_key.as_str()],
+            &[],
+            false,
+        );
+        read.result_image = Some(Payload::from(before.clone()));
+
+        let mut update = state_event(
+            20,
+            Some("c1"),
+            "db",
+            "generic_update_with_results",
+            serde_json::json!({"table": table}),
+            serde_json::json!([{"payment_id": "pay_1", "merchant_id": "merch_1"}]),
+            &[row_key.as_str()],
+            &[row_key.as_str()],
+            false,
+        );
+        update.result_image = Some(Payload::from(after.clone()));
+
+        let plan = build_seed_plan(&[read, update], Some("c1"));
+        let seed = plan
+            .resolve("db", row_key.as_str())
+            .expect("a composite-keyed row must seed");
+        assert_eq!(
+            seed.image,
+            Some(before),
+            "the RMW key resolves to the row's last observed state"
+        );
+        assert_ne!(
+            seed.image,
+            Some(after),
+            "seeding the post-image is what made the earlier read diverge"
+        );
+    }
+
+    /// The run-0811 payment_methods shape, end to end: a correlation READS a
+    /// row (two query fingerprints, one pre-state), then UPDATES it. The
+    /// update's read-set keys are RMW keys, and its own image is the POST
+    /// state — so seeding it makes two entries denote one row with different
+    /// contents, and `ON CONFLICT DO NOTHING` keeps whichever lands first. The
+    /// planner must resolve the RMW key to the row's LAST OBSERVED state
+    /// instead, which the earlier read put on the tape: then every entry for
+    /// that row agrees, the reads reproduce, and insert order stops mattering.
+    #[test]
+    fn seed_plan_resolves_an_rmw_key_to_the_rows_last_observed_state() {
+        let table = "payment_methods";
+        let pk = "pm_1";
+        let row_image = |stamp: &str| {
+            serde_json::json!({
+                "deja_image": "db_row",
+                "version": 1,
+                "table": table,
+                "wire_format": "binary",
+                "columns": [
+                    {"name": "payment_method_id", "type_oid": 1043, "value": pk, "wire": "706d5f31"},
+                    {"name": "last_modified", "type_oid": 1114, "value": stamp, "wire": "00"},
+                ],
+            })
+        };
+        let pre = row_image("2026-08-11 13:06:28.821026");
+        let post = row_image("2026-08-11 13:06:29.002555");
+        let read_key = StateKey::DbQuery {
+            table: table.to_owned(),
+            fingerprint: "read-fingerprint".to_owned(),
+        }
+        .to_wire();
+        // The update's own read-set key is a DIFFERENT query fingerprint — the
+        // per-key upsert cannot dedup it against the read's entry.
+        let update_key = StateKey::DbQuery {
+            table: table.to_owned(),
+            fingerprint: "update-fingerprint".to_owned(),
+        }
+        .to_wire();
+
+        let mut read = state_event(
+            10,
+            Some("c1"),
+            "db",
+            "generic_find_one_core",
+            serde_json::json!({"table": table}),
+            serde_json::json!({"payment_method_id": pk}),
+            &[read_key.as_str()],
+            &[],
+            false,
+        );
+        read.result_image = Some(Payload::from(pre.clone()));
+        let mut update = state_event(
+            20,
+            Some("c1"),
+            "db",
+            "generic_update_with_results",
+            serde_json::json!({"table": table}),
+            serde_json::json!([{"payment_method_id": pk}]),
+            &[update_key.as_str()],
+            &[update_key.as_str()],
+            false,
+        );
+        update.result_image = Some(Payload::from(post.clone()));
+
+        let plan = build_seed_plan(&[read, update], Some("c1"));
+        assert_eq!(
+            plan.resolve("db", read_key.as_str())
+                .expect("the read seeds")
+                .image,
+            Some(pre.clone()),
+            "the read seeds the state it observed"
+        );
+        assert_eq!(
+            plan.resolve("db", update_key.as_str())
+                .expect("the RMW key seeds")
+                .image,
+            Some(pre),
+            "the RMW key seeds the row's last observed state, NOT its own post-image"
+        );
+        assert_ne!(
+            plan.resolve("db", update_key.as_str())
+                .expect("the RMW key seeds")
+                .image,
+            Some(post),
+            "post-image seeding is what made the earlier read diverge"
+        );
+    }
+
+    /// The same fallback on the QUERY key of an RMW event — the shape that
+    /// produced the sandbox failure. `generic_update_with_results` carries the
+    /// query key and the row key in BOTH its read and write sets, so both keys
+    /// take the RMW branch and both must reach the physical image.
+    #[test]
+    fn seed_plan_falls_back_to_the_result_image_for_an_rmw_query_key() {
+        let query_key = StateKey::DbQuery {
+            table: "payment_attempt".to_owned(),
+            fingerprint: "f439efeb0ad8b2f4".to_owned(),
+        }
+        .to_wire();
+        let row_key = StateKey::DbRow {
+            table: "payment_attempt".to_owned(),
+            key: vec![("attempt_id".to_owned(), "a1".to_owned())],
+        }
+        .to_wire();
+        let post_image = serde_json::json!({
+            "deja_image": "db_row",
+            "version": 1,
+            "table": "payment_attempt",
+            "wire_format": "binary",
+            "columns": [
+                {"name": "attempt_id", "type_oid": 1043, "value": "a1", "wire": "6131"},
+                {"name": "connector_transaction_id", "type_oid": 1043,
+                 "value": {"TxnId": "pi_1"}, "wire": "70695f31"},
+            ],
+        });
+        let mut rmw = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "generic_update_with_results",
+            serde_json::json!({"table": "payment_attempt"}),
+            serde_json::json!([{"attempt_id": "a1", "connector_transaction_id": {"TxnId": "pi_1"}}]),
+            &[query_key.as_str(), row_key.as_str()],
+            &[query_key.as_str(), row_key.as_str()],
+            false,
+        );
+        rmw.result_image = Some(Payload::from(post_image.clone()));
+
+        let plan = build_seed_plan(&[rmw], Some("c1"));
+        for key in [query_key.as_str(), row_key.as_str()] {
+            let seed = plan.resolve("db", key).expect("RMW key must seed");
+            assert_eq!(
+                seed.image,
+                Some(post_image.clone()),
+                "both RMW keys must carry the physical image, so the wire bytes reach binary COPY instead of the serde renderer refusing {{\"TxnId\": …}}"
+            );
+        }
+    }
+
+    /// But an UPDATE of a table this correlation explicitly declared as created
+    /// is NOT seeded when the create names no rows: a read-back cannot be told
+    /// from a pre-existing row, so the whole table is declined.
+    #[test]
+    fn seed_plan_skips_update_of_explicitly_declared_created_table() {
+        let insert_key = test_db_query_key(
+            "generic_insert",
+            "payment_intent",
+            "INSERT INTO \"payment_intent\" VALUES (…) ",
+        );
+        let update_key = test_db_query_key(
+            "generic_update_with_results",
+            "payment_intent",
+            "UPDATE \"payment_intent\" SET \"status\" = $1",
+        );
+        let mut create = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "generic_insert",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1"}]),
+            &[],
+            &[insert_key.as_str()],
+            false,
+        );
+        create.declaration =
+            Some(crate::BoundaryDeclaration::default().operation(crate::OperationKind::Create));
+        let update = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "generic_update_with_results",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1"}]),
+            &[update_key.as_str()],
+            &[update_key.as_str()],
+            false,
+        );
+
+        let plan = build_seed_plan(&[create, update], Some("c1"));
+        assert!(
+            !plan.contains("db", update_key.as_str()),
+            "an UPDATE of an explicitly-created table must not seed (reconstructed via CREATE)"
+        );
+    }
+
+    // -- a self-created table declines the rows it created, not the table ----
+
+    fn address_row_key(id: &str) -> String {
+        StateKey::DbRow {
+            table: "address".to_owned(),
+            key: vec![("address_id".to_owned(), id.to_owned())],
+        }
+        .to_wire()
+    }
+
+    /// An INSERT into `address` that declares the row it created, as
+    /// `recorded_output` does on the write axis.
+    fn address_insert(created: &[&str]) -> BoundaryEvent {
+        let query = test_db_query_key(
+            "generic_insert",
+            "address",
+            "INSERT INTO \"address\" VALUES (…)",
+        );
+        let rows: Vec<String> = created.iter().map(|id| address_row_key(id)).collect();
+        let mut write_set: Vec<&str> = vec![query.as_str()];
+        write_set.extend(rows.iter().map(String::as_str));
+        let result: Vec<serde_json::Value> = created
+            .iter()
+            .map(|id| serde_json::json!({"address_id": id}))
+            .collect();
+        let mut create = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "generic_insert",
+            serde_json::json!({"table": "address"}),
+            serde_json::Value::Array(result),
+            &[],
+            &write_set,
+            false,
+        );
+        create.declaration =
+            Some(crate::BoundaryDeclaration::default().operation(crate::OperationKind::Create));
+        create
+    }
+
+    /// A read of `address` returning `returned`, declaring each returned row's
+    /// key and its query fingerprint, as `recorded_output` does on the read axis.
+    fn address_read(returned: &[&str]) -> (BoundaryEvent, String, Vec<String>) {
+        let query = test_db_query_key(
+            "generic_find_one_core",
+            "address",
+            "SELECT * FROM \"address\" WHERE address_id = $1",
+        );
+        let rows: Vec<String> = returned.iter().map(|id| address_row_key(id)).collect();
+        let mut read_set: Vec<&str> = rows.iter().map(String::as_str).collect();
+        read_set.push(query.as_str());
+        let result: Vec<serde_json::Value> = returned
+            .iter()
+            .map(|id| serde_json::json!({"address_id": id}))
+            .collect();
+        let read = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "generic_find_one_core",
+            serde_json::json!({"table": "address"}),
+            serde_json::Value::Array(result),
+            &read_set,
+            &[],
+            false,
+        );
+        (read, query, rows)
+    }
+
+    /// THE bug: the correlation inserts its shipping address and then reads a
+    /// billing address an earlier correlation created. That row is a
+    /// precondition; declining it because the table was written left the
+    /// replayed read with nothing to find.
+    #[test]
+    fn a_read_of_another_row_of_a_self_created_table_is_seeded() {
+        let (read, query, rows) = address_read(&["add_billing"]);
+        let plan = build_seed_plan(&[address_insert(&["add_shipping"]), read], Some("c1"));
+        assert!(
+            plan.contains("db", &rows[0]),
+            "the pre-existing row is seeded"
+        );
+        assert!(
+            plan.contains("db", &query),
+            "and so is its query fingerprint"
+        );
+        assert!(
+            plan.non_precondition_reads()
+                .all(|(_, _, reason)| !matches!(
+                    reason,
+                    NotPreconditionReason::SelfCreatedTable | NotPreconditionReason::SelfCreatedRow
+                )),
+            "nothing is declined as self-created"
+        );
+    }
+
+    /// The property the rule exists for: a read-back of a row this correlation
+    /// created is still declined, or the seeded row collides with the replayed
+    /// INSERT. Its row key is the one the INSERT wrote, so it is declined as a
+    /// read after a write; its query fingerprint is declined as self-created.
+    #[test]
+    fn a_read_back_of_a_created_row_is_still_declined() {
+        let (read, query, rows) = address_read(&["add_shipping"]);
+        let plan = build_seed_plan(&[address_insert(&["add_shipping"]), read], Some("c1"));
+        assert!(!plan.contains("db", &rows[0]));
+        assert!(!plan.contains("db", &query));
+        let declined: Vec<_> = plan.non_precondition_reads().collect();
+        assert!(
+            declined.contains(&(
+                "db",
+                rows[0].as_str(),
+                NotPreconditionReason::ReadAfterWrite
+            )),
+            "{declined:?}"
+        );
+        assert!(
+            declined.contains(&("db", query.as_str(), NotPreconditionReason::SelfCreatedRow)),
+            "{declined:?}"
+        );
+    }
+
+    /// A read returning a created row among others: its query fingerprint
+    /// would seed the created row too, so it is declined; the other row's own
+    /// key seeds only that row, which the correlation did not create.
+    #[test]
+    fn a_read_returning_a_created_row_declines_its_fingerprint_not_the_other_row() {
+        let (read, query, rows) = address_read(&["add_shipping", "add_billing"]);
+        let plan = build_seed_plan(&[address_insert(&["add_shipping"]), read], Some("c1"));
+        assert!(!plan.contains("db", &query));
+        assert!(
+            !plan.contains("db", &rows[0]),
+            "the created row is not seeded"
+        );
+        assert!(
+            plan.contains("db", &rows[1]),
+            "the row it did not create is"
+        );
+        let declined: Vec<_> = plan.non_precondition_reads().collect();
+        assert!(
+            declined.contains(&("db", query.as_str(), NotPreconditionReason::SelfCreatedRow)),
+            "{declined:?}"
+        );
+    }
+
+    /// A create that declared no row identity: nothing tells a read-back from
+    /// a read of a pre-existing row, so the table is declined as before.
+    #[test]
+    fn a_create_without_row_identity_still_declines_the_table() {
+        let (read, _, rows) = address_read(&["add_billing"]);
+        let plan = build_seed_plan(&[address_insert(&[]), read], Some("c1"));
+        assert!(!plan.contains("db", &rows[0]));
+        assert!(plan.non_precondition_reads().any(|entry| entry
+            == (
+                "db",
+                rows[0].as_str(),
+                NotPreconditionReason::SelfCreatedTable
+            )));
+    }
+
+    /// A create that failed created nothing, so it declines nothing.
+    #[test]
+    fn a_failed_create_declines_nothing() {
+        let mut failed = address_insert(&[]);
+        failed.is_error = true;
+        let (read, _, rows) = address_read(&["add_billing"]);
+        let plan = build_seed_plan(&[failed, read], Some("c1"));
+        assert!(plan.contains("db", &rows[0]));
+    }
+
+    /// An UPDATE of a different, pre-existing row after a create seeds that
+    /// row's pre-image: the create did not make it.
+    #[test]
+    fn an_update_of_another_row_after_a_create_seeds_its_pre_image() {
+        let (mut update, _, rows) = address_read(&["add_billing"]);
+        update.method_name = "generic_update_with_results".to_owned();
+        update.write_set = update.read_set.clone();
+        let plan = build_seed_plan(&[address_insert(&["add_shipping"]), update], Some("c1"));
+        assert!(plan.contains("db", &rows[0]));
+    }
+
+    /// A read that declares no row identity cannot be told apart either.
+    #[test]
+    fn a_read_without_row_identity_after_a_create_is_still_declined() {
+        let (mut read, query, _) = address_read(&["add_billing"]);
+        read.read_set.retain(|key| key == &query);
+        let plan = build_seed_plan(&[address_insert(&["add_shipping"]), read], Some("c1"));
+        assert!(!plan.contains("db", &query));
+        assert!(plan.non_precondition_reads().any(|entry| entry
+            == (
+                "db",
+                query.as_str(),
+                NotPreconditionReason::SelfCreatedTable
+            )));
+    }
+
+    #[test]
+    fn seed_plan_declared_create_masks_later_db_reads_without_insert_name() {
+        let create_key = test_db_query_key(
+            "persist_payment_intent",
+            "payment_intent",
+            "INSERT INTO \"payment_intent\" VALUES (…) ",
+        );
+        let read_key = test_db_query_key(
+            "find_payment_intent_by_id",
+            "payment_intent",
+            "SELECT * FROM \"payment_intent\" WHERE id = $1",
+        );
+        let mut create = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "persist_payment_intent",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1"}]),
+            &[],
+            &[create_key.as_str()],
+            false,
+        );
+        create.declaration =
+            Some(crate::BoundaryDeclaration::default().operation(crate::OperationKind::Create));
+        let read_back = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "find_payment_intent_by_id",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1"}]),
+            &[read_key.as_str()],
+            &[],
+            false,
+        );
+
+        let plan = build_seed_plan(&[create, read_back], Some("c1"));
+
+        assert!(
+            !plan.contains("db", read_key.as_str()),
+            "a declared Create masks later DB reads of the created table even when the method name lacks `insert`"
+        );
+        assert_eq!(
+            plan.non_precondition_reads().collect::<Vec<_>>(),
+            vec![(
+                "db",
+                read_key.as_str(),
+                NotPreconditionReason::SelfCreatedTable
+            )],
+            "and the decline is on the record — a declined read used to vanish, \
+             making `planned` silently under-count the tape's reads"
+        );
+    }
+
+    #[test]
+    fn seed_plan_legacy_insert_without_declaration_no_longer_masks_later_db_reads() {
+        let insert_key = "payment_intent:INSERT INTO \"payment_intent\" VALUES (…)";
+        let read_key = "payment_intent:SELECT * FROM \"payment_intent\" WHERE id = $1";
+        let insert = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "generic_insert",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1"}]),
+            &[],
+            &[insert_key],
+            false,
+        );
+        let read_back = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "find_payment_intent_by_id",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1"}]),
+            &[read_key],
+            &[],
+            false,
+        );
+
+        let plan = build_seed_plan(&[insert, read_back], Some("c1"));
+
+        assert!(
+            plan.contains("db", read_key),
+            "an undeclared legacy insert no longer uses method-name fallback masking"
+        );
+    }
+
+    #[test]
+    fn seed_plan_declared_non_create_does_not_mask_later_db_reads() {
+        let write_key = test_db_query_key(
+            "generic_insert_named_but_declared_update",
+            "payment_intent",
+            "UPDATE \"payment_intent\" SET \"status\" = $1",
+        );
+        let read_key = test_db_query_key(
+            "find_payment_intent_by_id",
+            "payment_intent",
+            "SELECT * FROM \"payment_intent\" WHERE id = $1",
+        );
+        let mut update = state_event(
+            0,
+            Some("c1"),
+            "db",
+            "generic_insert_named_but_declared_update",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1", "status": "requires_capture"}]),
+            &[],
+            &[write_key.as_str()],
+            false,
+        );
+        update.declaration =
+            Some(crate::BoundaryDeclaration::default().operation(crate::OperationKind::Update));
+        let later_read = state_event(
+            1,
+            Some("c1"),
+            "db",
+            "find_payment_intent_by_id",
+            serde_json::json!({"table": "payment_intent"}),
+            serde_json::json!([{"id": "p1", "status": "requires_capture"}]),
+            &[read_key.as_str()],
+            &[],
+            false,
+        );
+
+        let plan = build_seed_plan(&[update, later_read], Some("c1"));
+
+        assert!(
+            plan.contains("db", read_key.as_str()),
+            "a declared non-Create must not use the legacy `insert` method-name fallback"
+        );
+    }
+
+    /// Method names do not classify reads or writes: explicit fields do. A
+    /// read_set on a write-named method seeds, while a write_set on a read-named
+    /// method only marks the key mutated.
+    #[test]
+    fn seed_plan_uses_explicit_sets_not_method_names() {
+        let read_named_write = state_event(
+            0,
+            Some("c1"),
+            "custom_store",
+            "get_key",
+            serde_json::json!(["mutated"]),
+            serde_json::json!("after"),
+            &[],
+            &["mutated"],
+            false,
+        );
+        let write_named_read = state_event(
+            1,
+            Some("c1"),
+            "custom_store",
+            "set_key",
+            serde_json::json!(["precondition"]),
+            serde_json::json!("before"),
+            &["precondition"],
+            &[],
+            false,
+        );
+        let post_write_read = state_event(
+            2,
+            Some("c1"),
+            "custom_store",
+            "get_key",
+            serde_json::json!(["mutated"]),
+            serde_json::json!("after"),
+            &["mutated"],
+            &[],
+            false,
+        );
+
+        let plan = build_seed_plan(
+            &[read_named_write, write_named_read, post_write_read],
+            Some("c1"),
+        );
+
+        assert_eq!(
+            plan.resolve("custom_store", "precondition").unwrap().value,
+            serde_json::json!("before"),
+            "explicit read_set seeds even when the method name looks like a write"
+        );
+        assert!(
+            !plan.contains("custom_store", "mutated"),
+            "explicit write_set prevents a later read_set for the same key from seeding"
+        );
+    }
+
+    #[test]
+    fn seed_plan_skips_declared_redis_raw_null_without_op_metadata() {
+        let mut redis_null = state_event(
+            0,
+            Some("c1"),
+            "redis",
+            "get_key",
+            serde_json::json!({"key": "merchant_key_store_default"}),
+            serde_json::json!("Null"),
+            &["merchant_key_store_default"],
+            &[],
+            false,
+        );
+        redis_null.declaration =
+            Some(crate::BoundaryDeclaration::default().effect(EffectKind::Redis));
+
+        let mut redis_string_null = state_event(
+            1,
+            Some("c1"),
+            "redis",
+            "get_key",
+            serde_json::json!({"key": "literal_null_string"}),
+            serde_json::json!({"String": "Null"}),
+            &["literal_null_string"],
+            &[],
+            false,
+        );
+        redis_string_null.declaration =
+            Some(crate::BoundaryDeclaration::default().effect(EffectKind::Redis));
+
+        let custom_null = state_event(
+            2,
+            Some("c1"),
+            "custom_store",
+            "get_key",
+            serde_json::json!({"key": "custom"}),
+            serde_json::json!("Null"),
+            &["custom"],
+            &[],
+            false,
+        );
+
+        let plan = build_seed_plan(&[redis_null, redis_string_null, custom_null], Some("c1"));
+
+        assert!(
+            !plan.contains("redis", "merchant_key_store_default"),
+            "current Redis raw null (`DejaRedisValue::Null` => \"Null\") must materialize as absence, not a literal string"
+        );
+        assert_eq!(
+            plan.resolve("redis", "literal_null_string").unwrap().value,
+            serde_json::json!({"String": "Null"}),
+            "a real Redis string named Null remains seedable through the tagged enum shape"
+        );
+        assert_eq!(
+            plan.resolve("custom_store", "custom").unwrap().value,
+            serde_json::json!("Null"),
+            "non-Redis string values named Null are not reinterpreted"
+        );
+    }
+
+    /// Deliverable 1: a read AFTER the correlation wrote a key reflects the
+    /// mutation, not the precondition — so the FIRST (pre-write) read wins and a
+    /// post-write read never overwrites the seed.
+    #[test]
+    fn seed_plan_first_pre_write_read_wins() {
+        let events = vec![
+            state_event(
+                0,
+                Some("c1"),
+                "custom_store",
+                "load",
+                serde_json::json!(["k"]),
+                serde_json::json!("before"),
+                &["k"],
+                &[],
+                false,
+            ),
+            state_event(
+                1,
+                Some("c1"),
+                "custom_store",
+                "store",
+                serde_json::json!(["k", "after"]),
+                serde_json::json!("after"),
+                &[],
+                &["k"],
+                false,
+            ),
+            // Read-after-write: returns the mutated value, must NOT reseed.
+            state_event(
+                2,
+                Some("c1"),
+                "custom_store",
+                "load",
+                serde_json::json!(["k"]),
+                serde_json::json!("after"),
+                &["k"],
+                &[],
+                false,
+            ),
+        ];
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(
+            plan.resolve("custom_store", "k").unwrap().value,
+            serde_json::json!("before"),
+            "the precondition is the pre-write value, not the post-write read"
+        );
+        assert_eq!(
+            plan.non_precondition_reads().collect::<Vec<_>>(),
+            vec![("custom_store", "k", NotPreconditionReason::ReadAfterWrite)],
+            "the post-write read is declined AND accounted, not silently dropped"
+        );
+    }
+
+    /// Deliverable 1: an errored read carries no value and must not seed.
+    #[test]
+    fn seed_plan_skips_error_reads() {
+        let events = vec![state_event(
+            0,
+            Some("c1"),
+            "redis",
+            "get",
+            serde_json::json!(["k"]),
+            serde_json::json!({"error": "boom"}),
+            &["k"],
+            &[],
+            true,
+        )];
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(plan.is_empty(), "an error read seeds nothing");
+    }
+
+    #[test]
+    fn seed_plan_skips_structural_miss_reads_without_null_string_magic() {
+        let mut optional_none = state_event(
+            2,
+            Some("c1"),
+            "redis",
+            "get_key",
+            serde_json::json!(["optional_missing"]),
+            serde_json::json!({"Ok": null}),
+            &["optional_missing"],
+            &[],
+            false,
+        );
+        optional_none.declaration =
+            Some(crate::BoundaryDeclaration::default().returns(crate::ReturnSemantics::Optional));
+        let events = vec![
+            state_event(
+                0,
+                Some("c1"),
+                "redis",
+                "get_key",
+                serde_json::json!(["legacy_null_string"]),
+                serde_json::json!("Null"),
+                &["legacy_null_string"],
+                &[],
+                false,
+            ),
+            state_event(
+                1,
+                Some("c1"),
+                "db",
+                "find_x",
+                serde_json::json!(["json_null_absent"]),
+                serde_json::Value::Null,
+                &["json_null_absent"],
+                &[],
+                false,
+            ),
+            optional_none,
+            // a real HIT alongside, to prove only structural misses are skipped
+            state_event(
+                3,
+                Some("c1"),
+                "redis",
+                "get_key",
+                serde_json::json!(["present"]),
+                serde_json::json!({"String": "v"}),
+                &["present"],
+                &[],
+                false,
+            ),
+        ];
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert!(
+            plan.classify_read("redis", "legacy_null_string")
+                .is_reconstructable(),
+            "the legacy string \"Null\" is no longer a magic miss sentinel"
+        );
+        assert_eq!(
+            plan.resolve("redis", "legacy_null_string").unwrap().value,
+            serde_json::json!("Null")
+        );
+        assert!(
+            !plan
+                .classify_read("db", "json_null_absent")
+                .is_reconstructable(),
+            "JSON null is a structural miss and must not be seeded"
+        );
+        assert!(
+            !plan
+                .classify_read("redis", "optional_missing")
+                .is_reconstructable(),
+            "an explicitly Optional successful null is a structural miss"
+        );
+        assert!(
+            plan.classify_read("redis", "present").is_reconstructable(),
+            "a real hit IS seeded"
+        );
+    }
+
+    /// Deliverable 1: correlation isolation — only the requested case's reads
+    /// build the plan.
+    #[test]
+    fn seed_plan_is_correlation_scoped() {
+        let events = vec![
+            state_event(
+                0,
+                Some("c1"),
+                "redis",
+                "get",
+                serde_json::json!(["k"]),
+                serde_json::json!("c1val"),
+                &["k"],
+                &[],
+                false,
+            ),
+            state_event(
+                1,
+                Some("c2"),
+                "redis",
+                "get",
+                serde_json::json!(["k"]),
+                serde_json::json!("c2val"),
+                &["k"],
+                &[],
+                false,
+            ),
+        ];
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(plan.len(), 1);
+        assert_eq!(
+            plan.resolve("redis", "k").unwrap().value,
+            serde_json::json!("c1val")
+        );
+    }
+
+    /// Deliverable 3: a key in the plan classifies as Reconstructable; a key
+    /// neither in the plan nor the template is a seed-gap (never served stale).
+    #[test]
+    fn classify_read_flags_seed_gap() {
+        let events = vec![state_event(
+            0,
+            Some("c1"),
+            "redis",
+            "get",
+            serde_json::json!(["known"]),
+            serde_json::json!("v"),
+            &["known"],
+            &[],
+            false,
+        )];
+        let plan = build_seed_plan(&events, Some("c1"));
+
+        let hit = plan.classify_read("redis", "known");
+        assert!(hit.is_reconstructable());
+        match hit {
+            ReadClassification::Reconstructable { value, origin } => {
+                assert_eq!(value, serde_json::json!("v"));
+                assert_eq!(origin, SeedOrigin::Recording);
+            }
+            _ => panic!("expected reconstructable"),
+        }
+
+        let gap = plan.classify_read("redis", "never_seen");
+        assert!(!gap.is_reconstructable());
+        assert!(matches!(gap, ReadClassification::NotReconstructable { .. }));
+    }
+
+    /// Deliverable 4: an ambient template resolves a diverged read to a config
+    /// key the recording never observed — turning a would-be seed-gap into a
+    /// reconstructable read.
+    #[test]
+    fn ambient_template_resolves_config_key() {
+        // Recording only observed the DEFAULT rate.
+        let events = vec![state_event(
+            0,
+            Some("c1"),
+            "redis",
+            "get",
+            serde_json::json!(["settlement_rate_default"]),
+            serde_json::json!("0.10"),
+            &["settlement_rate_default"],
+            &[],
+            false,
+        )];
+        let plan = build_seed_plan(&events, Some("c1"));
+
+        // Without the template the premium key is a seed-gap.
+        assert!(!plan
+            .classify_read("redis", "settlement_rate_premium")
+            .is_reconstructable());
+
+        // Merge the demo ambient defaults.
+        let plan = plan.with_ambient(&AmbientTemplate::demo_defaults());
+        let resolved = plan.classify_read("redis", "settlement_rate_premium");
+        match resolved {
+            ReadClassification::Reconstructable { value, origin } => {
+                assert_eq!(value, serde_json::json!("0.20"));
+                assert_eq!(origin, SeedOrigin::Ambient);
+            }
+            _ => panic!("ambient template should resolve the premium key"),
+        }
+    }
+
+    /// Deliverable 4: a recording-derived precondition wins over an ambient
+    /// default for the SAME key (ambient never clobbers what was observed).
+    #[test]
+    fn ambient_does_not_clobber_recording() {
+        let events = vec![state_event(
+            0,
+            Some("c1"),
+            "redis",
+            "get",
+            serde_json::json!(["settlement_rate_premium"]),
+            serde_json::json!("0.15"),
+            &["settlement_rate_premium"],
+            &[],
+            false,
+        )];
+        let plan =
+            build_seed_plan(&events, Some("c1")).with_ambient(&AmbientTemplate::demo_defaults());
+        assert_eq!(
+            plan.resolve("redis", "settlement_rate_premium")
+                .unwrap()
+                .value,
+            serde_json::json!("0.15"),
+            "the observed value (0.15) wins over the ambient default (0.20)"
+        );
+        assert_eq!(
+            plan.resolve("redis", "settlement_rate_premium")
+                .unwrap()
+                .origin,
+            SeedOrigin::Recording
+        );
+    }
+
+    /// Deliverable 4: the ambient template parses from a TSV file body, JSON-
+    /// typing values (so the demo's config can live in a file).
+    #[test]
+    fn ambient_template_from_tsv() {
+        let body = "\
+# demo ambient config
+redis\tsettlement_rate_premium\t0.20
+redis\tcurrency\tusd
+";
+        let template = AmbientTemplate::from_tsv(body);
+        assert_eq!(template.entries().len(), 2);
+        let plan = SeedPlan::new().with_ambient(&template);
+        assert_eq!(
+            plan.resolve("redis", "settlement_rate_premium")
+                .unwrap()
+                .value,
+            serde_json::json!(0.20),
+            "0.20 parses as a JSON number"
+        );
+        assert_eq!(
+            plan.resolve("redis", "currency").unwrap().value,
+            serde_json::json!("usd"),
+            "bare token becomes a JSON string"
+        );
+    }
+
+    /// The execute-shadow path on the concrete `LookupTableHook` resolves the
+    /// recorded baseline at peek (advancing the stampers in lock-step with the
+    /// lookup path) and stamps the REAL boundary result at observe, emitting one
+    /// `Shadow` observation whose `recorded_result`/`observed_result` are
+    /// what the post-hoc divergence tally diffs.
+    #[test]
+    fn hook_execute_shadow_emits_observation_with_real_result() {
+        let table = LookupTable {
+            recording_id: "rec-shadow".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![entry_with(
+                None,
+                Locus::Unlocated,
+                &serde_json::json!(["counter"]),
+                0,
+                serde_json::json!(2), // recorded baseline result
+                7,
+            )],
+            identity_entries: Vec::new(),
+        };
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        let args = serde_json::json!(["counter"]);
+        let query = ReplayLookup {
+            boundary: "redis",
+            trait_name: "RedisStore",
+            // Identity is incidental to what this test asserts (shadow
+            // observation), but it must AGREE with `entry_with`'s fixture or
+            // the lookup never resolves and the test would pass or fail for an
+            // unrelated reason.
+            method_name: "get_key",
+            args: &args,
+            callsite_identity: None,
+            caller_location: None,
+        };
+
+        let token = hook.execute_shadow_peek(query).expect("peek token");
+        // The macro would now run the real op; hand its fresh result to observe.
+        DejaHook::execute_shadow_observe(&hook, token, serde_json::json!(3));
+
+        let calls = handle.lock().unwrap();
+        assert_eq!(calls.len(), 1, "one shadow observation emitted");
+        let call = &calls[0];
+        assert_eq!(call.provenance, crate::Provenance::Shadow);
+        assert_eq!(call.recorded_result, Some(serde_json::json!(2)));
+        assert_eq!(call.observed_result, Some(serde_json::json!(3)));
+    }
+
+    /// REGRESSION (#28 extra-call): a declared-`Execute` boundary CALL with NO
+    /// recorded counterpart (a novel call the recording never had) must emit an
+    /// observation the post-hoc tally classifies as a NovelCall divergence —
+    /// `resolved == false` AND `seed_gap == false` — NOT a swallowed
+    /// InconclusiveSeedGap. Under #28 the execute-shadow peek set
+    /// `seed_gap = recorded_result.is_none()`, so a novel Execute call was emitted
+    /// with `seed_gap = true` and the tally treated it as non-blocking — masking
+    /// the extra-call catch. The fix mirrors #26: a baseline-less Execute call
+    /// surfaces as NovelCall (the tally's final branch fires when there is no
+    /// recorded twin to pair against).
+    #[test]
+    fn novel_execute_call_surfaces_as_novel_not_swallowed_seed_gap() {
+        // Empty table → NO recorded baseline for the candidate's extra call.
+        let table = LookupTable {
+            recording_id: "rec-novel".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![],
+            identity_entries: Vec::new(),
+        };
+        let observed = InMemoryObservedSink::new();
+        let handle = observed.handle();
+        let hook =
+            LookupTableHook::from_source(VecSource(Some(table)), observed).expect("from_source");
+
+        let args = serde_json::json!(["extra_key"]);
+        let query = ReplayLookup {
+            boundary: "db",
+            trait_name: "PI",
+            method_name: "generic_find_one_core",
+            args: &args,
+            callsite_identity: None,
+            caller_location: None,
+        };
+
+        // Declared-Execute boundary routes to execute; peek returns a token even
+        // with no baseline (the real boundary still runs), then observe emits.
+        let token = hook.execute_shadow_peek(query).expect("peek token");
+        DejaHook::execute_shadow_observe(&hook, token, serde_json::json!({"id": "fresh"}));
+
+        let calls = handle.lock().unwrap();
+        assert_eq!(calls.len(), 1, "one observation emitted for the novel call");
+        let call = &calls[0];
+        assert!(
+            !call.resolved,
+            "a novel call has no recorded baseline → resolved == false"
+        );
+        assert_eq!(
+            call.recorded_result, None,
+            "no recorded baseline for a novel call"
+        );
+        assert!(
+            !call.seed_gap,
+            "a novel call (no recorded event) must NOT be flagged seed_gap — it is a \
+             NovelCall, not a swallowed InconclusiveSeedGap (the extra-call regression)"
+        );
+    }
+
+    /// `touched_db_tables` returns exactly the read-precondition tables (db
+    /// entries' keys), deduplicated — the set the harness must clone so seeded
+    /// rows land. Write-target tables are NOT here (no seeded rows for them).
+    #[test]
+    fn touched_db_tables_lists_only_read_precondition_tables() {
+        let users_key = StateKey::DbRow {
+            table: "users".to_owned(),
+            key: vec![("user_id".to_owned(), "u1".to_owned())],
+        }
+        .to_wire();
+        let mca_key = StateKey::DbRow {
+            table: "merchant_connector_account".to_owned(),
+            key: vec![(
+                "merchant_connector_account_id".to_owned(),
+                "mca1".to_owned(),
+            )],
+        }
+        .to_wire();
+        // Two reads of `users` (one is a dup) + one read of `mca`; a redis read
+        // must not appear in the db table set.
+        let events = vec![
+            state_event(
+                0,
+                Some("c1"),
+                "db",
+                "fetch",
+                serde_json::json!([]),
+                serde_json::json!({}),
+                &[&users_key],
+                &[],
+                false,
+            ),
+            state_event(
+                1,
+                Some("c1"),
+                "db",
+                "fetch",
+                serde_json::json!([]),
+                serde_json::json!({}),
+                &[&users_key],
+                &[],
+                false,
+            ),
+            state_event(
+                2,
+                Some("c1"),
+                "db",
+                "fetch",
+                serde_json::json!([]),
+                serde_json::json!({}),
+                &[&mca_key],
+                &[],
+                false,
+            ),
+            state_event(
+                3,
+                Some("c1"),
+                "redis",
+                "get",
+                serde_json::json!([]),
+                serde_json::json!("0.20"),
+                &["rate"],
+                &[],
+                false,
+            ),
+        ];
+        let plan = build_seed_plan(&events, Some("c1"));
+        assert_eq!(
+            plan.touched_db_tables(),
+            vec!["merchant_connector_account".to_owned(), "users".to_owned()],
+            "touched_db_tables = distinct read-precondition tables, sorted; no redis"
+        );
+    }
+
+    /// `build_write_target_tables` returns the tables a correlation WRITES to —
+    /// derived from write_set state keys — so the harness clones them for write
+    /// isolation. A write-only correlation (no reads → empty plan) still gets its
+    /// write-target tables here, so its schema is provisioned.
+    #[test]
+    fn build_write_target_tables_lists_write_isolation_tables() {
+        let pi_key = StateKey::DbRow {
+            table: "payment_intent".to_owned(),
+            key: vec![("payment_id".to_owned(), "pay_1".to_owned())],
+        }
+        .to_wire();
+        // A write to payment_intent; a read of users (must NOT appear in the
+        // write-target set); a redis write (not a db table).
+        let events = vec![
+            state_event(
+                0,
+                Some("c1"),
+                "db",
+                "fetch",
+                serde_json::json!([]),
+                serde_json::json!({}),
+                &["users:k"],
+                &[],
+                false,
+            ),
+            state_event(
+                1,
+                Some("c1"),
+                "db",
+                "update",
+                serde_json::json!([]),
+                serde_json::json!({}),
+                &[],
+                &[&pi_key],
+                false,
+            ),
+            state_event(
+                2,
+                Some("c1"),
+                "redis",
+                "set",
+                serde_json::json!([]),
+                serde_json::json!("ok"),
+                &[],
+                &["rate"],
+                false,
+            ),
+        ];
+        let writes = build_write_target_tables(&events, Some("c1"));
+        assert_eq!(
+            writes,
+            vec!["payment_intent".to_owned()],
+            "write-target set = distinct db write tables only; reads and redis excluded"
+        );
+    }
+
+    /// A correlation scoped to a different id contributes no tables to either set.
+    #[test]
+    fn table_sets_are_correlation_scoped() {
+        let key = StateKey::DbRow {
+            table: "users".to_owned(),
+            key: vec![("user_id".to_owned(), "u1".to_owned())],
+        }
+        .to_wire();
+        let events = vec![
+            state_event(
+                0,
+                Some("c1"),
+                "db",
+                "fetch",
+                serde_json::json!([]),
+                serde_json::json!({}),
+                &[&key],
+                &[],
+                false,
+            ),
+            state_event(
+                1,
+                Some("c2"),
+                "db",
+                "update",
+                serde_json::json!([]),
+                serde_json::json!({}),
+                &[],
+                &[&key],
+                false,
+            ),
+        ];
+        assert_eq!(
+            build_seed_plan(&events, Some("c1")).touched_db_tables(),
+            vec!["users".to_owned()],
+            "c1 read-precondition tables scoped to c1"
+        );
+        assert_eq!(
+            build_write_target_tables(&events, Some("c1")),
+            Vec::<String>::new(),
+            "c1 has no writes → empty write-target set"
+        );
+    }
+
+    /// Route D: a delete's `Ok(true)` asserts a row without carrying it. The
+    /// row is borrowed from the latest image of it recorded before the delete,
+    /// in any correlation, and the entry names where it came from.
+    mod borrowed_rows {
+        use super::*;
+
+        const PRESENT: &str = r#"{"version":1,"result":"Ok","value":true,"type_name":"bool"}"#;
+
+        fn profile_row_key(profile_id: &str) -> String {
+            StateKey::DbRow {
+                table: "business_profile".to_owned(),
+                key: vec![("profile_id".to_owned(), profile_id.to_owned())],
+            }
+            .to_wire()
+        }
+
+        fn row_image(table: &str, key_column: &str, key: &str, name: &str) -> serde_json::Value {
+            serde_json::json!({
+                "deja_image": "db_row",
+                "version": 1,
+                "table": table,
+                "columns": [
+                    {"name": key_column, "type_oid": 1043, "value": key},
+                    {"name": "profile_name", "type_oid": 1043, "value": name},
+                ],
+            })
+        }
+
+        fn imaged(seq: u64, corr: &str, image: serde_json::Value) -> BoundaryEvent {
+            let table = image["table"].as_str().unwrap().to_owned();
+            let mut event = state_event(
+                seq,
+                Some(corr),
+                "db",
+                "find",
+                serde_json::json!({"table": table}),
+                serde_json::json!({"version": 1, "result": "Ok", "value": [], "type_name": "Vec"}),
+                &[],
+                &[],
+                false,
+            );
+            event.result_image = Some(Payload::from(image));
+            event
+        }
+
+        fn delete(seq: u64, corr: &str, table: &str, sql: &str, result: &str) -> BoundaryEvent {
+            let key = profile_row_key("pro_1");
+            state_event(
+                seq,
+                Some(corr),
+                "db",
+                "generic_delete",
+                serde_json::json!({"table": table, "sql": sql}),
+                serde_json::from_str(result).unwrap(),
+                &[key.as_str()],
+                &[key.as_str()],
+                false,
+            )
+        }
+
+        const PROFILE_DELETE: &str = r#"DELETE FROM "business_profile" WHERE (("business_profile"."profile_id" = $1) AND ("business_profile"."merchant_id" = $2)) -- binds: [ProfileId("pro_1"), MerchantId("m1")]"#;
+
+        fn planted(events: &[BoundaryEvent]) -> SeedEntry {
+            register_test_schema_identity();
+            build_seed_plan(events, Some("b"))
+                .resolve("db", &profile_row_key("pro_1"))
+                .expect("the delete's key is planned")
+                .clone()
+        }
+
+        #[test]
+        fn borrows_the_latest_image_before_the_delete_from_another_correlation() {
+            let events = [
+                imaged(
+                    1,
+                    "a",
+                    row_image("business_profile", "profile_id", "pro_1", "v1"),
+                ),
+                imaged(
+                    3,
+                    "a",
+                    row_image("business_profile", "profile_id", "pro_1", "v2"),
+                ),
+                delete(5, "b", "business_profile", PROFILE_DELETE, PRESENT),
+                imaged(
+                    9,
+                    "a",
+                    row_image("business_profile", "profile_id", "pro_1", "after"),
+                ),
+            ];
+            let entry = planted(&events);
+            assert_eq!(
+                entry.image,
+                Some(row_image("business_profile", "profile_id", "pro_1", "v2")),
+                "the row as it stood when the delete ran: latest before it, never after"
+            );
+            assert_eq!(entry.origin, SeedOrigin::Borrowed { global_sequence: 3 });
+        }
+
+        #[test]
+        fn a_bare_true_asserts_presence_too() {
+            let events = [
+                imaged(
+                    1,
+                    "a",
+                    row_image("business_profile", "profile_id", "pro_1", "v1"),
+                ),
+                delete(5, "b", "business_profile", PROFILE_DELETE, "true"),
+            ];
+            assert_eq!(
+                planted(&events).origin,
+                SeedOrigin::Borrowed { global_sequence: 1 }
+            );
+        }
+
+        #[test]
+        fn only_a_recorded_presence_borrows() {
+            for result in [
+                r#"{"version":1,"result":"Ok","value":false,"type_name":"bool"}"#,
+                r#"{"version":1,"result":"Ok","value":1,"type_name":"usize"}"#,
+                r#"{"version":1,"result":"Err","kind":"NotFound","message":"x"}"#,
+                "false",
+            ] {
+                let events = [
+                    imaged(
+                        1,
+                        "a",
+                        row_image("business_profile", "profile_id", "pro_1", "v1"),
+                    ),
+                    delete(5, "b", "business_profile", PROFILE_DELETE, result),
+                ];
+                let entry = planted(&events);
+                assert_eq!(entry.image, None, "{result}");
+                assert_eq!(entry.origin, SeedOrigin::Recording, "{result}");
+            }
+        }
+
+        #[test]
+        fn an_errored_event_lends_no_image() {
+            let mut failed = imaged(
+                1,
+                "a",
+                row_image("business_profile", "profile_id", "pro_1", "v1"),
+            );
+            failed.is_error = true;
+            let events = [
+                failed,
+                delete(5, "b", "business_profile", PROFILE_DELETE, PRESENT),
+            ];
+            assert_eq!(planted(&events).image, None);
+        }
+
+        #[test]
+        fn an_image_of_another_table_or_row_is_never_borrowed() {
+            let events = [
+                imaged(
+                    1,
+                    "a",
+                    row_image("merchant_key_store", "merchant_id", "pro_1", "other table"),
+                ),
+                imaged(
+                    2,
+                    "a",
+                    row_image("business_profile", "profile_id", "pro_2", "other row"),
+                ),
+                delete(5, "b", "business_profile", PROFILE_DELETE, PRESENT),
+            ];
+            let entry = planted(&events);
+            assert_eq!(entry.image, None);
+            assert_eq!(
+                entry.origin,
+                SeedOrigin::Recording,
+                "still skipped as RecordedPresence"
+            );
+        }
+
+        #[test]
+        fn a_delete_that_names_no_single_whole_row_borrows_nothing() {
+            register_test_schema_identity();
+            // A composite key bound by only one of its columns.
+            assert_eq!(
+                statement_row_key(
+                    "incremental_authorization",
+                    r#"DELETE FROM "incremental_authorization" WHERE ("incremental_authorization"."authorization_id" = $1) -- binds: ["auth_1"]"#,
+                ),
+                None
+            );
+            // Two rows.
+            assert_eq!(
+                statement_row_key(
+                    "business_profile",
+                    r#"DELETE FROM "business_profile" WHERE (("business_profile"."profile_id" = $1) OR ("business_profile"."profile_id" = $2)) -- binds: [ProfileId("pro_1"), ProfileId("pro_2")]"#,
+                ),
+                None
+            );
+            assert_eq!(
+                statement_row_key(
+                    "business_profile",
+                    PROFILE_DELETE.split(" -- binds").next().unwrap()
+                ),
+                None,
+                "no binds, no key"
+            );
+            assert_eq!(
+                statement_row_key("business_profile", PROFILE_DELETE),
+                Some(profile_row_key("pro_1"))
+            );
+        }
+
+        #[test]
+        fn debug_binds_read_newtypes_as_their_inner_value() {
+            assert_eq!(
+                debug_bind_values(
+                    r#"[ProfileId("pro_1"), MerchantId("m, (1)"), 7, null, Some(Id("x"))]"#
+                ),
+                Some(vec![
+                    serde_json::json!("pro_1"),
+                    serde_json::json!("m, (1)"),
+                    serde_json::json!(7),
+                    serde_json::Value::Null,
+                    serde_json::json!("x"),
+                ])
+            );
+            assert_eq!(debug_bind_values("[]"), Some(Vec::new()));
+            assert_eq!(
+                debug_bind_values(r#"["a", Money { amount: 1 }]"#),
+                None,
+                "an item that is not a scalar refuses the whole list"
+            );
+            assert_eq!(debug_bind_values(r#""a""#), None, "not a list");
+            assert_eq!(
+                debug_bind_values(r#"["a", ["b", "c"]]"#),
+                None,
+                "a Vec bind renders as a JSON array and is refused, not used as a key"
+            );
+        }
+
+        #[test]
+        fn the_correlations_own_earlier_image_wins_over_a_later_rival() {
+            let events = [
+                imaged(
+                    2,
+                    "b",
+                    row_image("business_profile", "profile_id", "pro_1", "own"),
+                ),
+                imaged(
+                    3,
+                    "a",
+                    row_image("business_profile", "profile_id", "pro_1", "rival"),
+                ),
+                delete(5, "b", "business_profile", PROFILE_DELETE, PRESENT),
+            ];
+            let entry = planted(&events);
+            assert_eq!(
+                entry.image,
+                Some(row_image("business_profile", "profile_id", "pro_1", "own")),
+                "the image its own read plants, so two entries never disagree on one row"
+            );
+            assert_eq!(entry.origin, SeedOrigin::Recording);
+        }
+
+        #[test]
+        fn ambient_never_overwrites_a_borrowed_entry() {
+            let entry = |origin| SeedEntry {
+                boundary: "db".to_owned(),
+                key: "k".to_owned(),
+                value: serde_json::json!(true),
+                image: None,
+                method: None,
+                origin,
+                source_sequence: 1,
+            };
+            let borrowed = SeedOrigin::Borrowed { global_sequence: 3 };
+            for later in [SeedOrigin::Ambient, SeedOrigin::Recording] {
+                let mut plan = SeedPlan::new();
+                plan.upsert(entry(borrowed));
+                plan.upsert(entry(later));
+                assert_eq!(
+                    plan.resolve("db", "k").unwrap().origin,
+                    borrowed,
+                    "{later:?}"
+                );
+            }
+            let mut plan = SeedPlan::new();
+            plan.upsert(entry(SeedOrigin::Ambient));
+            plan.upsert(entry(borrowed));
+            assert_eq!(
+                plan.resolve("db", "k").unwrap().origin,
+                borrowed,
+                "a borrow replaces ambient"
+            );
+        }
+
+        #[test]
+        fn the_certificate_names_the_borrowed_image() {
+            assert_eq!(
+                serde_json::to_value(SeedOrigin::Borrowed { global_sequence: 3 }).unwrap(),
+                serde_json::json!({"borrowed": {"global_sequence": 3}})
+            );
+            assert_eq!(
+                serde_json::from_value::<SeedOrigin>(serde_json::json!("recording")).unwrap(),
+                SeedOrigin::Recording,
+                "existing certificates still read"
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod lookup_load_names_the_mismatch {
+    use super::{LocalFileLookupSource, LookupTableSource, POLICY_VERSION};
+
+    fn load_text(name: &str, text: &str) -> std::io::Result<super::LookupTable> {
+        let dir = std::env::temp_dir().join(format!("deja-lookup-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("tmpdir");
+        let path = dir.join(format!("{name}.jsonl"));
+        std::fs::write(&path, text).expect("write");
+        LocalFileLookupSource::new(path).load()
+    }
+
+    /// A table this build cannot READ must say so, not claim the file is empty.
+    ///
+    /// This is the case that bit twice. A pretty-printed enveloped table whose
+    /// `LookupKey` shape belongs to another revision used to have its schema
+    /// error DISCARDED, fall through to the JSONL branch, and report "EOF while
+    /// parsing an object at line 1 column 1" — line 1 being `{`. That reads as
+    /// an empty table and sends the reader to the renderer, which is not where
+    /// the fault is.
+    #[test]
+    fn a_version_skewed_table_names_the_skew_rather_than_reporting_eof() {
+        let skewed = "{\n  \"recording_id\": \"rec-test\",\n  \"policy_version\": 1,\n  \"entries\": [\n    { \"key\": { \"address\": { \"Sequence\": 7 }, \"args_hash\": \"x\", \"occurrence\": 0 },\n      \"result\": null,\n      \"source_event_global_sequence\": 1 }\n  ]\n}";
+        let err =
+            load_text("skewed", skewed).expect_err("a shape this build cannot read must fail");
+        let msg = err.to_string();
+        // The JSONL error may still appear — it is one of two attempts and is
+        // reported as such. What must not happen is the EOF standing ALONE and
+        // unattributed, which is what read as "the table is empty".
+        assert!(
+            msg.contains("as JSONL: EOF while parsing"),
+            "the EOF must be attributed to the JSONL attempt, not left bare: {msg}"
+        );
+        assert!(
+            msg.contains("expected u64"),
+            "the real schema error must be surfaced, not discarded: {msg}"
+        );
+        assert!(
+            msg.contains("VERSION SKEW"),
+            "must name version skew: {msg}"
+        );
+        assert!(
+            msg.contains(&POLICY_VERSION.to_string()),
+            "must state the version this build requires: {msg}"
+        );
+        assert!(
+            msg.contains("as an enveloped table:"),
+            "must surface the error that used to be discarded: {msg}"
+        );
+    }
+
+    /// The same skew, in the one-line form the orchestrator now writes.
+    ///
+    /// On one line the JSONL attempt no longer stops at `{`: it parses the
+    /// envelope as an entry and reports a missing `key`. That reads like a
+    /// malformed entry, so the enveloped error and the skew must still lead.
+    #[test]
+    fn a_version_skewed_compact_table_names_the_skew_first() {
+        let skewed = r#"{"recording_id":"rec-test","policy_version":1,"entries":[{"key":{"address":{"Sequence":7},"args_hash":"x","occurrence":0},"result":null,"source_event_global_sequence":1}]}"#;
+        let err = load_text("skewed-compact", skewed)
+            .expect_err("a shape this build cannot read must fail");
+        let msg = err.to_string();
+        let enveloped = msg
+            .find("as an enveloped table:")
+            .unwrap_or_else(|| panic!("must surface the enveloped error: {msg}"));
+        let jsonl = msg
+            .find("as JSONL:")
+            .unwrap_or_else(|| panic!("the JSONL attempt is attributed: {msg}"));
+        assert!(
+            enveloped < jsonl,
+            "the enveloped error leads, the JSONL one follows: {msg}"
+        );
+        assert!(msg.contains("expected u64"), "the real schema error: {msg}");
+        assert!(
+            msg.contains("VERSION SKEW"),
+            "must name version skew: {msg}"
+        );
+    }
+
+    /// The JSONL fallback still works, so the fix trades nothing away.
+    #[test]
+    fn a_bare_jsonl_stream_still_loads() {
+        let line = "{\"key\":{\"correlation_id\":null,\"fork_seq\":0,\"boundary\":\"time\",\"component\":\"c\",\"operation\":\"now\",\"locus\":\"Unlocated\",\"args_hash\":0,\"occurrence\":0},\"result\":null,\"source_event_global_sequence\":1}";
+        let table = load_text("jsonl", line).expect("JSONL must still load");
+        assert_eq!(
+            table.entries.len(),
+            1,
+            "the entry must survive the fallback"
+        );
+        assert_eq!(table.policy_version, POLICY_VERSION);
+    }
+
+    /// A genuinely empty file must still report emptiness — so the new message
+    /// has not simply replaced one wrong diagnosis with another.
+    #[test]
+    fn an_empty_file_is_not_reported_as_version_skew() {
+        let table = load_text("empty", "").expect("an empty file yields an empty table");
+        assert!(table.entries.is_empty());
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)] // tests panic on failure by design
+mod shared_results {
+    use std::sync::Arc;
+
+    use super::{
+        shared_results_path, LocalFileLookupSource, Locus, LookupEntry, LookupKey, LookupTable,
+        LookupTableSource, SharedResultsTable, POLICY_VERSION, SHARED_RESULTS_POLICY_VERSION,
+    };
+
+    fn entry(occurrence: u32, result: Arc<serde_json::Value>) -> LookupEntry {
+        LookupEntry {
+            key: LookupKey {
+                correlation_id: Some("c-1".to_owned()),
+                bucket_id: Some("root".to_owned()),
+                fork_seq: 0,
+                boundary: "imc".to_owned(),
+                component: "cache".to_owned(),
+                operation: "in_memory_get".to_owned(),
+                locus: Locus::Unlocated,
+                args_hash: 7,
+                occurrence,
+            },
+            result,
+            source_event_global_sequence: u64::from(occurrence),
+        }
+    }
+
+    /// Four entries: three recorded the same graph, each as its own value, and
+    /// one recorded something else.
+    fn legacy_table() -> LookupTable {
+        let graph = || Arc::new(serde_json::json!({"nodes": [1, 2, 3], "edges": [[1, 2]]}));
+        LookupTable {
+            recording_id: "rec-1".to_owned(),
+            policy_version: POLICY_VERSION,
+            event_schema_version: Some(crate::CURRENT_EVENT_SCHEMA_VERSION),
+            entries: vec![
+                entry(0, graph()),
+                entry(1, graph()),
+                entry(2, graph()),
+                entry(3, Arc::new(serde_json::json!("other"))),
+            ],
+            identity_entries: Vec::new(),
+        }
+    }
+
+    fn write_both(dir: &std::path::Path) -> std::path::PathBuf {
+        let path = dir.join("run-1.jsonl");
+        let legacy = serde_json::to_vec(&legacy_table()).unwrap();
+        std::fs::write(&path, &legacy).unwrap();
+        let shared = SharedResultsTable::from_table(&legacy_table(), &legacy).unwrap();
+        std::fs::write(
+            shared_results_path(&path),
+            serde_json::to_vec(&shared).unwrap(),
+        )
+        .unwrap();
+        path
+    }
+
+    fn shared_of_legacy() -> SharedResultsTable {
+        let legacy = serde_json::to_vec(&legacy_table()).unwrap();
+        SharedResultsTable::from_table(&legacy_table(), &legacy).unwrap()
+    }
+
+    /// Once no legacy table is written, the shared form is the table itself,
+    /// with nothing beside it to be checked against.
+    #[test]
+    fn a_shared_form_at_the_table_path_loads_as_the_table() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("run-1.jsonl");
+        let mut shared = shared_of_legacy();
+        shared.legacy_digest = None;
+        std::fs::write(&path, serde_json::to_vec(&shared).unwrap()).unwrap();
+        let mut source = LocalFileLookupSource::new(&path);
+        let table = source.load().unwrap();
+        assert_eq!(source.loaded_from(), Some(path.as_path()));
+        assert!(Arc::ptr_eq(
+            &table.entries[0].result,
+            &table.entries[2].result
+        ));
+    }
+
+    /// A shared file left beside a table it was not written for is not
+    /// served: the loader says why and reads the table itself.
+    #[test]
+    fn a_shared_file_written_for_another_table_is_not_served() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_both(dir.path());
+        let mut other = legacy_table();
+        other.recording_id = "rec-2".to_owned();
+        other.entries[3].result = Arc::new(serde_json::json!("OTHER"));
+        std::fs::write(&path, serde_json::to_vec(&other).unwrap()).unwrap();
+
+        let mut source = LocalFileLookupSource::new(&path);
+        let table = source.load().unwrap();
+        assert_eq!(source.loaded_from(), Some(path.as_path()));
+        assert_eq!(table.recording_id, "rec-2");
+        assert_eq!(*table.entries[3].result, serde_json::json!("OTHER"));
+    }
+
+    /// The same, when the replaced table happens to be exactly as long: the
+    /// digest, not the length, is what tells them apart.
+    #[test]
+    fn a_shared_file_for_a_table_of_the_same_length_is_not_served() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_both(dir.path());
+        let mut other = legacy_table();
+        other.entries[3].result = Arc::new(serde_json::json!("othex"));
+        let bytes = serde_json::to_vec(&other).unwrap();
+        assert_eq!(bytes.len() as u64, std::fs::metadata(&path).unwrap().len());
+        std::fs::write(&path, bytes).unwrap();
+
+        let mut source = LocalFileLookupSource::new(&path);
+        let table = source.load().unwrap();
+        assert_eq!(source.loaded_from(), Some(path.as_path()));
+        assert_eq!(*table.entries[3].result, serde_json::json!("othex"));
+    }
+
+    /// A shared file that does not parse, or carries no stamp, is passed over
+    /// for the table rather than failing the load.
+    #[test]
+    fn an_unusable_shared_file_is_passed_over_for_the_table() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_both(dir.path());
+        let sibling = shared_results_path(&path);
+        let full = std::fs::read(&sibling).unwrap();
+        std::fs::write(&sibling, &full[..full.len() / 2]).unwrap();
+        let mut source = LocalFileLookupSource::new(&path);
+        source.load().unwrap();
+        assert_eq!(
+            source.loaded_from(),
+            Some(path.as_path()),
+            "a truncated file"
+        );
+
+        let mut unstamped: serde_json::Value = serde_json::from_slice(&full).unwrap();
+        unstamped.as_object_mut().unwrap().remove("legacy_digest");
+        std::fs::write(&sibling, serde_json::to_vec(&unstamped).unwrap()).unwrap();
+        let mut source = LocalFileLookupSource::new(&path);
+        source.load().unwrap();
+        assert_eq!(
+            source.loaded_from(),
+            Some(path.as_path()),
+            "an unstamped file"
+        );
+    }
+
+    /// The shared form carries the second lookup too, from the same pool.
+    #[test]
+    fn a_shared_results_table_carries_the_identity_entries() {
+        let mut table = legacy_table();
+        table.identity_entries = vec![entry(9, Arc::new(serde_json::json!("other")))];
+        let bytes = serde_json::to_vec(&table).unwrap();
+        let shared = SharedResultsTable::from_table(&table, &bytes).unwrap();
+        assert_eq!(
+            shared.results.len(),
+            2,
+            "the identity entry shares the pool"
+        );
+        let loaded = shared.into_table().unwrap();
+        assert_eq!(loaded.identity_entries.len(), 1);
+        assert_eq!(
+            loaded.identity_entries[0].key,
+            table.identity_entries[0].key
+        );
+        assert_eq!(
+            *loaded.identity_entries[0].result,
+            serde_json::json!("other")
+        );
+        assert!(Arc::ptr_eq(
+            &loaded.identity_entries[0].result,
+            &loaded.entries[3].result
+        ));
+    }
+
+    /// The shared form holds each distinct result once, and loading it gives
+    /// every entry that recorded it the same allocation.
+    #[test]
+    fn a_shared_results_table_loads_one_copy_of_each_result() {
+        let shared = shared_of_legacy();
+        assert_eq!(shared.results.len(), 2, "two distinct values");
+        assert_eq!(shared.entries.len(), 4);
+        assert_eq!(shared.policy_version, SHARED_RESULTS_POLICY_VERSION);
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_both(dir.path());
+        let mut source = LocalFileLookupSource::new(&path);
+        let table = source.load().unwrap();
+        assert_eq!(
+            source.loaded_from(),
+            Some(shared_results_path(&path).as_path()),
+            "the shared form beside the table is preferred"
+        );
+        let e = &table.entries;
+        assert!(Arc::ptr_eq(&e[0].result, &e[1].result) && Arc::ptr_eq(&e[1].result, &e[2].result));
+        assert!(!Arc::ptr_eq(&e[0].result, &e[3].result));
+        let expected = legacy_table();
+        for (got, want) in e.iter().zip(&expected.entries) {
+            assert_eq!(got.key, want.key);
+            assert_eq!(*got.result, *want.result);
+            assert_eq!(
+                got.source_event_global_sequence,
+                want.source_event_global_sequence
+            );
+        }
+        assert_eq!(table.event_schema_version, expected.event_schema_version);
+        assert_eq!(
+            table.policy_version, POLICY_VERSION,
+            "held as a one-result-per-entry table"
+        );
+    }
+
+    /// Without the shared form, the legacy table loads as before: one value per
+    /// entry, which is the cost the shared form removes.
+    #[test]
+    fn without_the_shared_form_the_legacy_table_loads_a_copy_per_entry() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("run-1.jsonl");
+        std::fs::write(&path, serde_json::to_vec(&legacy_table()).unwrap()).unwrap();
+        let mut source = LocalFileLookupSource::new(&path);
+        let table = source.load().unwrap();
+        assert_eq!(source.loaded_from(), Some(path.as_path()));
+        assert_eq!(table.policy_version, POLICY_VERSION);
+        assert!(!Arc::ptr_eq(
+            &table.entries[0].result,
+            &table.entries[1].result
+        ));
+    }
+
+    /// A loader that knows only the legacy form cannot read the shared one:
+    /// its entries have no `result`, so it fails to parse as well as declaring
+    /// a version that loader refuses.
+    #[test]
+    fn a_legacy_only_loader_cannot_read_the_shared_form() {
+        let shared = shared_of_legacy();
+        let text = serde_json::to_string(&shared).unwrap();
+        assert!(serde_json::from_str::<LookupTable>(&text).is_err());
+        assert_ne!(shared.policy_version, POLICY_VERSION);
+    }
+
+    /// Sharing a result in memory does not change what a legacy entry looks
+    /// like on the wire.
+    #[test]
+    fn a_legacy_entry_serializes_its_result_as_the_plain_value() {
+        let value = serde_json::json!({"k": [1, 2]});
+        let bytes = serde_json::to_value(entry(0, Arc::new(value.clone()))).unwrap();
+        assert_eq!(bytes["result"], value);
+    }
+
+    /// The schema check sees the shared form's stamp, so which file loads
+    /// cannot change the verdict.
+    #[test]
+    fn the_schema_check_applies_to_the_shared_form() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_both(dir.path());
+        let mut shared = shared_of_legacy();
+        shared.event_schema_version = Some(crate::CURRENT_EVENT_SCHEMA_VERSION - 1);
+        std::fs::write(
+            shared_results_path(&path),
+            serde_json::to_vec(&shared).unwrap(),
+        )
+        .unwrap();
+        let refused = super::LookupTableHook::from_source(
+            LocalFileLookupSource::new(&path),
+            super::InMemoryObservedSink::new(),
+        );
+        let err = refused.err().unwrap().to_string();
+        assert!(
+            err.contains(&format!(
+                "event schema v{}",
+                crate::CURRENT_EVENT_SCHEMA_VERSION - 1
+            )),
+            "refused for its schema, not for failing to load: {err}"
+        );
+    }
+
+    /// An entry that points past the results is refused rather than served.
+    #[test]
+    fn an_entry_pointing_past_its_results_is_refused() {
+        let mut shared = shared_of_legacy();
+        shared.entries[3].result_index = 9;
+        let err = shared.into_table().unwrap_err().to_string();
+        assert!(err.contains("result 9 of 2"), "{err}");
+    }
+}

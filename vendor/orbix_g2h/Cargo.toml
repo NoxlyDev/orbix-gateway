@@ -1,0 +1,35 @@
+[package]
+name = "g2h"
+version = "0.5.0"
+edition = "2021"
+authors = ["Nishant Joshi"]
+description = "A code generator that bridges gRPC services to HTTP/JSON endpoints using Axum"
+documentation = "https://docs.rs/g2h"
+repository = "https://github.com/nishantjoshi00/g2h"
+homepage = "https://github.com/nishantjoshi00/g2h"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = ["grpc", "http", "axum", "codegen", "api"]
+categories = [ "web-programming", "network-programming", "api-bindings", "development-tools::build-utils" ]
+
+# Exclude unnecessary files from crates.io package
+exclude = ["/.github", "/.gitignore", "*.png"]
+
+rust-version = "1.78.0"
+
+[features]
+default = ["doc", "validate"]
+validate = []
+doc = []
+
+[dependencies]
+tonic-prost-build = "0.14.0"
+prost-build = "0.14"
+prost-types = "0.14"
+prost = "0.14"
+quote = "1.0.40"
+proc-macro2 = "1.0"
+heck = "0.5.0"
+
+cargo_metadata = "0.19.2"
+thiserror = "2.0.12"

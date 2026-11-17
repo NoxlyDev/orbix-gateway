@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["crates/*"]
+exclude = ["vendor/orbix_framework", "vendor/orbix_deja", "vendor/orbix_deja_prism", "vendor/orbix_g2h", "vendor/orbix_prism"]
 package.edition = "2021"
 package.rust-version = "1.94.1"
 package.license = "Apache-2.0"
@@ -61,4 +62,4 @@ codegen-units = 16
 strip = "none"
 
 [patch.crates-io]
-hyperswitch_masking = { git = "https://github.com/juspay/framework-libs-rs", rev = "f1c0ee2abdb56d0aec81c2bf13f2026ecaa010f6" }
+hyperswitch_masking = { path = "vendor/orbix_framework/crates/hyperswitch_masking" }

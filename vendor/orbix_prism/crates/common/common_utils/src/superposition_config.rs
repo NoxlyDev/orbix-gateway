@@ -1,0 +1,755 @@
+//! Superposition configuration wrapper for connector-service
+//!
+//! This module provides a thin wrapper around Superposition's local provider
+//! for loading and resolving configuration based on dimensions (connector, environment).
+
+use std::{fmt, path::PathBuf};
+
+use chrono::{DateTime, Utc};
+use hyperswitch_masking::{PeekInterface, Secret};
+use serde_json::{Map, Value};
+use superposition_core::experiment::ExperimentConfig;
+use superposition_provider::{
+    data_source::{file::FileDataSource, http::HttpDataSource, FetchResponse},
+    traits::AllFeatureProvider,
+    AuthMethod, ConfigData, EvaluationContext, ExperimentData, LocalResolutionProvider,
+    PollingStrategy, RefreshStrategy, Result as ProviderResult, SuperpositionDataSource,
+    SuperpositionOptions, WatchStrategy, WatchStream,
+};
+
+use crate::consts::{
+    CONFIG_KEY_CONNECTOR_BASE_URL, CONFIG_KEY_CONNECTOR_BASE_URL_BANK_REDIRECTS,
+    CONFIG_KEY_CONNECTOR_DISPUTE_BASE_URL, CONFIG_KEY_CONNECTOR_SECONDARY_BASE_URL,
+    CONFIG_KEY_CONNECTOR_THIRD_BASE_URL, DIMENSION_CONNECTOR, DIMENSION_ENVIRONMENT,
+};
+use crate::fp_utils::when;
+
+/// Error type for superposition configuration operations.
+///
+/// Under `deja` the WHOLE `Result<_, SuperpositionConfigError>` of a config read is
+/// captured on record and substituted on replay ("recording threw ⇒ replay throws"),
+/// so the error must round-trip through tape JSON. Every variant carries only a
+/// `String`, which keeps that trivial; the derive is feature-gated so the release
+/// build stays dependency-lean. Same shape as hyperswitch's `SuperpositionError`.
+#[derive(Debug, thiserror::Error)]
+#[cfg_attr(feature = "deja", derive(serde::Serialize, serde::Deserialize))]
+pub enum SuperpositionConfigError {
+    #[error("Failed to initialize superposition local provider: {0}")]
+    InitializationError(String),
+    #[error("Failed to resolve superposition configuration: {0}")]
+    ResolutionError(String),
+    #[error("Invalid superposition configuration: {0}")]
+    InvalidConfiguration(String),
+}
+
+/// The `[superposition]` table: where policy comes from.
+///
+/// `source = "file"` (the default) keeps today's behaviour — the baked
+/// `config/superposition.toml`, watched for changes. `source = "remote"` points the
+/// same provider at a remote workspace (polled), with the baked file as the fallback
+/// the provider consults if the remote source cannot initialise. Mirrors hyperswitch's
+/// `SuperpositionClientConfig` field for field; `source` is the one addition, because
+/// prism must boot file-first wherever no workspace exists yet.
+///
+/// Env overrides: `CS__SUPERPOSITION__{SOURCE,ENDPOINT,TOKEN,ORG_ID,WORKSPACE_ID,
+/// POLLING_INTERVAL_MILLISECONDS,REQUEST_TIMEOUT_MILLISECONDS,BACKUP_FILE_PATH}`.
+///
+/// The seconds-based `polling_interval` / `request_timeout` keys are no longer read.
+/// Unknown keys are ignored, so a config that still sets them boots on the defaults.
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct SuperpositionClientConfig {
+    /// Where policy comes from: the baked file (default) or a remote workspace.
+    pub source: SuperpositionSource,
+    /// Superposition server URL.
+    pub endpoint: String,
+    /// Workspace bearer token (a secret: never logged).
+    pub token: Secret<String>,
+    pub org_id: String,
+    pub workspace_id: String,
+    /// Milliseconds between polls of the remote workspace.
+    pub polling_interval_milliseconds: u64,
+    /// Timeout in milliseconds on each poll of the remote workspace (None = no timeout).
+    pub request_timeout_milliseconds: Option<u64>,
+    /// Fallback the provider loads if the remote source fails at init. Consulted at init
+    /// ONLY — after a successful init a failed poll keeps the last good snapshot. Defaults
+    /// to the baked `config/superposition.toml` when unset.
+    pub backup_file_path: Option<PathBuf>,
+}
+
+impl Default for SuperpositionClientConfig {
+    fn default() -> Self {
+        Self {
+            source: SuperpositionSource::File,
+            endpoint: String::new(),
+            token: Secret::new(String::new()),
+            org_id: String::new(),
+            workspace_id: String::new(),
+            polling_interval_milliseconds: 15_000,
+            request_timeout_milliseconds: None,
+            backup_file_path: None,
+        }
+    }
+}
+
+impl SuperpositionClientConfig {
+    /// Do the settings describe a workspace at all (endpoint, token, org, workspace)?
+    /// hyperswitch's check, field for field. Only meaningful for a remote source. Prism's
+    /// loader treats a failure as "remote source off" — reported, then served from the
+    /// baked file — never as a reason to refuse boot: Superposition being unreachable
+    /// or misdescribed must not block payments.
+    pub fn validate(&self) -> Result<(), SuperpositionConfigError> {
+        let invalid = |message: &str| {
+            Err(SuperpositionConfigError::InvalidConfiguration(
+                message.to_string(),
+            ))
+        };
+        when(self.endpoint.trim().is_empty(), || {
+            invalid("superposition.endpoint cannot be empty")
+        })
+        .and_then(|()| {
+            when(url::Url::parse(&self.endpoint).is_err(), || {
+                invalid("superposition.endpoint must be a valid URL")
+            })
+        })
+        .and_then(|()| {
+            when(self.token.peek().trim().is_empty(), || {
+                invalid("superposition.token cannot be empty")
+            })
+        })
+        .and_then(|()| {
+            when(self.org_id.trim().is_empty(), || {
+                invalid("superposition.org_id cannot be empty")
+            })
+        })
+        .and_then(|()| {
+            when(self.workspace_id.trim().is_empty(), || {
+                invalid("superposition.workspace_id cannot be empty")
+            })
+        })
+    }
+}
+
+/// Where policy comes from. In `[superposition] source` it is what the deployment
+/// asks for; from [`SuperpositionConfig::source`] it is what the provider was actually
+/// built on — logged once at boot so a pod that fell back to the file, and therefore
+/// will not follow the workspace, is visible.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SuperpositionSource {
+    /// The baked `config/superposition.toml`, watched for changes. No experiments.
+    #[default]
+    File,
+    /// Remote workspace polled on an interval, the baked file as init-time fallback.
+    /// The only source that can carry experiments.
+    Remote,
+}
+
+impl fmt::Display for SuperpositionSource {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::Remote => "remote",
+            Self::File => "file",
+        })
+    }
+}
+
+/// Superposition's local provider over whichever source [`SuperpositionConfig::new`]
+/// selected. Evaluation is always in-process against the provider's cached snapshot;
+/// only the source's refresh differs (poll vs. file watch).
+#[derive(Clone)]
+pub struct SuperpositionConfig {
+    provider: LocalResolutionProvider,
+    source: SuperpositionSource,
+}
+
+impl fmt::Debug for SuperpositionConfig {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "SuperpositionConfig({})", self.source)
+    }
+}
+
+/// The remote source's init-time fallback: a file's config, with no experiments.
+///
+/// Since provider 0.118, `LocalResolutionProvider::init` fails when the primary's
+/// experiment fetch fails and the fallback cannot serve experiments, which a bare
+/// [`FileDataSource`] never can. A workspace that is down at boot would then leave prism
+/// on the baked file until restart. Answering with an empty experiment set lets init
+/// succeed on the file's config, so the provider stays remote and keeps polling.
+///
+/// Both are dated at the Unix epoch. The poller sends the cached `fetched_at` to the
+/// workspace as `If-Modified-Since`, so a boot-time stamp would let it answer 304 and
+/// the file's policy would outlive the outage. The provider reads the fallback at init only.
+struct FileFallback(FileDataSource);
+
+impl FileFallback {
+    fn no_experiments() -> ExperimentData {
+        ExperimentData {
+            data: ExperimentConfig {
+                experiments: Vec::new(),
+                experiment_groups: Vec::new(),
+            },
+            fetched_at: DateTime::<Utc>::UNIX_EPOCH,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl SuperpositionDataSource for FileFallback {
+    async fn fetch_filtered_config(
+        &self,
+        context: Option<Map<String, Value>>,
+        prefix_filter: Option<Vec<String>>,
+        exclude_prefix_filter: Option<Vec<String>>,
+        if_modified_since: Option<DateTime<Utc>>,
+    ) -> ProviderResult<FetchResponse<ConfigData>> {
+        let response = self
+            .0
+            .fetch_filtered_config(
+                context,
+                prefix_filter,
+                exclude_prefix_filter,
+                if_modified_since,
+            )
+            .await?;
+        Ok(match response {
+            FetchResponse::Data(mut config) => {
+                config.fetched_at = DateTime::<Utc>::UNIX_EPOCH;
+                FetchResponse::Data(config)
+            }
+            FetchResponse::NotModified => FetchResponse::NotModified,
+        })
+    }
+
+    async fn fetch_active_experiments(
+        &self,
+        _if_modified_since: Option<DateTime<Utc>>,
+    ) -> ProviderResult<FetchResponse<ExperimentData>> {
+        Ok(FetchResponse::Data(Self::no_experiments()))
+    }
+
+    async fn fetch_candidate_active_experiments(
+        &self,
+        _context: Option<Map<String, Value>>,
+        _prefix_filter: Option<Vec<String>>,
+        _exclude_prefix_filter: Option<Vec<String>>,
+        _if_modified_since: Option<DateTime<Utc>>,
+    ) -> ProviderResult<FetchResponse<ExperimentData>> {
+        Ok(FetchResponse::Data(Self::no_experiments()))
+    }
+
+    async fn fetch_matching_active_experiments(
+        &self,
+        _context: Option<Map<String, Value>>,
+        _prefix_filter: Option<Vec<String>>,
+        _exclude_prefix_filter: Option<Vec<String>>,
+        _if_modified_since: Option<DateTime<Utc>>,
+    ) -> ProviderResult<FetchResponse<ExperimentData>> {
+        Ok(FetchResponse::Data(Self::no_experiments()))
+    }
+
+    fn supports_experiments(&self) -> bool {
+        true
+    }
+
+    fn watch(&self) -> ProviderResult<Option<WatchStream>> {
+        self.0.watch()
+    }
+
+    async fn close(&self) -> ProviderResult<()> {
+        self.0.close().await
+    }
+}
+
+impl SuperpositionConfig {
+    /// Build the provider the settings ask for.
+    ///
+    /// `source = "remote"` → the workspace as primary with the backup file (default: the
+    /// baked file at `baked_path`) as the provider's init-time fallback, polled every
+    /// `polling_interval_milliseconds` — hyperswitch's `SuperpositionClient::new` shape. If
+    /// even that cannot initialise (remote unreachable AND fallback unreadable), boot
+    /// continues on the baked file alone, loudly: prism's contract is fail-open.
+    ///
+    /// `source = "file"` → the baked file, watched (today's behaviour).
+    ///
+    /// `Err` only when NO source could initialise; the caller then runs without
+    /// Superposition (static connector config, sampler in its no-source state).
+    pub async fn new(
+        settings: &SuperpositionClientConfig,
+        baked_path: &str,
+    ) -> Result<Self, SuperpositionConfigError> {
+        if settings.source == SuperpositionSource::Remote {
+            let fallback_path = settings
+                .backup_file_path
+                .clone()
+                .unwrap_or_else(|| PathBuf::from(baked_path));
+            let primary = HttpDataSource::new(SuperpositionOptions::new(
+                settings.endpoint.clone(),
+                AuthMethod::Token(settings.token.peek().clone()),
+                settings.org_id.clone(),
+                settings.workspace_id.clone(),
+            ));
+            // A missing fallback file only warns: the remote source may still
+            // initialise on its own, exactly as hyperswitch treats it. A present one is
+            // wrapped so an unreachable workspace still initialises (see `FileFallback`).
+            let fallback: Option<Box<dyn SuperpositionDataSource>> = match FileDataSource::new(
+                fallback_path.clone(),
+            ) {
+                Ok(source) => Some(Box::new(FileFallback(source))),
+                Err(error) => {
+                    tracing::warn!(
+                        path = %fallback_path.display(),
+                        %error,
+                        "superposition fallback file unavailable; the remote source has no init-time fallback"
+                    );
+                    None
+                }
+            };
+            let polling_strategy = PollingStrategy::new(settings.polling_interval_milliseconds);
+            let polling_strategy = match settings.request_timeout_milliseconds {
+                Some(timeout_milliseconds) => polling_strategy.with_timeout(timeout_milliseconds),
+                None => polling_strategy,
+            };
+            let strategy = RefreshStrategy::Polling(polling_strategy);
+            match Self::with_sources(
+                Box::new(primary),
+                fallback,
+                strategy,
+                SuperpositionSource::Remote,
+            )
+            .await
+            {
+                Ok(config) => return Ok(config),
+                Err(error) => tracing::error!(
+                    %error,
+                    endpoint = %settings.endpoint,
+                    workspace = %settings.workspace_id,
+                    "superposition remote source failed to initialise; falling back to the \
+                     baked file — policy will NOT follow the workspace until restart"
+                ),
+            }
+        }
+        Self::from_file(baked_path).await
+    }
+
+    /// Load superposition.toml and watch it for changes.
+    ///
+    /// # Arguments
+    /// * `path` - Path to the superposition.toml file
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be read or parsed.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let config = SuperpositionConfig::from_file("config/superposition.toml").await?;
+    /// ```
+    pub async fn from_file(path: &str) -> Result<Self, SuperpositionConfigError> {
+        let source = FileDataSource::new(PathBuf::from(path))
+            .map_err(SuperpositionConfigError::InitializationError)?;
+        Self::with_sources(
+            Box::new(source),
+            None,
+            RefreshStrategy::Watch(WatchStrategy::default()),
+            SuperpositionSource::File,
+        )
+        .await
+    }
+
+    /// The provider over explicit sources. `from_file` and `new` are the two shapes
+    /// prism ships; this is the seam for either, and for tests that need a custom
+    /// data source.
+    pub async fn with_sources(
+        primary: Box<dyn SuperpositionDataSource>,
+        fallback: Option<Box<dyn SuperpositionDataSource>>,
+        strategy: RefreshStrategy,
+        source: SuperpositionSource,
+    ) -> Result<Self, SuperpositionConfigError> {
+        let provider = LocalResolutionProvider::new(primary, fallback, strategy);
+        provider
+            .init(EvaluationContext::default())
+            .await
+            .map_err(|error| SuperpositionConfigError::InitializationError(error.to_string()))?;
+        Ok(Self { provider, source })
+    }
+
+    /// Which source this provider was built on.
+    pub fn source(&self) -> SuperpositionSource {
+        self.source
+    }
+
+    /// Whether this source can carry experiments at all. A file cannot — a policy
+    /// that expects experiments to sample requests in will silently see none.
+    pub fn experiments_supported(&self) -> bool {
+        matches!(self.source, SuperpositionSource::Remote)
+    }
+
+    /// Resolve the flat key-value map for given dimensions.
+    ///
+    /// # Arguments
+    /// * `connector` - The connector name (e.g., "stripe", "adyen")
+    /// * `environment` - The environment name (e.g., "production", "sandbox", "development")
+    ///
+    /// # Returns
+    /// A map of configuration keys to their resolved values.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let resolved = config.resolve("stripe", "production").await?;
+    /// let base_url = resolved.get("connector_base_url").and_then(|v| v.as_str());
+    /// ```
+    pub async fn resolve(
+        &self,
+        connector: &str,
+        environment: &str,
+    ) -> Result<Map<String, Value>, SuperpositionConfigError> {
+        let dimensions = [
+            (DIMENSION_CONNECTOR, connector),
+            (DIMENSION_ENVIRONMENT, environment),
+        ];
+        // A déjà READ BOUNDARY (feature `deja`): captured on record, substituted on
+        // replay. Under a polled remote source the snapshot at replay time is not the
+        // one at record time, so the value must come from the tape or the replayed
+        // connector URL drifts off it. The sampler's `resolve_with` is deliberately not
+        // wrapped — it runs in record mode only, so there is nothing to substitute.
+        #[cfg(feature = "deja")]
+        {
+            deja_boundary::read("resolve", &dimensions, || {
+                self.resolve_with(&dimensions, None)
+            })
+            .await
+        }
+        #[cfg(not(feature = "deja"))]
+        {
+            self.resolve_with(&dimensions, None).await
+        }
+    }
+
+    /// Resolve with caller-supplied dimensions. `resolve` delegates here; callers
+    /// with other dimension sets (the déjà sampler's `environment` × `rpc_method` ×
+    /// `rpc_service`) use this directly. Evaluation runs in-process against the
+    /// provider's cached snapshot, which the source refreshes (poll or file watch) — so
+    /// a caller must not cache the result across requests.
+    ///
+    /// `targeting_key` is the identifier Superposition buckets EXPERIMENTS on — the
+    /// OpenFeature targeting key, deliberately NOT a dimension. Without it no experiment
+    /// variant ever applies (the provider evaluates zero experiments for an empty key,
+    /// silently), so a consumer that wants to be sampled by a remote experiment must
+    /// pass one: the déjà sampler passes the request id (a request either records or
+    /// not); a merchant-facing consumer would pass the merchant id so one merchant sees
+    /// one consistent variant. Plain config reads pass `None`.
+    pub async fn resolve_with(
+        &self,
+        dimensions: &[(&str, &str)],
+        targeting_key: Option<&str>,
+    ) -> Result<Map<String, Value>, SuperpositionConfigError> {
+        let mut context = dimensions
+            .iter()
+            .fold(EvaluationContext::default(), |context, (key, value)| {
+                context.with_custom_field(*key, *value)
+            });
+        if let Some(targeting_key) = targeting_key {
+            context = context.with_targeting_key(targeting_key);
+        }
+
+        self.provider
+            .resolve_all_features(context)
+            .await
+            .map_err(|error| SuperpositionConfigError::ResolutionError(error.to_string()))
+    }
+}
+
+/// The déjà read boundary around Superposition resolution — hyperswitch's
+/// `external_services::superposition::deja_boundary`, ported.
+///
+/// Each read is CAPTURED on record and SUBSTITUTED from the tape on replay: in replay
+/// there is no workspace to consult, and even the baked file may not be the snapshot the
+/// recording saw. The WHOLE `Result<_, SuperpositionConfigError>` round-trips
+/// ("recording threw ⇒ replay throws"). Identity is rank-2 span-path + occurrence — no
+/// call-site id — so a read matches by where in the request it happened plus its args
+/// image, exactly like the db/redis/superposition boundaries in hyperswitch.
+///
+/// A genuine tape MISS (a novel config read) is SYNTHESIZED as a recoverable
+/// `Err(ResolutionError)` from the reconstruct closure's miss arm
+/// (`Reconstructed::Synthesized`) instead of the egress fail-stop, so
+/// `resolve_connector_urls` degrades to static config and the replayed request
+/// progresses. The synthesized value is a pure function of the query, which is what
+/// keeps two replays of one candidate in agreement. Reads only — there are no writes
+/// to wrap.
+#[cfg(feature = "deja")]
+mod deja_boundary {
+    use std::future::Future;
+
+    use serde_json::{json, Map, Value};
+
+    use super::SuperpositionConfigError;
+
+    const BOUNDARY: &str = "superposition";
+    const COMPONENT: &str = "SuperpositionConfig";
+
+    type Resolved = Result<Map<String, Value>, SuperpositionConfigError>;
+
+    pub(super) async fn read<F, Fut>(
+        operation: &'static str,
+        dimensions: &[(&str, &str)],
+        run: F,
+    ) -> Resolved
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Resolved>,
+    {
+        // Passthrough when déjà is inactive — no observation, no allocation.
+        if !deja::__private::observation_is_active() {
+            return run().await;
+        }
+
+        let caller = std::panic::Location::caller();
+        let correlation = deja::current_correlation_id();
+        let scope = format!("superposition::{operation}");
+        let identity = deja::__private::CallsiteIdentity {
+            version: 1,
+            source: deja::__private::CallsiteSource::SyntacticHash,
+            id: None,
+            scope: Some(scope.clone()),
+            occurrence: deja::__private::next_boundary_occurrence(
+                correlation.as_deref(),
+                deja::__private::CallsiteSource::SyntacticHash,
+                Some(&scope),
+            ),
+            caller_function: Some(operation.to_string()),
+            lexical_path: Some(scope.clone()),
+            syntax_hash: Some(deja::__private::stable_callsite_hash(&scope)),
+            span_path: deja::__private::current_span_path(),
+        };
+        let semantics = deja::__private::BoundarySemantics {
+            replay_strategy: deja::ReplayStrategy::Substitute,
+            kind: Some(BOUNDARY.to_string()),
+            declaration: Some(
+                deja::BoundaryDeclaration::default().operation(deja::OperationKind::ExternalCall),
+            ),
+        };
+        let spec = deja::__private::BoundarySpec::with_semantics(
+            BOUNDARY, COMPONENT, operation, semantics,
+        );
+        let observation = deja::__private::CrossingObservation::with_correlation(
+            spec,
+            identity,
+            caller,
+            correlation,
+        );
+
+        // The args image: dimensions SORTED, so the identity does not depend on
+        // caller argument order. No targeting key rides here (reads pass none).
+        let mut sorted: Vec<(String, String)> = dimensions
+            .iter()
+            .map(|(key, value)| ((*key).to_string(), (*value).to_string()))
+            .collect();
+        sorted.sort();
+        let args = json!({ "operation": operation, "dimensions": sorted });
+
+        // One closure answers both arms of the Substitute lookup: a recorded hit
+        // is decoded; a miss (a config read the recording never made) is
+        // SYNTHESIZED as a typed error — a pure function of the query, so every
+        // replay of this candidate degrades identically, and the caller's static
+        // fallback takes over instead of the fail-stop an undeclared miss means.
+        deja::__private::dispatch_async(
+            observation,
+            move || args,
+            run,
+            |input: deja::__private::ReconstructInput<'_>| match input {
+                deja::__private::ReconstructInput::Hit(Value::Object(mut object)) => {
+                    if let Some(Value::Object(map)) = object.remove("Ok") {
+                        return deja::__private::Reconstructed::Value(Ok(map));
+                    }
+                    match object
+                        .remove("Err")
+                        .map(serde_json::from_value::<SuperpositionConfigError>)
+                    {
+                        Some(Ok(error)) => deja::__private::Reconstructed::Value(Err(error)),
+                        _ => deja::__private::Reconstructed::Failed(
+                            "superposition codec: recorded payload carried neither Ok nor Err"
+                                .to_string(),
+                        ),
+                    }
+                }
+                deja::__private::ReconstructInput::Hit(_) => {
+                    deja::__private::Reconstructed::Failed(
+                        "superposition codec: recorded payload is not an object".to_string(),
+                    )
+                }
+                deja::__private::ReconstructInput::Miss(_) => {
+                    deja::__private::Reconstructed::Synthesized(Err(
+                        SuperpositionConfigError::ResolutionError(format!(
+                            "deja replay: no recorded Superposition value for `{operation}` \
+                             (novel config read); caller falls back to static config"
+                        )),
+                    ))
+                }
+            },
+            |result: &Resolved| match result {
+                Ok(map) => (json!({ "Ok": map }), false),
+                Err(error) => (json!({ "Err": error }), true),
+            },
+            deja::__private::RoundTrip::<
+                fn(&Resolved, &Resolved) -> deja::__private::Comparison,
+            >::RecordOnly,
+        )
+        .await
+    }
+}
+
+/// Helper function to extract a string value from the resolved configuration.
+///
+/// Returns `Some(String)` if the key exists and the value is a string, `None` otherwise.
+pub fn get_string(resolved: &Map<String, Value>, key: &str) -> Option<String> {
+    resolved
+        .get(key)
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+}
+
+/// Helper function to extract an optional non-empty string from the resolved configuration.
+///
+/// Returns `Some(String)` if the key exists, is a string, and is non-empty; `None` otherwise.
+pub fn get_optional_nonempty_string(resolved: &Map<String, Value>, key: &str) -> Option<String> {
+    get_string(resolved, key).filter(|s| !s.is_empty())
+}
+
+/// Container for resolved connector URLs from superposition configuration
+#[derive(Debug, Clone, Default)]
+pub struct ConnectorUrls {
+    /// Primary base URL for the connector
+    pub base_url: Option<String>,
+    /// Base URL for dispute operations
+    pub dispute_base_url: Option<String>,
+    /// Secondary base URL (used by some connectors)
+    pub secondary_base_url: Option<String>,
+    /// Third base URL (used by some connectors like HiPay)
+    pub third_base_url: Option<String>,
+    /// Base URL for bank redirect operations (used by TrustPay)
+    pub base_url_bank_redirects: Option<String>,
+}
+
+/// Extract connector URLs from resolved superposition configuration
+///
+/// # Arguments
+/// * `resolved` - The resolved configuration HashMap from `SuperpositionConfig::resolve()`
+///
+/// # Returns
+/// A `ConnectorUrls` struct containing all resolved URL fields
+///
+/// # Example
+/// ```ignore
+/// let resolved = config.resolve("stripe", "production").await?;
+/// let urls = get_connector_urls(&resolved);
+/// ```
+pub fn get_connector_urls(resolved: &Map<String, Value>) -> ConnectorUrls {
+    ConnectorUrls {
+        base_url: get_optional_nonempty_string(resolved, CONFIG_KEY_CONNECTOR_BASE_URL),
+        dispute_base_url: get_optional_nonempty_string(
+            resolved,
+            CONFIG_KEY_CONNECTOR_DISPUTE_BASE_URL,
+        ),
+        secondary_base_url: get_optional_nonempty_string(
+            resolved,
+            CONFIG_KEY_CONNECTOR_SECONDARY_BASE_URL,
+        ),
+        third_base_url: get_optional_nonempty_string(resolved, CONFIG_KEY_CONNECTOR_THIRD_BASE_URL),
+        base_url_bank_redirects: get_optional_nonempty_string(
+            resolved,
+            CONFIG_KEY_CONNECTOR_BASE_URL_BANK_REDIRECTS,
+        ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Fixture assertions may unwrap/expect freely — a panic IS the test failing.
+    #![allow(
+        clippy::expect_used,
+        clippy::unwrap_used,
+        clippy::indexing_slicing,
+        clippy::type_complexity
+    )]
+
+    use super::*;
+
+    #[test]
+    fn test_get_string_returns_none_for_missing_key() {
+        let resolved = Map::new();
+        assert_eq!(get_string(&resolved, "missing_key"), None);
+    }
+
+    #[test]
+    fn test_get_string_returns_some_for_value() {
+        let mut resolved = Map::new();
+        resolved.insert(
+            "connector_base_url".to_string(),
+            Value::String("https://api.example.com/".to_string()),
+        );
+        assert_eq!(
+            get_string(&resolved, "connector_base_url"),
+            Some("https://api.example.com/".to_string())
+        );
+    }
+
+    #[test]
+    fn test_get_optional_nonempty_string_returns_none_for_empty() {
+        let mut resolved = Map::new();
+        resolved.insert("key".to_string(), Value::String("".to_string()));
+        assert_eq!(get_optional_nonempty_string(&resolved, "key"), None);
+    }
+
+    #[test]
+    fn test_get_optional_nonempty_string_returns_some_for_value() {
+        let mut resolved = Map::new();
+        resolved.insert("key".to_string(), Value::String("value".to_string()));
+        assert_eq!(
+            get_optional_nonempty_string(&resolved, "key"),
+            Some("value".to_string())
+        );
+    }
+
+    fn remote_settings() -> SuperpositionClientConfig {
+        SuperpositionClientConfig {
+            source: SuperpositionSource::Remote,
+            endpoint: "http://superposition:8080".to_string(),
+            token: Secret::new("sp_token".to_string()),
+            org_id: "hyperswitch".to_string(),
+            workspace_id: "prism".to_string(),
+            ..SuperpositionClientConfig::default()
+        }
+    }
+
+    /// The default table is the file-only posture: nothing to validate.
+    #[test]
+    fn settings_default_is_the_file_source_with_hyperswitch_polling_interval() {
+        let settings = SuperpositionClientConfig::default();
+        assert_eq!(settings.source, SuperpositionSource::File);
+        assert_eq!(settings.polling_interval_milliseconds, 15_000);
+        assert!(settings.backup_file_path.is_none());
+    }
+
+    /// Mirrors hyperswitch's `SuperpositionClientConfig::validate`: every field a
+    /// remote source needs is checked, and each failure names its field.
+    #[test]
+    fn settings_validate_rejects_each_missing_remote_field() {
+        assert!(remote_settings().validate().is_ok());
+        let cases: [(&str, Box<dyn Fn(&mut SuperpositionClientConfig)>); 5] = [
+            ("endpoint", Box::new(|s| s.endpoint = "  ".to_string())),
+            (
+                "valid URL",
+                Box::new(|s| s.endpoint = "not a url".to_string()),
+            ),
+            ("token", Box::new(|s| s.token = Secret::new(String::new()))),
+            ("org_id", Box::new(|s| s.org_id = String::new())),
+            ("workspace_id", Box::new(|s| s.workspace_id = String::new())),
+        ];
+        for (needle, break_it) in cases {
+            let mut settings = remote_settings();
+            break_it(&mut settings);
+            let error = settings.validate().expect_err(needle).to_string();
+            assert!(error.contains(needle), "{error} should mention {needle}");
+        }
+    }
+}

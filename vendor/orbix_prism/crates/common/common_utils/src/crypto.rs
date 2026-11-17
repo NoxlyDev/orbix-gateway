@@ -1,0 +1,1088 @@
+//! Utilities for cryptographic algorithms
+
+pub mod jose;
+
+use std::ops::Deref;
+
+use error_stack::ResultExt;
+use hyperswitch_masking::{ExposeInterface, Secret};
+use md5;
+use ring::{
+    aead::{self, BoundKey, OpeningKey, SealingKey, UnboundKey},
+    hmac,
+};
+
+use crate::{
+    errors::{self, CustomResult},
+    pii::{self, EncryptionStrategy},
+};
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "deja", derive(serde::Serialize, serde::Deserialize))]
+struct NonceSequence(
+    // deja: serialize the 96-bit nonce as its 16 big-endian BYTES, not a bare u128.
+    // A nonce routinely exceeds u64::MAX, and `serde_json::Value::Number` cannot hold a
+    // u128 beyond u64 range — capturing it as a number would record `null`, leaving
+    // nothing to substitute (the real random nonce would then run on replay → divergent
+    // ciphertext). A byte array is small-int-only, so it round-trips losslessly.
+    #[cfg_attr(feature = "deja", serde(with = "deja_nonce_bytes"))] u128,
+);
+
+/// deja: lossless u128 nonce (de)serialization via its 16 big-endian bytes.
+#[cfg(feature = "deja")]
+mod deja_nonce_bytes {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &u128, s: S) -> Result<S::Ok, S::Error> {
+        v.to_be_bytes().serialize(s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<u128, D::Error> {
+        let bytes = <[u8; 16]>::deserialize(d)?;
+        Ok(u128::from_be_bytes(bytes))
+    }
+}
+
+impl NonceSequence {
+    /// Byte index at which sequence number starts in a 16-byte (128-bit) sequence.
+    /// This byte index considers the big endian order used while encoding and decoding the nonce
+    /// to/from a 128-bit unsigned integer.
+    const SEQUENCE_NUMBER_START_INDEX: usize = 4;
+
+    /// Generate a random nonce sequence.
+    //
+    // deja: the AEAD nonce is the single source of ciphertext non-determinism. Recording
+    // it (Ok-only; the ring error type is non-serializable) and replaying it in call order
+    // makes encryption reproduce byte-identical ciphertext for the same key+plaintext. Real
+    // AES still runs; only the random nonce is substituted.
+    #[cfg_attr(
+        feature = "deja",
+        deja::id(
+            component = "common_utils::crypto",
+            operation = "GcmAes256::nonce",
+            codec = ResultOkCodec,
+            on_miss = Ok(Self(u128::from_be_bytes({
+                let mut sequence = [0_u8; 128 / 8];
+                for (slot, byte) in sequence[Self::SEQUENCE_NUMBER_START_INDEX..]
+                    .iter_mut()
+                    .zip(deja::synth::bytes::<12>(&__deja_miss))
+                {
+                    *slot = byte;
+                }
+                sequence
+            }))),
+        )
+    )]
+    fn new() -> Result<Self, ring::error::Unspecified> {
+        use ring::rand::{SecureRandom, SystemRandom};
+
+        let rng = SystemRandom::new();
+
+        // 96-bit sequence number, stored in a 128-bit unsigned integer in big-endian order
+        let mut sequence_number = [0_u8; 128 / 8];
+        rng.fill(&mut sequence_number[Self::SEQUENCE_NUMBER_START_INDEX..])?;
+        let sequence_number = u128::from_be_bytes(sequence_number);
+
+        Ok(Self(sequence_number))
+    }
+
+    /// Returns the current nonce value as bytes.
+    fn current(&self) -> [u8; aead::NONCE_LEN] {
+        let mut nonce = [0_u8; aead::NONCE_LEN];
+        nonce.copy_from_slice(&self.0.to_be_bytes()[Self::SEQUENCE_NUMBER_START_INDEX..]);
+        nonce
+    }
+
+    /// Constructs a nonce sequence from bytes
+    fn from_bytes(bytes: [u8; aead::NONCE_LEN]) -> Self {
+        let mut sequence_number = [0_u8; 128 / 8];
+        sequence_number[Self::SEQUENCE_NUMBER_START_INDEX..].copy_from_slice(&bytes);
+        let sequence_number = u128::from_be_bytes(sequence_number);
+        Self(sequence_number)
+    }
+}
+
+impl aead::NonceSequence for NonceSequence {
+    fn advance(&mut self) -> Result<aead::Nonce, ring::error::Unspecified> {
+        let mut nonce = [0_u8; aead::NONCE_LEN];
+        nonce.copy_from_slice(&self.0.to_be_bytes()[Self::SEQUENCE_NUMBER_START_INDEX..]);
+
+        // Increment sequence number
+        self.0 = self.0.wrapping_add(1);
+
+        // Return previous sequence number as bytes
+        Ok(aead::Nonce::assume_unique_for_key(nonce))
+    }
+}
+
+/// Trait for cryptographically signing messages
+pub trait SignMessage {
+    /// Takes in a secret and a message and returns the calculated signature as bytes
+    fn sign_message(
+        &self,
+        _secret: &[u8],
+        _msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError>;
+}
+
+/// Trait for cryptographically verifying a message against a signature
+pub trait VerifySignature {
+    /// Takes in a secret, the signature and the message and verifies the message
+    /// against the signature
+    fn verify_signature(
+        &self,
+        _secret: &[u8],
+        _signature: &[u8],
+        _msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError>;
+}
+
+/// Trait for cryptographically encoding a message
+pub trait EncodeMessage {
+    /// Takes in a secret and the message and encodes it, returning bytes
+    fn encode_message(
+        &self,
+        _secret: &[u8],
+        _msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError>;
+}
+
+/// Trait for cryptographically decoding a message
+pub trait DecodeMessage {
+    /// Takes in a secret, an encoded messages and attempts to decode it, returning bytes
+    fn decode_message(
+        &self,
+        _secret: &[u8],
+        _msg: Secret<Vec<u8>, EncryptionStrategy>,
+    ) -> CustomResult<Vec<u8>, errors::CryptoError>;
+}
+
+/// Represents no cryptographic algorithm.
+/// Passes messages through during encoding and decoding, but never verifies signatures.
+#[derive(Debug)]
+pub struct NoAlgorithm;
+
+impl SignMessage for NoAlgorithm {
+    fn sign_message(
+        &self,
+        _secret: &[u8],
+        _msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        Ok(Vec::new())
+    }
+}
+
+impl VerifySignature for NoAlgorithm {
+    fn verify_signature(
+        &self,
+        _secret: &[u8],
+        _signature: &[u8],
+        _msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        Ok(false)
+    }
+}
+
+impl EncodeMessage for NoAlgorithm {
+    fn encode_message(
+        &self,
+        _secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        Ok(msg.to_vec())
+    }
+}
+
+impl DecodeMessage for NoAlgorithm {
+    fn decode_message(
+        &self,
+        _secret: &[u8],
+        msg: Secret<Vec<u8>, EncryptionStrategy>,
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        Ok(msg.expose())
+    }
+}
+
+/// Represents the HMAC-SHA-1 algorithm
+#[derive(Debug)]
+pub struct HmacSha1;
+
+impl SignMessage for HmacSha1 {
+    fn sign_message(
+        &self,
+        secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let key = hmac::Key::new(hmac::HMAC_SHA1_FOR_LEGACY_USE_ONLY, secret);
+        Ok(hmac::sign(&key, msg).as_ref().to_vec())
+    }
+}
+
+impl VerifySignature for HmacSha1 {
+    fn verify_signature(
+        &self,
+        secret: &[u8],
+        signature: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        let key = hmac::Key::new(hmac::HMAC_SHA1_FOR_LEGACY_USE_ONLY, secret);
+
+        Ok(hmac::verify(&key, msg, signature).is_ok())
+    }
+}
+
+/// Represents the HMAC-SHA-256 algorithm
+#[derive(Debug)]
+pub struct HmacSha256;
+
+impl SignMessage for HmacSha256 {
+    fn sign_message(
+        &self,
+        secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let key = hmac::Key::new(hmac::HMAC_SHA256, secret);
+        Ok(hmac::sign(&key, msg).as_ref().to_vec())
+    }
+}
+
+impl VerifySignature for HmacSha256 {
+    fn verify_signature(
+        &self,
+        secret: &[u8],
+        signature: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        let key = hmac::Key::new(hmac::HMAC_SHA256, secret);
+
+        Ok(hmac::verify(&key, msg, signature).is_ok())
+    }
+}
+
+/// Represents the HMAC-SHA-512 algorithm
+#[derive(Debug)]
+pub struct HmacSha512;
+
+impl SignMessage for HmacSha512 {
+    fn sign_message(
+        &self,
+        secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let key = hmac::Key::new(hmac::HMAC_SHA512, secret);
+        Ok(hmac::sign(&key, msg).as_ref().to_vec())
+    }
+}
+
+impl VerifySignature for HmacSha512 {
+    fn verify_signature(
+        &self,
+        secret: &[u8],
+        signature: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        let key = hmac::Key::new(hmac::HMAC_SHA512, secret);
+
+        Ok(hmac::verify(&key, msg, signature).is_ok())
+    }
+}
+
+/// Blake3
+#[derive(Debug)]
+pub struct Blake3(String);
+
+impl Blake3 {
+    /// Create a new instance of Blake3 with a key
+    pub fn new(key: impl Into<String>) -> Self {
+        Self(key.into())
+    }
+}
+
+impl SignMessage for Blake3 {
+    fn sign_message(
+        &self,
+        secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let key = blake3::derive_key(&self.0, secret);
+        let output = blake3::keyed_hash(&key, msg).as_bytes().to_vec();
+        Ok(output)
+    }
+}
+
+impl VerifySignature for Blake3 {
+    fn verify_signature(
+        &self,
+        secret: &[u8],
+        signature: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        let key = blake3::derive_key(&self.0, secret);
+        let output = blake3::keyed_hash(&key, msg);
+        Ok(constant_time_eq::constant_time_eq(
+            output.as_bytes(),
+            signature,
+        ))
+    }
+}
+
+/// Represents the GCM-AES-256 algorithm
+#[derive(Debug)]
+pub struct GcmAes256;
+
+impl EncodeMessage for GcmAes256 {
+    fn encode_message(
+        &self,
+        secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let nonce_sequence =
+            NonceSequence::new().change_context(errors::CryptoError::EncodingFailed)?;
+        let current_nonce = nonce_sequence.current();
+        let key = UnboundKey::new(&aead::AES_256_GCM, secret)
+            .change_context(errors::CryptoError::EncodingFailed)?;
+        let mut key = SealingKey::new(key, nonce_sequence);
+        let mut in_out = msg.to_vec();
+
+        key.seal_in_place_append_tag(aead::Aad::empty(), &mut in_out)
+            .change_context(errors::CryptoError::EncodingFailed)?;
+        in_out.splice(0..0, current_nonce);
+
+        Ok(in_out)
+    }
+}
+
+impl DecodeMessage for GcmAes256 {
+    fn decode_message(
+        &self,
+        secret: &[u8],
+        msg: Secret<Vec<u8>, EncryptionStrategy>,
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let msg = msg.expose();
+        let key = UnboundKey::new(&aead::AES_256_GCM, secret)
+            .change_context(errors::CryptoError::DecodingFailed)?;
+
+        let nonce_sequence = NonceSequence::from_bytes(
+            <[u8; aead::NONCE_LEN]>::try_from(
+                msg.get(..aead::NONCE_LEN)
+                    .ok_or(errors::CryptoError::DecodingFailed)
+                    .attach_printable("Failed to read the nonce form the encrypted ciphertext")?,
+            )
+            .change_context(errors::CryptoError::DecodingFailed)?,
+        );
+
+        let mut key = OpeningKey::new(key, nonce_sequence);
+        let mut binding = msg;
+        let output = binding.as_mut_slice();
+
+        let result = key
+            .open_within(aead::Aad::empty(), output, aead::NONCE_LEN..)
+            .change_context(errors::CryptoError::DecodingFailed)?;
+
+        Ok(result.to_vec())
+    }
+}
+/// Represents the ED25519 signature verification algorithm
+#[derive(Debug)]
+pub struct Ed25519;
+
+impl Ed25519 {
+    /// ED25519 algorithm constants
+    const ED25519_PUBLIC_KEY_LEN: usize = 32;
+    const ED25519_SIGNATURE_LEN: usize = 64;
+    /// Validates ED25519 inputs (public key and signature lengths)
+    fn validate_inputs(
+        public_key: &[u8],
+        signature: &[u8],
+    ) -> CustomResult<(), errors::CryptoError> {
+        // Validate public key length
+        if public_key.len() != Self::ED25519_PUBLIC_KEY_LEN {
+            return Err(errors::CryptoError::InvalidKeyLength).attach_printable(format!(
+                "Invalid ED25519 public key length: expected {} bytes, got {}",
+                Self::ED25519_PUBLIC_KEY_LEN,
+                public_key.len()
+            ));
+        }
+
+        // Validate signature length
+        if signature.len() != Self::ED25519_SIGNATURE_LEN {
+            return Err(errors::CryptoError::InvalidKeyLength).attach_printable(format!(
+                "Invalid ED25519 signature length: expected {} bytes, got {}",
+                Self::ED25519_SIGNATURE_LEN,
+                signature.len()
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+impl VerifySignature for Ed25519 {
+    fn verify_signature(
+        &self,
+        public_key: &[u8],
+        signature: &[u8], // ED25519 signature bytes (must be 64 bytes)
+        msg: &[u8],       // Message that was signed
+    ) -> CustomResult<bool, errors::CryptoError> {
+        // Validate inputs first
+        Self::validate_inputs(public_key, signature)?;
+
+        // Create unparsed public key
+        let ring_public_key =
+            ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, public_key);
+
+        // Perform verification
+        match ring_public_key.verify(msg, signature) {
+            Ok(()) => Ok(true),
+            Err(_err) => Err(errors::CryptoError::SignatureVerificationFailed)
+                .attach_printable("ED25519 signature verification failed"),
+        }
+    }
+}
+
+impl SignMessage for Ed25519 {
+    fn sign_message(
+        &self,
+        secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        if secret.len() != 32 {
+            return Err(errors::CryptoError::InvalidKeyLength).attach_printable(format!(
+                "Invalid ED25519 private key length: expected 32 bytes, got {}",
+                secret.len()
+            ));
+        }
+        let key_pair = ring::signature::Ed25519KeyPair::from_seed_unchecked(secret)
+            .change_context(errors::CryptoError::MessageSigningFailed)
+            .attach_printable("Failed to create ED25519 key pair from seed")?;
+
+        let signature = key_pair.sign(msg);
+        Ok(signature.as_ref().to_vec())
+    }
+}
+/// Secure Hash Algorithm 512
+#[derive(Debug)]
+pub struct Sha512;
+
+/// Secure Hash Algorithm 256
+#[derive(Debug)]
+pub struct Sha256;
+
+/// Trait for generating a digest for SHA
+pub trait GenerateDigest {
+    /// takes a message and creates a digest for it
+    fn generate_digest(&self, message: &[u8]) -> CustomResult<Vec<u8>, errors::CryptoError>;
+}
+
+impl GenerateDigest for Sha512 {
+    fn generate_digest(&self, message: &[u8]) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let digest = ring::digest::digest(&ring::digest::SHA512, message);
+        Ok(digest.as_ref().to_vec())
+    }
+}
+impl VerifySignature for Sha512 {
+    fn verify_signature(
+        &self,
+        _secret: &[u8],
+        signature: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        let msg_str = std::str::from_utf8(msg)
+            .change_context(errors::CryptoError::EncodingFailed)?
+            .to_owned();
+        let hashed_digest = hex::encode(
+            Self.generate_digest(msg_str.as_bytes())
+                .change_context(errors::CryptoError::SignatureVerificationFailed)?,
+        );
+        let hashed_digest_into_bytes = hashed_digest.into_bytes();
+        Ok(constant_time_eq::constant_time_eq(
+            &hashed_digest_into_bytes,
+            signature,
+        ))
+    }
+}
+/// MD5 hash function
+#[derive(Debug)]
+pub struct Md5;
+
+impl GenerateDigest for Md5 {
+    fn generate_digest(&self, message: &[u8]) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let digest = md5::compute(message);
+        Ok(digest.as_ref().to_vec())
+    }
+}
+
+impl VerifySignature for Md5 {
+    fn verify_signature(
+        &self,
+        _secret: &[u8],
+        signature: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        let hashed_digest = Self
+            .generate_digest(msg)
+            .change_context(errors::CryptoError::SignatureVerificationFailed)?;
+        Ok(constant_time_eq::constant_time_eq(
+            &hashed_digest,
+            signature,
+        ))
+    }
+}
+
+impl GenerateDigest for Sha256 {
+    fn generate_digest(&self, message: &[u8]) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        let digest = ring::digest::digest(&ring::digest::SHA256, message);
+        Ok(digest.as_ref().to_vec())
+    }
+}
+
+impl VerifySignature for Sha256 {
+    fn verify_signature(
+        &self,
+        _secret: &[u8],
+        signature: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<bool, errors::CryptoError> {
+        let hashed_digest = Self
+            .generate_digest(msg)
+            .change_context(errors::CryptoError::SignatureVerificationFailed)?;
+        let hashed_digest_into_bytes = hashed_digest.as_slice();
+        Ok(constant_time_eq::constant_time_eq(
+            hashed_digest_into_bytes,
+            signature,
+        ))
+    }
+}
+
+/// Generate a random string using a cryptographically secure pseudo-random number generator
+/// (CSPRNG). Typically used for generating (readable) keys and passwords.
+#[inline]
+#[cfg_attr(feature = "deja", track_caller)]
+#[cfg_attr(
+    feature = "deja",
+    deja::id(
+        component = "common_utils::crypto",
+        operation = "generate_cryptographically_secure_random_string",
+        codec = SerdeCodec,
+        on_miss = crate::synth_shape::over(&__deja_miss, &crate::consts::ALPHABETS, length),
+    )
+)]
+pub fn generate_cryptographically_secure_random_string(length: usize) -> String {
+    use rand::distributions::DistString;
+
+    rand::distributions::Alphanumeric.sample_string(&mut rand::rngs::OsRng, length)
+}
+
+/// Generate an array of random bytes using a cryptographically secure pseudo-random number
+/// generator (CSPRNG). Typically used for generating keys.
+#[inline]
+pub fn generate_cryptographically_secure_random_bytes<const N: usize>() -> [u8; N] {
+    use rand::RngCore;
+
+    let mut bytes = [0; N];
+    rand::rngs::OsRng.fill_bytes(&mut bytes);
+    bytes
+}
+
+/// A wrapper type to store the encrypted data for sensitive pii domain data types
+#[derive(Debug, Clone)]
+pub struct Encryptable<T: Clone> {
+    inner: T,
+    encrypted: Secret<Vec<u8>, EncryptionStrategy>,
+}
+
+impl<T: Clone, S: hyperswitch_masking::Strategy<T>> Encryptable<Secret<T, S>> {
+    /// constructor function to be used by the encryptor and decryptor to generate the data type
+    pub fn new(
+        masked_data: Secret<T, S>,
+        encrypted_data: Secret<Vec<u8>, EncryptionStrategy>,
+    ) -> Self {
+        Self {
+            inner: masked_data,
+            encrypted: encrypted_data,
+        }
+    }
+}
+
+impl<T: Clone> Encryptable<T> {
+    /// Get the inner data while consuming self
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
+
+    /// Get the reference to inner value
+    #[inline]
+    pub fn get_inner(&self) -> &T {
+        &self.inner
+    }
+
+    /// Get the inner encrypted data while consuming self
+    #[inline]
+    pub fn into_encrypted(self) -> Secret<Vec<u8>, EncryptionStrategy> {
+        self.encrypted
+    }
+
+    /// Deserialize inner value and return new Encryptable object
+    pub fn deserialize_inner_value<U, F>(
+        self,
+        f: F,
+    ) -> CustomResult<Encryptable<U>, errors::ParsingError>
+    where
+        F: FnOnce(T) -> CustomResult<U, errors::ParsingError>,
+        U: Clone,
+    {
+        let inner = self.inner;
+        let encrypted = self.encrypted;
+        let inner = f(inner)?;
+        Ok(Encryptable { inner, encrypted })
+    }
+
+    /// consume self and modify the inner value
+    pub fn map<U: Clone>(self, f: impl FnOnce(T) -> U) -> Encryptable<U> {
+        let encrypted_data = self.encrypted;
+        let masked_data = f(self.inner);
+        Encryptable {
+            inner: masked_data,
+            encrypted: encrypted_data,
+        }
+    }
+}
+
+impl<T: Clone> Deref for Encryptable<Secret<T>> {
+    type Target = Secret<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T: Clone> hyperswitch_masking::Serialize for Encryptable<T>
+where
+    T: hyperswitch_masking::Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.inner.serialize(serializer)
+    }
+}
+
+impl<T: Clone> PartialEq for Encryptable<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.inner.eq(&other.inner)
+    }
+}
+
+/// Type alias for `Option<Encryptable<Secret<String>>>`
+pub type OptionalEncryptableSecretString = Option<Encryptable<Secret<String>>>;
+/// Type alias for `Option<Encryptable<Secret<String>>>` used for `name` field
+pub type OptionalEncryptableName = Option<Encryptable<Secret<String>>>;
+/// Type alias for `Option<Encryptable<Secret<String>>>` used for `email` field
+pub type OptionalEncryptableEmail = Option<Encryptable<Secret<String, pii::EmailStrategy>>>;
+/// Type alias for `Option<Encryptable<Secret<String>>>` used for `phone` field
+pub type OptionalEncryptablePhone = Option<Encryptable<Secret<String>>>;
+/// Type alias for `Option<Encryptable<Secret<serde_json::Value>>>`
+pub type OptionalEncryptableValue = Option<Encryptable<Secret<serde_json::Value>>>;
+/// Type alias for `Option<Secret<serde_json::Value>>`
+pub type OptionalSecretValue = Option<Secret<serde_json::Value>>;
+/// Type alias for `Encryptable<Secret<String>>` used for `name` field
+pub type EncryptableName = Encryptable<Secret<String>>;
+/// Type alias for `Encryptable<Secret<String>>` used for `email` field
+pub type EncryptableEmail = Encryptable<Secret<String, pii::EmailStrategy>>;
+
+/// Triple DES (3DES) encryption using EDE3 CBC mode
+/// Used by connectors like Redsys for signature generation
+pub struct TripleDesEde3CBC {
+    padding: common_enums::CryptoPadding,
+    iv: Vec<u8>,
+}
+
+impl TripleDesEde3CBC {
+    /// Triple DES key length (24 bytes = 192 bits)
+    pub const TRIPLE_DES_KEY_LENGTH: usize = 24;
+    /// Triple DES IV length (8 bytes = 64 bits)
+    pub const TRIPLE_DES_IV_LENGTH: usize = 8;
+
+    /// Create a new TripleDesEde3CBC instance
+    ///
+    /// # Arguments
+    /// * `padding` - Optional padding scheme (defaults to PKCS7)
+    /// * `iv` - Initialization vector (must be 8 bytes)
+    ///
+    /// # Errors
+    /// Returns `CryptoError::InvalidIvLength` if IV is not 8 bytes
+    pub fn new(
+        padding: Option<common_enums::CryptoPadding>,
+        iv: Vec<u8>,
+    ) -> CustomResult<Self, errors::CryptoError> {
+        if iv.len() != Self::TRIPLE_DES_IV_LENGTH {
+            Err(errors::CryptoError::InvalidIvLength)?
+        };
+        let padding = padding.unwrap_or(common_enums::CryptoPadding::PKCS7);
+        Ok(Self { iv, padding })
+    }
+}
+
+impl EncodeMessage for TripleDesEde3CBC {
+    fn encode_message(
+        &self,
+        secret: &[u8],
+        msg: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        if secret.len() != Self::TRIPLE_DES_KEY_LENGTH {
+            Err(errors::CryptoError::InvalidKeyLength)?
+        }
+        let mut buffer = msg.to_vec();
+
+        // Apply zero padding if specified
+        if let common_enums::CryptoPadding::ZeroPadding = self.padding {
+            let pad_len = Self::TRIPLE_DES_IV_LENGTH - (buffer.len() % Self::TRIPLE_DES_IV_LENGTH);
+            if pad_len != Self::TRIPLE_DES_IV_LENGTH {
+                buffer.extend(vec![0u8; pad_len]);
+            }
+        };
+
+        let cipher = openssl::symm::Cipher::des_ede3_cbc();
+        openssl::symm::encrypt(cipher, secret, Some(&self.iv), &buffer)
+            .change_context(errors::CryptoError::EncodingFailed)
+    }
+}
+
+/// RSA encryption using OAEP padding with SHA-256
+/// Provides stronger security than PKCS#1 v1.5
+/// This matches the Web Crypto API's RSA-OAEP with SHA-256 hash algorithm
+#[derive(Debug)]
+pub struct RsaOaepSha256;
+
+impl RsaOaepSha256 {
+    /// Encrypts plaintext using RSA public key with OAEP-SHA256 padding.
+    ///
+    /// Seamed at the OUTCOME for déjà replay: the OAEP seed is drawn inside
+    /// OpenSSL and cannot be substituted individually — the same key and
+    /// plaintext produce a different ciphertext on every call — so replay
+    /// substitutes the recorded ciphertext, the same posture as
+    /// `NonceSequence::new` above (real crypto still runs at record; the tape
+    /// carries the one value a re-run cannot reproduce).
+    #[cfg_attr(feature = "deja", track_caller)]
+    #[cfg_attr(
+        feature = "deja",
+        deja::id(
+            component = "common_utils::crypto",
+            operation = "rsa_oaep_sha256_encrypt",
+            codec = ResultOkCodec,
+        )
+    )]
+    pub fn encrypt(
+        public_key_der: &[u8],
+        plaintext: &[u8],
+    ) -> CustomResult<Vec<u8>, errors::CryptoError> {
+        use openssl::md::Md;
+        use openssl::pkey::PKey;
+        use openssl::pkey_ctx::PkeyCtx;
+        use openssl::rsa::Padding;
+
+        let pkey = PKey::public_key_from_der(public_key_der)
+            .change_context(errors::CryptoError::EncodingFailed)
+            .attach_printable("Failed to parse public key from DER format")?;
+
+        let mut ctx = PkeyCtx::new(&pkey)
+            .change_context(errors::CryptoError::EncodingFailed)
+            .attach_printable("Failed to create PkeyCtx")?;
+
+        ctx.encrypt_init()
+            .change_context(errors::CryptoError::EncodingFailed)
+            .attach_printable("Failed to initialize encryption")?;
+
+        ctx.set_rsa_padding(Padding::PKCS1_OAEP)
+            .change_context(errors::CryptoError::EncodingFailed)
+            .attach_printable("Failed to set OAEP padding")?;
+
+        ctx.set_rsa_oaep_md(Md::sha256())
+            .change_context(errors::CryptoError::EncodingFailed)
+            .attach_printable("Failed to set OAEP hash to SHA-256")?;
+
+        ctx.set_rsa_mgf1_md(Md::sha256())
+            .change_context(errors::CryptoError::EncodingFailed)
+            .attach_printable("Failed to set MGF1 hash to SHA-256")?;
+
+        // Check the input only after OpenSSL has validated that this key supports
+        // RSA-OAEP-SHA256, so invalid key/configuration failures remain internal errors.
+        // RFC 8017: mLen <= k - 2hLen - 2. SHA-256 has a 32-byte digest.
+        let key_size = pkey.size();
+        let max_plaintext_length = key_size
+            .checked_sub(2 * 32 + 2)
+            .ok_or(errors::CryptoError::InvalidKeyLength)
+            .attach_printable("RSA key is too small for OAEP-SHA256")?;
+
+        if plaintext.len() > max_plaintext_length {
+            return Err(error_stack::report!(
+                errors::CryptoError::PlaintextTooLong {
+                    max_length: max_plaintext_length,
+                    actual_length: plaintext.len(),
+                }
+            ));
+        }
+
+        let mut encrypted = vec![0u8; key_size];
+
+        let encrypted_len = ctx
+            .encrypt(plaintext, Some(&mut encrypted))
+            .change_context(errors::CryptoError::EncodingFailed)
+            .attach_printable("RSA OAEP-SHA256 encryption failed")?;
+
+        encrypted.truncate(encrypted_len);
+        Ok(encrypted)
+    }
+}
+
+#[cfg(test)]
+mod crypto_tests {
+    #![allow(clippy::expect_used)]
+    use super::{DecodeMessage, EncodeMessage, SignMessage, VerifySignature};
+    use crate::{crypto::GenerateDigest, errors::CryptoError};
+    use openssl::{ec::EcGroup, nid::Nid, pkey::PKey, rsa::Rsa};
+
+    #[test]
+    fn no_algorithm_never_verifies_signatures() {
+        let algorithm: Box<dyn VerifySignature> = Box::new(super::NoAlgorithm);
+        for (secret, signature, message) in [
+            (&b""[..], &b""[..], &b""[..]),
+            (&b"secret"[..], &b"signature"[..], &b"message"[..]),
+        ] {
+            assert!(!algorithm
+                .verify_signature(secret, signature, message)
+                .expect("unsupported verification should return false"));
+        }
+    }
+
+    #[test]
+    fn rsa_oaep_sha256_reports_plaintext_length_overflow() {
+        let rsa = Rsa::generate(2048).expect("2048-bit RSA key generation");
+        let public_key_der = rsa.public_key_to_der().expect("public key DER encoding");
+
+        // RFC 8017: 256-byte modulus - 2 * 32-byte SHA-256 digest - 2 = 190 bytes.
+        super::RsaOaepSha256::encrypt(&public_key_der, &[0; 190])
+            .expect("190-byte plaintext must fit");
+
+        let error = super::RsaOaepSha256::encrypt(&public_key_der, &[0; 191])
+            .expect_err("191-byte plaintext must exceed OAEP-SHA256 capacity");
+
+        assert!(matches!(
+            error.current_context(),
+            CryptoError::PlaintextTooLong {
+                max_length: 190,
+                actual_length: 191,
+            }
+        ));
+    }
+
+    #[test]
+    fn rsa_oaep_sha256_does_not_report_invalid_key_as_plaintext_overflow() {
+        let group = EcGroup::from_curve_name(Nid::X9_62_PRIME256V1).expect("P-256 curve");
+        let ec_key = openssl::ec::EcKey::generate(&group).expect("EC key generation");
+        let public_key_der = PKey::from_ec_key(ec_key)
+            .expect("EC PKey")
+            .public_key_to_der()
+            .expect("public key DER encoding");
+
+        let error = super::RsaOaepSha256::encrypt(&public_key_der, &[0; 191])
+            .expect_err("an EC key must not be accepted for RSA encryption");
+
+        assert!(matches!(
+            error.current_context(),
+            CryptoError::EncodingFailed
+        ));
+    }
+
+    #[test]
+    fn test_hmac_sha256_sign_message() {
+        let message = r#"{"type":"payment_intent"}"#.as_bytes();
+        let secret = "hmac_secret_1234".as_bytes();
+        let right_signature =
+            hex::decode("d5550730377011948f12cc28889bee590d2a5434d6f54b87562f2dbc2657823e")
+                .expect("Right signature decoding");
+
+        let signature = super::HmacSha256
+            .sign_message(secret, message)
+            .expect("Signature");
+
+        assert_eq!(signature, right_signature);
+    }
+
+    #[test]
+    fn test_hmac_sha256_verify_signature() {
+        let right_signature =
+            hex::decode("d5550730377011948f12cc28889bee590d2a5434d6f54b87562f2dbc2657823e")
+                .expect("Right signature decoding");
+        let wrong_signature =
+            hex::decode("d5550730377011948f12cc28889bee590d2a5434d6f54b87562f2dbc2657823f")
+                .expect("Wrong signature decoding");
+        let secret = "hmac_secret_1234".as_bytes();
+        let data = r#"{"type":"payment_intent"}"#.as_bytes();
+
+        let right_verified = super::HmacSha256
+            .verify_signature(secret, &right_signature, data)
+            .expect("Right signature verification result");
+
+        assert!(right_verified);
+
+        let wrong_verified = super::HmacSha256
+            .verify_signature(secret, &wrong_signature, data)
+            .expect("Wrong signature verification result");
+
+        assert!(!wrong_verified);
+    }
+
+    #[test]
+    fn test_sha256_verify_signature() {
+        let right_signature =
+            hex::decode("123250a72f4e961f31661dbcee0fec0f4714715dc5ae1b573f908a0a5381ddba")
+                .expect("Right signature decoding");
+        let wrong_signature =
+            hex::decode("123250a72f4e961f31661dbcee0fec0f4714715dc5ae1b573f908a0a5381ddbb")
+                .expect("Wrong signature decoding");
+        let secret = "".as_bytes();
+        let data = r#"AJHFH9349JASFJHADJ9834115USD2020-11-13.13:22:34711000000021406655APPROVED12345product_id"#.as_bytes();
+
+        let right_verified = super::Sha256
+            .verify_signature(secret, &right_signature, data)
+            .expect("Right signature verification result");
+
+        assert!(right_verified);
+
+        let wrong_verified = super::Sha256
+            .verify_signature(secret, &wrong_signature, data)
+            .expect("Wrong signature verification result");
+
+        assert!(!wrong_verified);
+    }
+
+    #[test]
+    fn test_hmac_sha512_sign_message() {
+        let message = r#"{"type":"payment_intent"}"#.as_bytes();
+        let secret = "hmac_secret_1234".as_bytes();
+        let right_signature = hex::decode("38b0bc1ea66b14793e39cd58e93d37b799a507442d0dd8d37443fa95dec58e57da6db4742636fea31201c48e57a66e73a308a2e5a5c6bb831e4e39fe2227c00f")
+            .expect("signature decoding");
+
+        let signature = super::HmacSha512
+            .sign_message(secret, message)
+            .expect("Signature");
+
+        assert_eq!(signature, right_signature);
+    }
+
+    #[test]
+    fn test_hmac_sha512_verify_signature() {
+        let right_signature = hex::decode("38b0bc1ea66b14793e39cd58e93d37b799a507442d0dd8d37443fa95dec58e57da6db4742636fea31201c48e57a66e73a308a2e5a5c6bb831e4e39fe2227c00f")
+            .expect("signature decoding");
+        let wrong_signature =
+            hex::decode("d5550730377011948f12cc28889bee590d2a5434d6f54b87562f2dbc2657823f")
+                .expect("Wrong signature decoding");
+        let secret = "hmac_secret_1234".as_bytes();
+        let data = r#"{"type":"payment_intent"}"#.as_bytes();
+
+        let right_verified = super::HmacSha512
+            .verify_signature(secret, &right_signature, data)
+            .expect("Right signature verification result");
+
+        assert!(right_verified);
+
+        let wrong_verified = super::HmacSha256
+            .verify_signature(secret, &wrong_signature, data)
+            .expect("Wrong signature verification result");
+
+        assert!(!wrong_verified);
+    }
+
+    #[test]
+    fn test_gcm_aes_256_encode_message() {
+        let message = r#"{"type":"PAYMENT"}"#.as_bytes();
+        let secret =
+            hex::decode("000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f")
+                .expect("Secret decoding");
+        let algorithm = super::GcmAes256;
+
+        let encoded_message = algorithm
+            .encode_message(&secret, message)
+            .expect("Encoded message and tag");
+
+        assert_eq!(
+            algorithm
+                .decode_message(&secret, encoded_message.into())
+                .expect("Decode Failed"),
+            message
+        );
+    }
+
+    #[test]
+    fn test_gcm_aes_256_decode_message() {
+        // Inputs taken from AES GCM test vectors provided by NIST
+        // https://github.com/briansmith/ring/blob/95948b3977013aed16db92ae32e6b8384496a740/tests/aead_aes_256_gcm_tests.txt#L447-L452
+
+        let right_secret =
+            hex::decode("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308")
+                .expect("Secret decoding");
+        let wrong_secret =
+            hex::decode("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308309")
+                .expect("Secret decoding");
+        let message =
+            // The three parts of the message are the nonce, ciphertext and tag from the test vector
+            hex::decode(
+                "cafebabefacedbaddecaf888\
+                 522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1aa8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f662898015ad\
+                 b094dac5d93471bdec1a502270e3cc6c"
+            ).expect("Message decoding");
+
+        let algorithm = super::GcmAes256;
+
+        let decoded = algorithm
+            .decode_message(&right_secret, message.clone().into())
+            .expect("Decoded message");
+
+        assert_eq!(
+            decoded,
+            hex::decode("d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255")
+                .expect("Decoded plaintext message")
+        );
+
+        let err_decoded = algorithm.decode_message(&wrong_secret, message.into());
+
+        assert!(err_decoded.is_err());
+    }
+
+    #[test]
+    fn test_md5_digest() {
+        let message = "abcdefghijklmnopqrstuvwxyz".as_bytes();
+        assert_eq!(
+            hex::encode(super::Md5.generate_digest(message).expect("Digest")),
+            "c3fcd3d76192e4007dfb496cca67e13b"
+        );
+    }
+
+    #[test]
+    fn test_md5_verify_signature() {
+        let right_signature =
+            hex::decode("c3fcd3d76192e4007dfb496cca67e13b").expect("signature decoding");
+        let wrong_signature =
+            hex::decode("d5550730377011948f12cc28889bee590d2a5434d6f54b87562f2dbc2657823f")
+                .expect("Wrong signature decoding");
+        let secret = "".as_bytes();
+        let data = "abcdefghijklmnopqrstuvwxyz".as_bytes();
+
+        let right_verified = super::Md5
+            .verify_signature(secret, &right_signature, data)
+            .expect("Right signature verification result");
+
+        assert!(right_verified);
+
+        let wrong_verified = super::Md5
+            .verify_signature(secret, &wrong_signature, data)
+            .expect("Wrong signature verification result");
+
+        assert!(!wrong_verified);
+    }
+}
