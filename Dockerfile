@@ -1,6 +1,6 @@
 FROM public.ecr.aws/docker/library/rust:trixie as builder
 
-ARG EXTRA_FEATURES=""
+ARG EXTRA_FEATURES="--features redis-rs"
 ARG VERSION_FEATURE_SET="v1"
 
 # Which cargo profile compiles the binaries: `release` (default, production),
